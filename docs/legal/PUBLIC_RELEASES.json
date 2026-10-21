@@ -1,0 +1,22 @@
+{
+  "_comment": "DRAFT scaffold (2026-10-21). Tracks each public release of the community engine for FSL->Apache-2.0 conversion timing. Public availability starts the clock; do NOT reset it at a later tag/reissue and NEVER invent publication dates. Unknown dates must be flagged for human resolution, not guessed.",
+  "_status": "DRAFT_NOT_EFFECTIVE",
+  "schema": {
+    "version": "string (semver or tag)",
+    "commit": "string (full SHA)",
+    "artifact_sha256": "string",
+    "first_public_availability_utc": "ISO-8601 UTC timestamp",
+    "evidence_url": "string (where the public availability is provable)",
+    "fsl_text_sha256": "string (hash of the FSL text that version shipped under)",
+    "conversion_license": "Apache-2.0",
+    "conversion_date_utc": "ISO-8601 UTC = first_public_availability_utc + 2 years"
+  },
+  "references": {
+    "fsl_template_sha256": "36b6082235c0a2105174927fc57cc6ae9c41f45a08af2bdcaee18a8dace56177",
+    "fsl_template_source": "https://raw.githubusercontent.com/getsentry/fsl.software/main/FSL-1.1-ALv2.template.md",
+    "fsl_template_retrieved_utc": "2026-10-21T15:56:53Z",
+    "generated_license_sha256": "9da7ab609a92e5ec6694089084eaebcd01cf53146ff7c26320e157461877e69b",
+    "apache2_text_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  "releases": []
+}
