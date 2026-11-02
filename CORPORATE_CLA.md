@@ -10,7 +10,7 @@ Used when an employer/entity owns Contributions made by its personnel.
 
 **Contracting company (licensee):** Armur Technologies Inc. [LEGAL REVIEW
 REQUIRED: verify] · **Notice contact:** [LEGAL REVIEW REQUIRED]
-**Project scope:** the `swarm-defence` repository/project only.
+**Project scope:** the `heramba` repository/project only.
 
 The Corporation agrees:
 

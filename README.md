@@ -1,9 +1,10 @@
-# swarm-defence  ·  community engine (codename)
+# Heramba  ·  community engine
 
-> **Working codename only — `swarm-defence`.** The public product name is pending
-> a trademark-cleared naming review (an earlier codename, "Mirage", is already
-> used by other security projects and is not being adopted). Do not treat any
-> name here as final.
+> **Product name: `Heramba`** — chosen 2026-11-02, **trademark clearance
+> pending** (not final until counsel signs off; a preliminary check found no
+> cybersecurity-space collision — see `../heramba-commercial/legal/IP_STRATEGY.md`).
+> An earlier codename, "Mirage", was dropped (already used by other security
+> projects). Do not treat the name as cleared yet.
 >
 > **STATUS: pre-release. Licensing and contribution process are DRAFT and NOT yet
 > active** — see `docs/LICENSING.md` and `CONTRIBUTING.md`. Nothing here is legal

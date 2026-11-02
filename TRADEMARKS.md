@@ -1,13 +1,14 @@
 # Trademark Policy
 
-> **STATUS: DRAFT.** Scaffolded 2026-10-21. The public product name is **not yet
-> chosen or cleared**; `swarm-defence` is a provisional codename. Not legal advice.
+> **STATUS: DRAFT.** Scaffolded 2026-10-21; name updated 2026-11-02. The public
+> product name **Heramba** has been **chosen but NOT yet trademark-cleared**
+> (clearance pending counsel review). Not legal advice.
 
 ## Scope
 
 This policy covers use of Armur Technologies Inc.'s names and logos associated
-with this project. It does **not** assert exclusivity in any provisional codename,
-and it is not a claim of trademark registration.
+with this project. It does **not** assert exclusivity in the (as-yet-uncleared)
+name, and it is not a claim of trademark registration.
 
 ## Permitted
 

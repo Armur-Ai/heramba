@@ -8,7 +8,7 @@
 
 **Contracting company:** Armur Technologies Inc. [LEGAL REVIEW REQUIRED: verify
 exact legal name] · **Notice contact:** [LEGAL REVIEW REQUIRED]
-**Project scope:** the `swarm-defence` repository/project only. This does **not**
+**Project scope:** the `heramba` repository/project only. This does **not**
 sweep in other Armur projects.
 
 By signing, You agree to the following for Your present and future intentional

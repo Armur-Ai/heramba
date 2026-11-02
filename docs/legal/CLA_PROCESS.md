@@ -16,7 +16,7 @@
 
 Exact accepted agreement text + SHA-256; agreement version; effective date;
 authenticated identity; stable GitHub ID + current handle; assent timestamp;
-named project (`swarm-defence`); elected current PR; and, where relevant, private
+named project (`heramba`); elected current PR; and, where relevant, private
 legal name/contact (kept **out** of the public repo). A copy is delivered to the
 signer.
 
