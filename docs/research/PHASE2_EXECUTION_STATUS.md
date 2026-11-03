@@ -13,8 +13,8 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `PARTIAL` · `VERI
 
 | R | Title | Status | Commit | Evidence |
 |---|---|---|---|---|
-| R0 | Safe handoff & gap analysis | VERIFIED | this commit | baseline below |
-| R1 | Research protocol & threat model | NOT_STARTED | — | — |
+| R0 | Safe handoff & gap analysis | VERIFIED | `38f533d` | baseline below |
+| R1 | Research protocol & threat model | VERIFIED | this commit | `go test ./internal/research/...`; `heramba research manifest` |
 | R2 | Fair coordination detection experiment | NOT_STARTED | — | — |
 | R3 | Deception & attack-objective experiment | NOT_STARTED | — | — |
 | R4 | Adaptation race & co-evolution lab | NOT_STARTED | — | — |
@@ -109,3 +109,33 @@ reimplement them, it adds controls and evaluation around them.
 
 Proceed to **R1**: build `internal/research` with a schema-validated protocol,
 threat-model manifest, and pre-registered hypotheses H1–H5.
+
+---
+
+## R1 — Research protocol & threat model — VERIFIED (2026-11-03)
+
+**Files:** `internal/research/{protocol,default,protocol_test}.go`,
+`cmd/heramba/research.go` (+`main.go` wiring), `docs/research/{protocol,threat-model}.md`,
+`docs/research/protocol.manifest.json` (generated).
+
+**What shipped:** the protocol is **code, not prose** — a schema-validated
+`research.Protocol` with pre-registered H1-H5 (each with an explicit null),
+six threat-model actor families (scripted / independent / coordinated /
+legit-automation / human / deception-aware) with explicit capabilities, request
+and time budgets, objectives, and defender observability; 13 endpoints (5
+primary); leakage-free train/tune/validation/test partitions; stat methods,
+stopping and leakage rules. `Protocol.Validate()` rejects duplicate IDs,
+non-falsifiable hypotheses, unknown endpoints/actors, missing held-out families,
+and **train/test seed leakage** — each proved by a negative test.
+
+**Commands / results:**
+- `go test ./internal/research/...` → `ok` (12 tests incl. leakage/null/dup/held-out negatives)
+- `go vet ./...` → clean; `go test -race ./...` → research `ok`, full suite PASS
+- `heramba research manifest` → validated JSON; `--out docs/research/protocol.manifest.json` (464 lines)
+
+**Limitations:** the deception-aware actor is a modeled heuristic, not a live
+LLM; synthetic traffic is more separable than production (declared in
+`threats_to_validity`).
+
+**Next action:** R2 — the fair coordination-detection experiment on these
+families (4 methods + ablations, CIs, one command).

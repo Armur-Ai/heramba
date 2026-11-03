@@ -31,6 +31,8 @@ func main() {
 		runDoctor(os.Args[2:])
 	case "experiment":
 		runExperiment(os.Args[2:])
+	case "research":
+		runResearch(os.Args[2:])
 	case "honeypot":
 		runHoneypot(os.Args[2:])
 	case "version", "-v", "--version":
@@ -57,6 +59,7 @@ commands:
   doctor       check the environment and configuration
   honeypot     serve the stateful deception app behind the edge (no upstream)
   experiment   run the reproducible four-baseline defense evaluation
+  research     reproducible Phase 2 experiments and protocol manifest
   version      print version
   help         show this help
 
