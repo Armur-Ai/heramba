@@ -42,6 +42,12 @@ rate_limit_burst: 0      # defaults to max(rate_limit_rps, 1)
 egress:                  # callback firewall (protect mode)
   enabled: false
   allowed_hosts: []      # hosts the protected app is permitted to call
+
+# Counter-agent prompt decoys (PROTECT mode): inject fabricated vuln leads into
+# HTML/JS responses for classifier-flagged agentic sources (invisible to humans;
+# the fake paths become decoys and the key is watched as a canary). Off by default.
+counter:
+  enabled: false
 `
 
 func runConfig(args []string) {

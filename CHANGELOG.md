@@ -23,6 +23,9 @@ follow [Semantic Versioning](https://semver.org/) once it tags a release.
   (protect mode) that cuts SSRF/OOB callbacks and exfil.
 - **Per-source rate limiting** (`internal/ratelimit`): token-bucket throttle in
   protect mode (429 + `rate_limited` event); never engaged in observe mode.
+- **Counter-agent prompt decoys** (`internal/counter`): inject fabricated vuln
+  leads into HTML/JS for classifier-flagged agentic sources (protect mode); the
+  fake paths become decoys and the key a canary — closed-loop deception.
 - **Alerting** (`internal/alert`): text + JSONL sinks, fan-out.
 - **CLI** (`cmd/heramba`): `serve`, `decoys` (list / canary), `config`
   (init / show), `doctor`, `version`.

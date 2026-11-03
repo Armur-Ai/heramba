@@ -81,7 +81,8 @@ enforces a deny-by-default allowlist.
 Deep dives: [architecture](docs/architecture.md) ·
 [decoys & canaries](docs/decoys.md) · [classifier](docs/classifier.md) ·
 [signal denial](docs/signal-denial.md) ·
-[metrics & alerting](docs/metrics.md) · [deployment](docs/deployment.md) ·
+[metrics & alerting](docs/metrics.md) ·
+[counter-agent deception](docs/counter-agent.md) · [deployment](docs/deployment.md) ·
 [threat model](docs/threat-model.md)
 
 ## What's shipped vs planned
@@ -89,7 +90,8 @@ Deep dives: [architecture](docs/architecture.md) ·
 **Shipped (real, tested in this repo):**
 - ✅ Reverse-proxy edge runtime with observe/protect modes
 - ✅ Decoy endpoints + registry, zero-FP `decoy_hit` detection
-- ✅ Cryptographic canary tokens (mint/track) + edge detection of their use (path/query/headers/body)
+- ✅ Cryptographic canary tokens + edge detection (path/query/headers/body)
+- ✅ **Counter-agent prompt decoys** — inject fabricated leads for flagged AI agents; the fake paths become decoys + the key a canary (protect mode)
 - ✅ Deterministic, **configurable** agentic-traffic classifier (explainable signals)
 - ✅ Signal denial: response-header normalization + timing jitter
 - ✅ Deny-by-default egress/callback firewall + per-source rate limiting (protect mode)
