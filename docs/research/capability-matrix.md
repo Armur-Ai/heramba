@@ -52,9 +52,10 @@ piece is incomplete; **NOT STARTED** / **BLOCKED** otherwise. Nothing is called
 ## Explicitly NOT production-ready / not claimed
 
 - Coordination **FPR 0.7%** meets the 1% target at the point estimate, but the 95% upper bound (2.1%) can't yet exclude >1%.
-- **H4** missing-sensor degradation: PARTIAL.
-- Synthetic deception app / strategy engine **not auto-mounted into live `serve`**
-  (opt-in).
+- **H4** missing-sensor degradation: PARTIAL (now quantified per sensor —
+  synchrony + division are load-bearing).
+- Strategy engine now runs inline from `serve` in **shadow** (not enforce) mode;
+  the deception app auto-mounts via `serve --deception` (opt-in).
 - **No signed releases / SLSA provenance** yet; **SECURITY.md** has owner-draft
   fields.
 - All experiment numbers are **synthetic-harness measurements**, not field

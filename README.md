@@ -198,10 +198,11 @@ heramba research stats       # targets-vs-observed scorecard
 ```
 
 **Planned / next integration steps (tracked honestly):**
-- ◻ Auto-mount the deception app and run the strategy engine inline from `serve`
-- ◻ More classifier signals (JA3/TLS, header-order fingerprint)
+- ✅ Run the strategy engine inline from `serve` (shadow mode) and auto-mount the deception app (`serve --deception`)
+- ✅ Coordination FPR driven to **0.7%** (meets the 1% target at the point estimate); H4 missing-sensor sweep now quantified (`heramba research h4`)
+- ✅ Added a UA/header-consistency classifier signal (spoofed-browser tell)
+- ◻ True wire-level fingerprinting (JA3/JA4 TLS, raw header ordering — needs capture below net/http)
 - ◻ Content-level deception; **online** deception-policy optimization (offline evaluator shipped)
-- ◻ Drive coordination FPR to the 1% target (currently ~9% on hard synthetic benign); finish H4 missing-sensor sweep
 - ◻ More alert sinks (Slack/SIEM; webhook sink shipped); signed releases / SLSA provenance
 
 See the [CHANGELOG](CHANGELOG.md). Deep dives:
