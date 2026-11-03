@@ -18,7 +18,7 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `PARTIAL` · `VERI
 | R2 | Fair coordination detection experiment | VERIFIED | this commit | `go test ./internal/research/{coord,stats}/...`; `heramba research coord` |
 | R3 | Deception & attack-objective experiment | VERIFIED | this commit | `go test ./internal/research/objective/...`; `heramba research objective` |
 | R4 | Adaptation race & co-evolution lab | VERIFIED | this commit | `go test ./internal/research/coevolve/...`; `heramba research coevolve` |
-| R5 | Defender prompt-injection & data-plane safety | NOT_STARTED | — | — |
+| R5 | Defender prompt-injection & data-plane safety | VERIFIED | this commit | `go test ./internal/taint/...` |
 | R6 | Proxy correctness & resilience | NOT_STARTED | — | — |
 | R7 | Supply chain & release assurance | NOT_STARTED | — | — |
 | R8 | Scientific statistics & targets | NOT_STARTED | — | — |
@@ -252,3 +252,38 @@ detectability is a parameter, not a claim about a real adversary.
 
 **Next action:** R5 — defender prompt-injection & data-plane safety (taint
 labels + typed contracts + adversarial test battery).
+
+---
+
+## R5 — Defender prompt-injection & data-plane safety — VERIFIED (2026-11-03)
+
+**Files:** `internal/taint/{taint,contract,taint_test}.go`,
+`docs/research/data-plane-safety.md`.
+
+**What shipped:** a taint layer where every value carries a trust label
+(Trusted/AttackerControlled/Derived) + provenance, and the only decision
+accessor (`Trusted`/`RequireTrusted`) refuses untrusted content — there is no
+trusted accessor that returns attacker-controlled data, so injection is a type
+error. Taint propagates through derivation (no laundering). A typed
+observation/action contract decodes untrusted JSON with strict decoding (rejects
+unknown fields, trailing data, type mismatches = schema confusion; rejects
+unknown kinds and out-of-range severity) and quarantines free text;
+`AuthorizeContainment` reads only validated enum + trusted severity + tool
+allowlist, never the note. Guards: fail-closed `ToolAllowlist`, `ReplayGuard`,
+`SameTenant` isolation, `SanitizeForLog`, human approval for high impact.
+
+**Battery (inert fixtures only):** `go test ./internal/taint/...` → 11 tests
+cover forged roles, tool-output laundering, schema confusion, log injection,
+malformed input, replay, cross-tenant contamination, privilege escalation via
+tools, and taint propagation. All pass; `-race` clean.
+
+**Verification of the core gate:** clean vs hostile-note observations produce
+**identical** containment decisions — attacker text cannot change policy.
+Complements `strategy.TestPromptInjectionCannotOverridePolicy` on the output
+side.
+
+**Limitations:** this is a library + battery; wiring the contract through every
+live ingestion path is a tracked integration step (not yet every call site).
+
+**Next action:** R6 — proxy correctness & resilience suite + SLOs + fault
+injection.
