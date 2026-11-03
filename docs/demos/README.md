@@ -22,6 +22,8 @@ vhs docs/demos/quickstart.tape
 | `quickstart.tape` | `config init` → `doctor` → `version` (observe mode in 30s) |
 | `decoys.tape` | `decoys list` + minting a canary token |
 | `detect.tape` | a honeypot edge catching a `/.env` probe as a zero-FP hit |
+| `honeypot.tape` | `heramba honeypot` — edge decoys in front of a live synthetic app, with an intelligence rollup |
+| `experiment.tape` | `heramba experiment` — the reproducible four-baseline evaluation (and byte-identical reruns) |
 
 Build the binary first (`make build`) and ensure `heramba` is on `PATH` so the
 tapes invoke the real CLI.
