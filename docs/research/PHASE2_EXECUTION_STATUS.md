@@ -23,7 +23,7 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `PARTIAL` · `VERI
 | R7 | Supply chain & release assurance | VERIFIED | `bfc8f36` | `make fuzz`; `make sbom`; CI |
 | R8 | Scientific statistics & targets | VERIFIED | this commit | `go test ./internal/research/{stats,scorecard}/...`; `heramba research stats` |
 | R9 | Operations, explainability & human control | VERIFIED | this commit | `go test ./internal/incident/... ./internal/alert/...` |
-| R10 | Advanced training package | NOT_STARTED | — | — |
+| R10 | Advanced training package | VERIFIED | this commit | `go test ./labs/...` (fresh-machine dry run) |
 | R11 | Final research & release review | NOT_STARTED | — | — |
 
 ---
@@ -406,3 +406,32 @@ test first).
 
 **Next action:** R10 — advanced training package (prompt-injection + adaptation
 labs, course map).
+
+---
+
+## R10 — Advanced training package — VERIFIED (2026-11-03)
+
+**Files:** `labs/07-prompt-injection-defense/{lab_test.go,README.md}`,
+`labs/08-adaptation-race/{lab_test.go,README.md}`, `labs/README.md` (updated to
+eight labs), `docs/training/{COURSE.md,README.md}`.
+
+**What shipped:** two new locally-gradable labs reusing real Phase 2 packages —
+Lab 07 (prompt-injection-resistant controls, `internal/taint`) and Lab 08
+(adaptation race & ablation, `internal/research/coevolve`). The lab set now
+covers all directive-required topics: campaign reconstruction (02),
+coordination-vs-automation (06), stateful-deception consistency (03),
+business-logic invariants (04), prompt-injection-resistant controls (07), and
+adaptation race + ablation (08). Each lab has objectives, prerequisites, expected
+duration, one-command run/reset, expected observations, automatic grading (the
+test is the grader), troubleshooting, and cleanup. Added a 2-day core + optional
+4-day course map in `docs/training/COURSE.md` with per-block hands-on time and
+instructor dependencies, plus the public/private materials policy.
+
+**Fresh-machine dry run:** `go test ./labs/...` → all 8 labs `ok`, with **no
+instructor-only secrets and no external targets**. Full suite + vet + gofmt clean.
+
+**Limitations:** instructor solution keys / challenge flags / grading secrets are
+intentionally kept in a separate private repo (not committed here).
+
+**Next action:** R11 — final research & release review (reports + capability
+matrix).

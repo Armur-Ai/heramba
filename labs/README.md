@@ -1,8 +1,11 @@
 # Heramba Labs
 
-Six progressive, self-contained exercises that teach Heramba's defense model
+Eight progressive, self-contained exercises that teach Heramba's defense model
 against autonomous attack agents. Every lab runs, resets, and grades **locally**
 against the real engine packages — no external target, no network, no cloud.
+
+A realistic 2-day (and optional 4-day) course that sequences these labs is in
+[docs/training/COURSE.md](../docs/training/COURSE.md).
 
 ## Running a lab
 
@@ -22,7 +25,7 @@ go test ./labs/...
 Labs are deterministic (fixed seeds), so **resetting a lab is just re-running
 it** — there is no state to clean up.
 
-## The six labs
+## The eight labs
 
 | # | Lab | Teaches | Engine package |
 |---|-----|---------|----------------|
@@ -32,8 +35,11 @@ it** — there is no state to clean up.
 | 04 | [Business-logic attack detection](04-business-logic) | BOLA/IDOR, workflow-sequence abuse, authorized-equivalent allowance | `bizlogic` |
 | 05 | [Policy-constrained adaptive response](05-adaptive-response) | shadow mode, approval/expiry/rollback, injection-proof policy | `strategy` |
 | 06 | [Swarm-versus-defense benchmarking](06-swarm-benchmark) | the reproducible four-baseline evaluation | `replay`, `campaign/swarm` |
+| 07 | [Prompt-injection-resistant controls](07-prompt-injection-defense) | taint labels, typed contracts, fail-closed tools, injection-proof decisions | `taint` |
+| 08 | [Adaptation race & ablation study](08-adaptation-race) | adaptation latency (detection+response), utility, oscillation, ablations | `research/coevolve` |
 
-A suggested order is 01 → 06; each builds intuition the next relies on.
+A suggested order is 01 → 08; each builds intuition the next relies on. Labs 07
+and 08 correspond to the Phase 2 robustness and co-evolution work.
 
 ## Public vs. private materials
 
