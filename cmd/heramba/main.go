@@ -25,6 +25,10 @@ func main() {
 		runServe(os.Args[2:])
 	case "decoys":
 		runDecoys(os.Args[2:])
+	case "config":
+		runConfig(os.Args[2:])
+	case "doctor":
+		runDoctor(os.Args[2:])
 	case "version", "-v", "--version":
 		fmt.Println(version.String())
 	case "help", "-h", "--help":
