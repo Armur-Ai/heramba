@@ -114,6 +114,7 @@ func (c *Classifier) Classify(o Observation) Verdict {
 	signals := []Signal{
 		toolUASignal(ua),
 		missingBrowserSignal(ua, o.Headers),
+		acceptSignal(o.Headers),
 		cadenceSignal(cadence, c.opts.CadenceRPS),
 		enumerationSignal(distinct, c.opts.EnumDistinct),
 	}
@@ -173,6 +174,20 @@ func missingBrowserSignal(ua string, h map[string]string) Signal {
 	_, hasAcceptLang := h["accept-language"]
 	if !looksBrowser && !hasSecFetch && !hasAcceptLang {
 		s.Fired, s.Detail = true, "no Sec-Fetch-*, no Accept-Language, UA not a browser"
+	}
+	return s
+}
+
+// acceptSignal fires when the request's Accept headers look non-browser: a
+// browser sends a rich Accept (containing text/html) and an Accept-Encoding;
+// most tools send "*/*" or nothing and omit Accept-Encoding.
+func acceptSignal(h map[string]string) Signal {
+	s := Signal{Name: "non_browser_accept", Weight: 0.15}
+	accept := h["accept"]
+	_, hasEnc := h["accept-encoding"]
+	browserishAccept := strings.Contains(accept, "text/html")
+	if !browserishAccept && !hasEnc {
+		s.Fired, s.Detail = true, "no text/html Accept and no Accept-Encoding"
 	}
 	return s
 }

@@ -15,6 +15,7 @@ capped at 1.0. Every verdict lists exactly which signals fired and why.
 |---|---|---|
 | `tool_user_agent` | 0.40 | UA is empty or a known non-browser client (curl, python-requests, go-http-client, nuclei, sqlmap, …) |
 | `missing_browser_signals` | 0.25 | no `Sec-Fetch-*`, no `Accept-Language`, and UA isn't a browser |
+| `non_browser_accept` | 0.15 | no `text/html` in Accept and no `Accept-Encoding` |
 | `high_cadence` | 0.25 | sustained request rate above the human threshold (>5 rps) |
 | `enumeration` | 0.20 | many distinct paths from one source in a short window |
 

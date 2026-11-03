@@ -6,7 +6,34 @@ import (
 )
 
 func browserHeaders() map[string]string {
-	return map[string]string{"sec-fetch-mode": "navigate", "accept-language": "en-US"}
+	return map[string]string{
+		"sec-fetch-mode":  "navigate",
+		"accept-language": "en-US",
+		"accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+		"accept-encoding": "gzip, deflate, br",
+	}
+}
+
+func TestNonBrowserAcceptSignal(t *testing.T) {
+	c := New()
+	// tool-style: Accept */*, no Accept-Encoding
+	v := c.Classify(Observation{Source: "5.5.5.5", Path: "/", UserAgent: "Mozilla/5.0 custom", Headers: map[string]string{"accept": "*/*"}})
+	fired := false
+	for _, s := range v.Signals {
+		if s.Name == "non_browser_accept" && s.Fired {
+			fired = true
+		}
+	}
+	if !fired {
+		t.Fatalf("non_browser_accept should fire for */* + no encoding: %+v", v.Signals)
+	}
+	// browser headers: must not fire
+	v2 := c.Classify(Observation{Source: "5.5.5.6", Path: "/", UserAgent: "Mozilla/5.0", Headers: browserHeaders()})
+	for _, s := range v2.Signals {
+		if s.Name == "non_browser_accept" && s.Fired {
+			t.Fatal("non_browser_accept must not fire for a real browser")
+		}
+	}
 }
 
 func TestBrowserLooksHuman(t *testing.T) {

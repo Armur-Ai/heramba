@@ -254,7 +254,7 @@ func (e *Engine) isTrusted(ip net.IP) bool {
 // headerSubset extracts the lower-cased headers the classifier reasons about.
 func headerSubset(r *http.Request) map[string]string {
 	h := map[string]string{}
-	for _, name := range []string{"Sec-Fetch-Mode", "Accept-Language", "Referer"} {
+	for _, name := range []string{"Sec-Fetch-Mode", "Accept-Language", "Referer", "Accept", "Accept-Encoding"} {
 		if v := r.Header.Get(name); v != "" {
 			h[toLower(name)] = v
 		}
