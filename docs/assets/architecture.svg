@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 520" role="img" aria-label="Heramba architecture: client to edge runtime to upstream, with detections flowing to alert sinks">
+  <defs>
+    <linearGradient id="abg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1119"/><stop offset="1" stop-color="#0e1722"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5f7384"/>
+    </marker>
+    <style>
+      .box{fill:#121d29;stroke:#27384a;stroke-width:1.5;rx:10}
+      .lbl{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#dce7ee}
+      .sub{font-family:'SFMono-Regular',Consolas,monospace;fill:#8aa0ad;font-size:12px}
+      .acc{fill:#3ddc97}
+      .edge{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#8aa0ad;font-size:12px}
+      .flow{stroke:#5f7384;stroke-width:2;fill:none}
+    </style>
+  </defs>
+  <rect width="1180" height="520" fill="url(#abg)"/>
+
+  <!-- client -->
+  <rect class="box" x="40" y="210" width="170" height="90" rx="10"/>
+  <text class="lbl" x="125" y="245" font-size="18" font-weight="700" text-anchor="middle">Client</text>
+  <text class="sub" x="125" y="270" text-anchor="middle">user · scanner · agent</text>
+
+  <!-- edge runtime -->
+  <rect class="box" x="330" y="70" width="470" height="380" rx="14" fill="#0f1a26"/>
+  <text class="lbl" x="565" y="104" font-size="20" font-weight="800" text-anchor="middle">Heramba edge runtime</text>
+  <text class="sub" x="565" y="128" text-anchor="middle">observe (default) · protect (opt-in)</text>
+
+  <rect class="box" x="360" y="150" width="190" height="78"/>
+  <text class="lbl" x="455" y="180" font-size="15" font-weight="700" text-anchor="middle">classifier</text>
+  <text class="sub" x="455" y="202" text-anchor="middle">agentic-traffic score</text>
+
+  <rect class="box" x="580" y="150" width="190" height="78"/>
+  <text class="lbl" x="675" y="180" font-size="15" font-weight="700" text-anchor="middle">decoys + canaries</text>
+  <text class="sub" x="675" y="202" text-anchor="middle">zero-FP detection</text>
+
+  <rect class="box" x="360" y="250" width="190" height="78"/>
+  <text class="lbl" x="455" y="280" font-size="15" font-weight="700" text-anchor="middle">signal denial</text>
+  <text class="sub" x="455" y="302" text-anchor="middle">normalize · jitter</text>
+
+  <rect class="box" x="580" y="250" width="190" height="78"/>
+  <text class="lbl" x="675" y="280" font-size="15" font-weight="700" text-anchor="middle">egress firewall</text>
+  <text class="sub" x="675" y="302" text-anchor="middle">deny-by-default</text>
+
+  <rect class="box" x="430" y="356" width="270" height="66"/>
+  <text class="lbl" x="565" y="384" font-size="14" font-weight="700" text-anchor="middle">reverse proxy</text>
+  <text class="sub" x="565" y="404" text-anchor="middle">pass real traffic through</text>
+
+  <!-- upstream -->
+  <rect class="box" x="930" y="210" width="210" height="90" rx="10"/>
+  <text class="lbl" x="1035" y="245" font-size="18" font-weight="700" text-anchor="middle">Your app / API</text>
+  <text class="sub" x="1035" y="270" text-anchor="middle">upstream (unchanged)</text>
+
+  <!-- alert sink -->
+  <rect class="box" x="430" y="462" width="270" height="44" rx="8"/>
+  <text class="acc" x="565" y="490" font-size="14" font-weight="700" text-anchor="middle" font-family="'Segoe UI',sans-serif">detections → alert sink (text / jsonl)</text>
+
+  <!-- flows -->
+  <path class="flow" d="M210 255 H330" marker-end="url(#arr)"/>
+  <text class="edge" x="270" y="246" text-anchor="middle">request</text>
+  <path class="flow" d="M800 255 H930" marker-end="url(#arr)"/>
+  <text class="edge" x="865" y="246" text-anchor="middle">proxied</text>
+  <path class="flow" d="M565 422 V462" marker-end="url(#arr)"/>
+</svg>

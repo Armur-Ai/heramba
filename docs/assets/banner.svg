@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" role="img" aria-label="Heramba — active-deception defense for the app and API layer">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a0e13"/>
+      <stop offset="1" stop-color="#0f1620"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3ddc97"/>
+      <stop offset="1" stop-color="#36c6e0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="320" fill="url(#bg)"/>
+  <!-- faint grid -->
+  <g stroke="#1b2733" stroke-width="1" opacity="0.6">
+    <path d="M0 80 H1200 M0 160 H1200 M0 240 H1200"/>
+    <path d="M300 0 V320 M600 0 V320 M900 0 V320"/>
+  </g>
+
+  <!-- shield / deception glyph -->
+  <g transform="translate(96,160)">
+    <path d="M0 -70 L60 -44 V8 C60 44 34 66 0 80 C-34 66 -60 44 -60 8 V-44 Z"
+          fill="none" stroke="url(#accent)" stroke-width="5"/>
+    <!-- decoy dots: one real path, several lures -->
+    <circle cx="0" cy="-10" r="6" fill="#3ddc97"/>
+    <circle cx="-26" cy="18" r="4" fill="#36c6e0" opacity="0.85"/>
+    <circle cx="26" cy="18" r="4" fill="#36c6e0" opacity="0.85"/>
+    <circle cx="0" cy="40" r="4" fill="#36c6e0" opacity="0.85"/>
+    <path d="M0 -10 L-26 18 M0 -10 L26 18 M0 -10 L0 40" stroke="#2a3b49" stroke-width="2"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="210" y="150" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="88" font-weight="800" fill="#eaf2f0" letter-spacing="2">HERAMBA</text>
+  <text x="214" y="196" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" font-weight="500" fill="url(#accent)">active-deception defense for the app &amp; API layer</text>
+  <text x="214" y="236" font-family="'SFMono-Regular',Consolas,monospace" font-size="18" fill="#8aa0ad">deny the attacker clean ground truth · trap autonomous agents in deception</text>
+</svg>
