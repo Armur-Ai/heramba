@@ -46,7 +46,7 @@ piece is incomplete; **NOT STARTED** / **BLOCKED** otherwise. Nothing is called
 | H1 | coordination distinguishable | **null rejected** | R2: recall 1.00 @ FPR 0.007, beats all baselines |
 | H2 | adaptive deception reduces objectives | **null rejected** | R3: completion 1.00 → 0.00 |
 | H3 | defender adapts fast enough for positive utility | **null rejected (detectable)** | R4: utility 0.93, response 4.0s; feint case lossy |
-| H4 | graceful degradation under missing sensor | **PARTIAL** | R2 ablations degrade gracefully; full live-sensor sweep not run |
+| H4 | graceful degradation under missing sensor | **PARTIAL** | [missing-sensor sweep](missing-sensor-h4.md): target-overlap/decoy redundant (graceful); synchrony+division load-bearing |
 | H5 | safety holds, overhead bounded | **null rejected** | R5 fuzz + R6 sub-ms latency |
 
 ## Explicitly NOT production-ready / not claimed

@@ -59,10 +59,12 @@ utility 0.45 (reported, not hidden).
 
 ### H4 — graceful degradation under a missing sensor
 
-Partially addressed: the R2 ablations show detection degrades gracefully rather
-than catastrophically when a signal is removed (e.g. no-decoy keeps PR-AUC
-0.935). A full single-sensor-removal sweep across live sensors is **not yet**
-run end-to-end — tracked as PARTIAL.
+Now quantified by the [missing-sensor sweep](missing-sensor-h4.md) (`heramba
+research h4`): removing the target-overlap or decoy sensor is **graceful** (recall
+stays 1.00 — they are redundant), while removing synchrony or the
+division-of-labor sensor **collapses** recall for labor-dividing swarms. The
+detector needs synchrony plus the applicable co-targeting signal, so H4 remains
+**PARTIAL** — measured per sensor, not asserted.
 
 ### H5 — safety holds, overhead bounded ([R5](data-plane-safety.md), [R6](../security/proxy-resilience.md))
 
