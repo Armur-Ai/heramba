@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "code_revision": "322b409",
+  "full_recall": {
+    "point": 1,
+    "lo": 0.8388748419471806,
+    "hi": 1,
+    "n": 20
+  },
+  "request_only_recall": {
+    "point": 0,
+    "lo": 0,
+    "hi": 0.16112515805281938,
+    "n": 20
+  },
+  "sensors": [
+    {
+      "missing_sensor": "timing (synchrony)",
+      "recall": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0.16112515805281938,
+        "n": 20
+      },
+      "fpr": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0.009063433368181313,
+        "n": 420
+      },
+      "graceful": false,
+      "load_bearing": true
+    },
+    {
+      "missing_sensor": "target-overlap (shared)",
+      "recall": {
+        "point": 1,
+        "lo": 0.8388748419471806,
+        "hi": 1,
+        "n": 20
+      },
+      "fpr": {
+        "point": 0.007142857142857143,
+        "lo": 0.0024321293652942912,
+        "hi": 0.02078754066905586,
+        "n": 420
+      },
+      "graceful": true,
+      "load_bearing": false
+    },
+    {
+      "missing_sensor": "graph (division of labor)",
+      "recall": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0.16112515805281938,
+        "n": 20
+      },
+      "fpr": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0.009063433368181313,
+        "n": 420
+      },
+      "graceful": false,
+      "load_bearing": true
+    },
+    {
+      "missing_sensor": "deception (decoy contact)",
+      "recall": {
+        "point": 1,
+        "lo": 0.8388748419471806,
+        "hi": 1,
+        "n": 20
+      },
+      "fpr": {
+        "point": 0.007142857142857143,
+        "lo": 0.0024321293652942912,
+        "hi": 0.02078754066905586,
+        "n": 420
+      },
+      "graceful": true,
+      "load_bearing": false
+    }
+  ],
+  "verdict": "PARTIAL: most sensors degrade gracefully, but at least one is load-bearing (removing it collapses recall) — H4 null holds for that sensor.",
+  "not_measured": [
+    "a 'missing sensor' is modeled as a removed detection signal; recall/FPR are on the held-out set",
+    "the floor is the request-only recall — the null hypothesis is that any removal drops to this floor"
+  ]
+}

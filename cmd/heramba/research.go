@@ -27,6 +27,8 @@ func runResearch(args []string) {
 		runResearchCoevolve(args[1:])
 	case "stats":
 		runResearchStats(args[1:])
+	case "h4":
+		runResearchH4(args[1:])
 	default:
 		fmt.Fprintf(os.Stderr, "heramba research: unknown subcommand %q\n\n", args[0])
 		researchUsage(os.Stderr)
@@ -46,6 +48,7 @@ subcommands:
   objective  run the deception & attack-objective experiment (5 arms, H2)
   coevolve   run the adaptation-race & co-evolution lab (H3)
   stats      target-vs-observed scorecard across all experiments (H-series)
+  h4         missing-sensor degradation sweep (H4)
 `)
 }
 
