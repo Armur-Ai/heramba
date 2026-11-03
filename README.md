@@ -7,6 +7,7 @@
   <img alt="go" src="https://img.shields.io/badge/go-%E2%89%A5%201.25-00ADD8">
   <img alt="license" src="https://img.shields.io/badge/license-FSL--1.1--ALv2-3ddc97">
   <img alt="mode" src="https://img.shields.io/badge/default-observe%20(safe)-3ddc97">
+  <img alt="detection" src="https://img.shields.io/badge/deception-zero%20false%20positive-3ddc97">
 </p>
 
 **Active-deception & counter-agent defense for the app/API layer.**
@@ -22,7 +23,20 @@ instead of matching payloads (WAF) or watching hosts (EDR).
 > production** — it only watches. Every feature here is honestly marked
 > *shipped* or *planned*; nothing claims a defense it doesn't have.
 
+## At a glance
+
+| | |
+|---|---|
+| 🪤 **Deception surface** | decoy endpoints + cryptographic canary tokens — a hit is an attacker, **zero false positives** |
+| 🤖 **Agentic-traffic classifier** | deterministic, explainable signals score how automated a source is — **no LLM on the hot path** |
+| 🙈 **Signal denial** | strip fingerprinting headers + timing jitter so automated oracles lose their ground truth |
+| 🧲 **Counter-agent lures** | inject fabricated leads for flagged AI agents — the fake paths become decoys, the key a canary |
+| 🚧 **Egress firewall + rate limit** | deny-by-default outbound (cut SSRF/OOB/exfil) and throttle abusive sources |
+| 🛡️ **Observe-first** | detection-only by default; inline **protect** is explicit opt-in |
+
 ## Why
+
+<img src="docs/assets/positioning.svg" alt="Defense for the age of autonomous offense: WAF and EDR vs Heramba" width="100%">
 
 Offense is going autonomous. Agentic attack tools enumerate your surface, chain
 weaknesses, and exfiltrate **without a human in the loop** — fast, tireless, and
@@ -63,12 +77,19 @@ $ curl -s -o /dev/null http://127.0.0.1:8080/.env
 
 ## How it works
 
-![architecture](docs/assets/architecture.svg)
-
 Every request flows through the edge runtime: **classify** the source →
 **deception** check (decoys/canaries) → **signal denial** (protect mode) →
 **reverse proxy** to your app. Outbound, an **egress firewall** (protect mode)
 enforces a deny-by-default allowlist.
+
+<img src="docs/assets/pipeline.svg" alt="Per-request detection pipeline" width="100%">
+
+### Observe vs protect
+
+Observe is the safe default and **never alters legitimate traffic** — so you can
+run it in front of production and measure before enabling any inline behavior.
+
+<img src="docs/assets/modes.svg" alt="Observe vs protect capability comparison" width="100%">
 
 | | observe (default) | protect (opt-in) |
 |---|---|---|
@@ -78,12 +99,49 @@ enforces a deny-by-default allowlist.
 | tarpit flagged sources | ❌ | ✅ |
 | egress firewall | ❌ | ✅ |
 
-Deep dives: [architecture](docs/architecture.md) ·
-[decoys & canaries](docs/decoys.md) · [classifier](docs/classifier.md) ·
-[signal denial](docs/signal-denial.md) ·
-[metrics & alerting](docs/metrics.md) ·
-[counter-agent deception](docs/counter-agent.md) · [deployment](docs/deployment.md) ·
-[threat model](docs/threat-model.md)
+See the full [architecture](docs/architecture.md).
+
+## Decoys & canaries
+
+No legitimate client ever reaches the decoy surface — that's why the signal is
+clean. Nothing to tune, no false-positive rate.
+
+<img src="docs/assets/lifecycle.svg" alt="Decoy and canary lifecycle" width="100%">
+
+```bash
+heramba decoys list                 # the active lure surface
+heramba decoys canary db-password   # mint a plantable canary token
+```
+
+More: [decoys & canaries](docs/decoys.md).
+
+## Counter-agent deception
+
+Autonomous assessment agents read and reason over responses, then chase the best
+leads. In protect mode Heramba injects **fabricated** vulnerability leads for
+sources the classifier flags — invisible to humans — then **catches the agent
+that chases them**: the fake paths are registered as decoys and the lure key is
+watched as a canary.
+
+<img src="docs/assets/counter-loop.svg" alt="Counter-agent closed loop" width="100%">
+
+Inspired by static injectors like
+[SpikeStrip](https://github.com/Arcanum-Sec/SpikeStrip), applied at runtime and
+closed-loop. More: [counter-agent deception](docs/counter-agent.md).
+
+## Deploy
+
+<img src="docs/assets/deployments.svg" alt="Deployment shapes: reverse proxy, sidecar, honeypot-only" width="100%">
+
+Reverse proxy in front of your app, sidecar in the same pod, or honeypot-only
+(no upstream). Same binary, same config. Full guide: [deployment](docs/deployment.md).
+
+## Detections
+
+<img src="docs/assets/events.svg" alt="Event kinds and severity legend" width="100%">
+
+Detections stream to an alert sink as text or JSONL, with a per-session
+shutdown summary. Details: [metrics & alerting](docs/metrics.md).
 
 ## What's shipped vs planned
 
@@ -102,7 +160,11 @@ Deep dives: [architecture](docs/architecture.md) ·
 - ◻ Content-level deception (believable fake responses)
 - ◻ More alert sinks (webhook/Slack/SIEM)
 
-See the [CHANGELOG](CHANGELOG.md).
+See the [CHANGELOG](CHANGELOG.md). Deep dives:
+[architecture](docs/architecture.md) · [decoys & canaries](docs/decoys.md) ·
+[classifier](docs/classifier.md) · [signal denial](docs/signal-denial.md) ·
+[counter-agent](docs/counter-agent.md) · [metrics](docs/metrics.md) ·
+[deployment](docs/deployment.md) · [threat model](docs/threat-model.md)
 
 ## Open source vs commercial
 
@@ -118,7 +180,8 @@ withheld; it just doesn't ship the premium layers. (Boundary and rationale:
 Heramba is **defensive**. Observe mode is the default and never alters or blocks
 legitimate traffic. Protect mode's inline actions are bounded and documented. No
 LLM sits on the detection path, so nothing an attacker sends can prompt-inject
-the decision. Report vulnerabilities via [SECURITY.md](SECURITY.md).
+the decision. The counter-agent lures are false *bait*, never a payload aimed at
+the agent's host. Report vulnerabilities via [SECURITY.md](SECURITY.md).
 
 ## Contributing & license
 
