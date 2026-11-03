@@ -80,7 +80,8 @@ enforces a deny-by-default allowlist.
 
 Deep dives: [architecture](docs/architecture.md) ·
 [decoys & canaries](docs/decoys.md) · [classifier](docs/classifier.md) ·
-[signal denial](docs/signal-denial.md) · [deployment](docs/deployment.md) ·
+[signal denial](docs/signal-denial.md) ·
+[metrics & alerting](docs/metrics.md) · [deployment](docs/deployment.md) ·
 [threat model](docs/threat-model.md)
 
 ## What's shipped vs planned
