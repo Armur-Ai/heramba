@@ -16,7 +16,7 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `PARTIAL` · `VERI
 | R0 | Safe handoff & gap analysis | VERIFIED | `38f533d` | baseline below |
 | R1 | Research protocol & threat model | VERIFIED | `be6db33` | `go test ./internal/research/...`; `heramba research manifest` |
 | R2 | Fair coordination detection experiment | VERIFIED | this commit | `go test ./internal/research/{coord,stats}/...`; `heramba research coord` |
-| R3 | Deception & attack-objective experiment | NOT_STARTED | — | — |
+| R3 | Deception & attack-objective experiment | VERIFIED | this commit | `go test ./internal/research/objective/...`; `heramba research objective` |
 | R4 | Adaptation race & co-evolution lab | NOT_STARTED | — | — |
 | R5 | Defender prompt-injection & data-plane safety | NOT_STARTED | — | — |
 | R6 | Proxy correctness & resilience | NOT_STARTED | — | — |
@@ -178,3 +178,42 @@ separable than production.
 
 **Next action:** R3 — deception & attack-objective experiment (5 arms,
 consistency validator, deception-aware adversary, real/synthetic isolation tests).
+
+---
+
+## R3 — Deception & attack-objective experiment — VERIFIED (2026-11-03)
+
+**Files:** `internal/research/objective/{consistency,experiment,run,report,objective_test}.go`,
+`cmd/heramba/research_objective.go`, `docs/research/deception-experiment.md`,
+`docs/research/artifacts/objective/`.
+
+**Real, tested safety pieces:** `ValidateWorld` checks the actual
+`deception.World` across identifiers / permissions / workflows / temporal state /
+synthetic tag — asserted to pass on generated worlds and to catch injected
+dangling refs, non-synthetic records, and real-looking email domains.
+Real/synthetic isolation proven: synthetic emails use RFC-reserved domains only;
+`assetgraph` real graph fails closed on `WriteAdversaryView`, synthetic exports.
+`Reproducible` asserts byte-identical regeneration from a seed.
+
+**Modeled five-arm comparison (labeled a model):** unprotected / conventional /
+static-decoys / stateful / adaptive, matched depth+budget, vs naive and
+deception-aware adversaries. `heramba research objective [--deception-aware]`.
+
+**Results (fe40522, 500 trials/arm):** naive objective completion
+1.00 → 1.00 → 0.88 → 0.40 → **0.00** (adaptive) — **H2 null rejected**, >99%
+relative reduction, zero benign disruption for all deception arms (only the rate
+limiter disrupts benign, 5%). Deception-aware: static decoys **discovered 100%,
+never detected** (worthless vs a smart adversary) while stateful/adaptive are
+never discovered (0.00) and keep completion at 0.40 / 0.00 — the payoff of the
+consistency validator.
+
+**Commands / results:** `go test ./internal/research/objective/...` ok (incl.
+consistency-catch, isolation fail-closed, H2 naive + aware, benign-disruption
+tests); `go test ./...` PASS; `-race` ok.
+
+**Limitations:** the five-arm comparison is a behavioral model, not the live
+engine; the aware adversary is a threshold heuristic, not an LLM; CPU/mem not
+measured here (R6 covers proxy overhead).
+
+**Next action:** R4 — adaptation race & co-evolution lab (event-sourced,
+t_change…t_objective, adaptation latency, utility/oscillation).
