@@ -49,7 +49,15 @@ type Engine struct {
 	trusted   []*net.IPNet           // proxy CIDRs whose XFF we trust
 	limiter   *ratelimit.Limiter     // per-source rate limit (protect mode only)
 	counterOn bool                   // counter-agent prompt-decoy injection (protect mode)
+	honeypot  http.Handler           // optional: serve non-decoy paths from a deception app (no upstream)
 }
+
+// SetHoneypot installs a fallthrough handler used ONLY in honeypot-only
+// deployments (no upstream): requests that are not decoys/canaries are served
+// by this handler (e.g. a stateful deception app) instead of a neutral 404, so
+// an autonomous agent gets a coherent, engaging fake application. It has no
+// effect when a reverse-proxy upstream is configured.
+func (e *Engine) SetHoneypot(h http.Handler) { e.honeypot = h }
 
 // ctxKey is a private request-context key type.
 type ctxKey int
@@ -216,7 +224,13 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e.proxy.ServeHTTP(w, r)
 		return
 	}
-	// Honeypot-only deployment (no upstream): everything else is a neutral 404.
+	// Honeypot-only deployment (no upstream). If a deception app is installed,
+	// serve non-decoy paths from it (coherent synthetic application); otherwise
+	// return a neutral 404 indistinguishable from a missing path.
+	if e.honeypot != nil {
+		e.honeypot.ServeHTTP(w, r)
+		return
+	}
 	e.serveNeutral(w)
 }
 

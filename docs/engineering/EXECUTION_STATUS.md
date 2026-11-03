@@ -107,7 +107,7 @@ narrower than the full mandate. All are backed by tests in-tree.
 | # | Capability | Status | Where | Notes |
 |---|-----------|--------|-------|-------|
 | 01 | Attack-campaign reconstruction | VERIFIED | `internal/campaign`, `internal/evidence` | sessions (observed) vs actors/campaigns (inferred); explainable; live-wired via `intel` |
-| 02 | Stateful adaptive deception | VERIFIED | `internal/deception` | seeded coherent synthetic app, session state, isolation; mountable `http.Handler` (PARTIAL: not auto-mounted by `serve` yet) |
+| 02 | Stateful adaptive deception | VERIFIED | `internal/deception` | seeded coherent synthetic app, session state, isolation; live via `heramba honeypot` (edge decoys in front, deception app for non-decoy paths) |
 | 03 | Defender-controlled attack graphs | VERIFIED | `internal/assetgraph` | real/synthetic separation fails closed; attack-path hypotheses |
 | 04 | Counter-agent strategy engine | VERIFIED | `internal/strategy` | typed bounded actions, deterministic policy, dry-run/approval/expiry/rollback |
 | 05 | Adversarial memory | VERIFIED | `internal/evidence`, `internal/campaign` | confidence decay, expiry, merge/split correction |

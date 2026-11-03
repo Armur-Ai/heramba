@@ -1,6 +1,7 @@
 package edge
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -101,5 +102,43 @@ func TestHoneypotOnlyNoUpstream(t *testing.T) {
 	resp, _ := http.Get(srv.URL + "/anything")
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("honeypot-only should 404 non-decoys, got %d", resp.StatusCode)
+	}
+}
+
+func TestHoneypotFallthroughHandler(t *testing.T) {
+	cfg := config.Default() // observe, no upstream
+	e, err := New(cfg, &capSink{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Install a deception-style fallthrough; non-decoy paths should reach it
+	// instead of a neutral 404.
+	e.SetHoneypot(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("synthetic-app:" + r.URL.Path))
+	}))
+	srv := httptest.NewServer(e.Handler())
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/projects")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("honeypot fallthrough should serve the app, got %d", resp.StatusCode)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	if string(body) != "synthetic-app:/api/projects" {
+		t.Fatalf("fallthrough body wrong: %q", body)
+	}
+
+	// A decoy path must STILL be handled by the edge (decoy served), not the
+	// fallthrough.
+	resp2, _ := http.Get(srv.URL + "/.env")
+	defer resp2.Body.Close()
+	b2, _ := io.ReadAll(resp2.Body)
+	if string(b2) == "synthetic-app:/.env" {
+		t.Fatal("decoy path should be served by the edge, not the honeypot fallthrough")
 	}
 }
