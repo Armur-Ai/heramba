@@ -21,6 +21,8 @@ func main() {
 		os.Exit(2)
 	}
 	switch os.Args[1] {
+	case "serve":
+		runServe(os.Args[2:])
 	case "version", "-v", "--version":
 		fmt.Println(version.String())
 	case "help", "-h", "--help":
