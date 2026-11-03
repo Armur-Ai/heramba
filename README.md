@@ -183,11 +183,26 @@ shutdown summary. Details: [metrics & alerting](docs/metrics.md).
 See the full [capability matrix](docs/engineering/EXECUTION_STATUS.md) and
 [implementation plan](docs/architecture/implementation-plan.md).
 
+**Research & assurance (Phase 2 — shipped, tested):** a pre-registered,
+leakage-checked protocol and reproducible experiments quantify the claims above
+(H1–H5), with honest targets-vs-observed accounting. See the
+[research report](docs/research/research-report.md),
+[capability matrix](docs/research/capability-matrix.md), and
+[assurance report](docs/security/assurance-report.md). Run them:
+
+```bash
+heramba research coord       # H1: coordination detection (4 methods + ablations)
+heramba research objective   # H2: deception vs attacker objective (5 arms)
+heramba research coevolve    # H3: adaptation race & ablations
+heramba research stats       # targets-vs-observed scorecard
+```
+
 **Planned / next integration steps (tracked honestly):**
 - ◻ Auto-mount the deception app and run the strategy engine inline from `serve`
 - ◻ More classifier signals (JA3/TLS, header-order fingerprint)
-- ◻ Content-level deception (believable fake responses); online deception-policy optimization
-- ◻ More alert sinks (webhook/Slack/SIEM)
+- ◻ Content-level deception; **online** deception-policy optimization (offline evaluator shipped)
+- ◻ Drive coordination FPR to the 1% target (currently ~9% on hard synthetic benign); finish H4 missing-sensor sweep
+- ◻ More alert sinks (Slack/SIEM; webhook sink shipped); signed releases / SLSA provenance
 
 See the [CHANGELOG](CHANGELOG.md). Deep dives:
 [architecture](docs/architecture.md) · [four planes](docs/architecture/planes.md) ·
@@ -196,6 +211,7 @@ See the [CHANGELOG](CHANGELOG.md). Deep dives:
 [classifier](docs/classifier.md) · [signal denial](docs/signal-denial.md) ·
 [counter-agent](docs/counter-agent.md) · [metrics](docs/metrics.md) ·
 [deployment](docs/deployment.md) · [threat model](docs/threat-model.md) ·
+[research protocol](docs/research/protocol.md) · [reproducibility](docs/research/reproducibility.md) ·
 [labs](labs/)
 
 ## Open source vs commercial

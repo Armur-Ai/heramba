@@ -21,10 +21,10 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `PARTIAL` · `VERI
 | R5 | Defender prompt-injection & data-plane safety | VERIFIED | `c22524a` | `go test ./internal/taint/...` |
 | R6 | Proxy correctness & resilience | VERIFIED | `1aa9b17` | `go test ./internal/edge/...` |
 | R7 | Supply chain & release assurance | VERIFIED | `bfc8f36` | `make fuzz`; `make sbom`; CI |
-| R8 | Scientific statistics & targets | VERIFIED | this commit | `go test ./internal/research/{stats,scorecard}/...`; `heramba research stats` |
-| R9 | Operations, explainability & human control | VERIFIED | this commit | `go test ./internal/incident/... ./internal/alert/...` |
-| R10 | Advanced training package | VERIFIED | this commit | `go test ./labs/...` (fresh-machine dry run) |
-| R11 | Final research & release review | NOT_STARTED | — | — |
+| R8 | Scientific statistics & targets | VERIFIED | `b332f94` | `go test ./internal/research/{stats,scorecard}/...`; `heramba research stats` |
+| R9 | Operations, explainability & human control | VERIFIED | `44ee931` | `go test ./internal/incident/... ./internal/alert/...` |
+| R10 | Advanced training package | VERIFIED | `93557d5` | `go test ./labs/...` (fresh-machine dry run) |
+| R11 | Final research & release review | VERIFIED | `46a9774` | reports + `go test -race ./...` rerun |
 
 ---
 
@@ -435,3 +435,34 @@ intentionally kept in a separate private repo (not committed here).
 
 **Next action:** R11 — final research & release review (reports + capability
 matrix).
+
+---
+
+## R11 — Final research & release review — VERIFIED (2026-11-03)
+
+**Files:** `docs/research/{research-report,reproducibility,capability-matrix}.md`,
+`docs/security/assurance-report.md`.
+
+**What shipped:** the research report (threat model, protocol, H1–H5 results with
+uncertainty, ablations, limitations, ethics/safety), the reproducibility guide
+(every figure → a committed command, with determinism checks), the security &
+release assurance report (proxy correctness, threat-model coverage, supply-chain,
+fuzz, failure injection, known risks, release readiness), and a combined
+capability matrix for the original 12 + Phase 2 with honest VERIFIED / PARTIAL /
+NOT STARTED verdicts.
+
+**Independent rerun (93557d5):** `go build`/`vet`/`gofmt` clean; `go test -race
+./...` → **38 packages pass, no races**; coordination metrics hash stable
+(`c24eb0fdd001c864`); `heramba experiment --json` byte-identical
+(`1387ba652109a167`); fuzz smoke clean. Codebase grew 93→136 Go files,
+10,647→16,460 LOC across 11 Phase 2 commits.
+
+**Honest blockers carried forward:** coordination FPR (9.4%) exceeds the 1%
+target on underpowered synthetic benign; H4 (missing-sensor degradation) is
+PARTIAL; no signed releases/SLSA yet; SECURITY.md owner-draft fields unfilled;
+deception app / strategy engine not auto-mounted into live serve.
+
+## Phase 2 — complete
+
+R0–R11 VERIFIED (H4 PARTIAL, disclosed). All critical tests pass under
+`go test -race ./...`; every experiment reproduces from a committed command.
