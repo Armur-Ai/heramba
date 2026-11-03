@@ -15,8 +15,8 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `VERIFIED`.
 | 4 | Attack graph + business logic | VERIFIED | `4cf706a` | `internal/assetgraph`, `internal/bizlogic` |
 | 5 | Strategy + containment | VERIFIED | `d08b4e6` | `internal/strategy` |
 | 6 | Swarm correlation + active learning | VERIFIED | `3bd25ab` | `campaign/swarm`, `campaign/experiment` |
-| 7 | Multi-sensor intelligence | VERIFIED | pending | `evidence/sensor` |
-| 8 | Optimization + replay | NOT_STARTED | — | `internal/replay` |
+| 7 | Multi-sensor intelligence | VERIFIED | `0e2ab25` | `evidence/sensor` |
+| 8 | Optimization + replay | VERIFIED | pending | `internal/replay` |
 | 9 | Conference labs | NOT_STARTED | — | `labs/` |
 | 10 | Hardening + final validation | NOT_STARTED | — | — |
 

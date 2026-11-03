@@ -29,6 +29,8 @@ func main() {
 		runConfig(os.Args[2:])
 	case "doctor":
 		runDoctor(os.Args[2:])
+	case "experiment":
+		runExperiment(os.Args[2:])
 	case "version", "-v", "--version":
 		fmt.Println(version.String())
 	case "help", "-h", "--help":
@@ -51,6 +53,7 @@ commands:
   decoys       generate and list decoys / canary tokens
   config       create or inspect configuration
   doctor       check the environment and configuration
+  experiment   run the reproducible four-baseline defense evaluation
   version      print version
   help         show this help
 
