@@ -16,9 +16,9 @@ type ArchetypeResult struct {
 	AdaptationLatency  stats.Interval `json:"adaptation_latency_s"` // bootstrap (countered rounds)
 	DetectionComponent stats.Interval `json:"detection_component_s"`
 	ResponseComponent  stats.Interval `json:"response_component_s"`
-	MeanUtility        stats.Interval `json:"mean_utility"`      // bootstrap
-	UtilityStdDev      float64        `json:"utility_stddev"`    // adaptation stability
-	OscillationRate    stats.Interval `json:"oscillation_rate"`  // Wilson
+	MeanUtility        stats.Interval `json:"mean_utility"`     // bootstrap
+	UtilityStdDev      float64        `json:"utility_stddev"`   // adaptation stability
+	OscillationRate    stats.Interval `json:"oscillation_rate"` // Wilson
 }
 
 // Report is the complete co-evolution artifact.

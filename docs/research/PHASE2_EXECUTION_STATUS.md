@@ -20,7 +20,7 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `PARTIAL` · `VERI
 | R4 | Adaptation race & co-evolution lab | VERIFIED | this commit | `go test ./internal/research/coevolve/...`; `heramba research coevolve` |
 | R5 | Defender prompt-injection & data-plane safety | VERIFIED | this commit | `go test ./internal/taint/...` |
 | R6 | Proxy correctness & resilience | VERIFIED | this commit | `go test ./internal/edge/...` |
-| R7 | Supply chain & release assurance | NOT_STARTED | — | — |
+| R7 | Supply chain & release assurance | VERIFIED | this commit | `make fuzz`; `make sbom`; CI |
 | R8 | Scientific statistics & targets | NOT_STARTED | — | — |
 | R9 | Operations, explainability & human control | NOT_STARTED | — | — |
 | R10 | Advanced training package | NOT_STARTED | — | — |
@@ -314,3 +314,34 @@ measured (overhead test, not a load test); latency is single-machine.
 
 **Next action:** R7 — supply-chain & release assurance (CI, SBOM, fuzz,
 dependency policy).
+
+---
+
+## R7 — Supply-chain & release assurance — VERIFIED (2026-11-03)
+
+**Files:** `internal/{taint,decoy,evidence,strategy}/fuzz_test.go`,
+`tools/sbom/main.go`, `sbom.cdx.json` (generated), `.github/workflows/ci.yml`
+(extended), `Makefile` (fuzz/sbom/vuln targets), `docs/security/SUPPLY_CHAIN.md`.
+
+**What shipped:** native Go fuzz targets for the four untrusted-input surfaces
+(parser, decoy routing, event ingestion, policy evaluation), each asserting
+no-panic plus a domain invariant (e.g. policy never allows unbounded scope). A
+self-contained deterministic CycloneDX SBOM generator (`make sbom`). CI extended
+with a fuzz-smoke job (`make fuzz FUZZTIME=20s`), a supply-chain job
+(govulncheck, `go mod tidy` gate, SBOM freshness diff + artifact upload), on Go
+1.25.x and 1.27.x. Supply-chain doc covering pinned deps, update policy,
+reproducible-build guidance, secrets/access/retention/minimization/safe-defaults,
+and an explicit "NOT claimed" section (no certification, no signed releases yet).
+
+**Commands / results:**
+- `make fuzz` locally: millions of execs/target, **0 crashes** (FuzzPolicyEvaluate ~3.7M execs, invariants held)
+- `go run ./tools/sbom` → deterministic CycloneDX (1 runtime dep: yaml.v3 v3.0.1)
+- `gofmt -l .` clean (formatted all prior Phase 2 files), `go vet` clean, `go test -race ./...` pass
+- `go mod tidy` → no change
+
+**Limitations (declared):** signed releases / SLSA provenance not yet wired;
+govulncheck is advisory coverage, not a guarantee; SECURITY.md still has
+owner-draft fields.
+
+**Next action:** R8 — scientific statistics & targets (reproduce scripts,
+targets-vs-observed).

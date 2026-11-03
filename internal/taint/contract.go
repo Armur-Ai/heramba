@@ -18,10 +18,10 @@ import (
 type ObservationKind string
 
 const (
-	KindDecoyHit       ObservationKind = "decoy_hit"
-	KindAgenticScore   ObservationKind = "agentic_score"
-	KindBlockedEgress  ObservationKind = "blocked_egress"
-	KindRateExceeded   ObservationKind = "rate_exceeded"
+	KindDecoyHit      ObservationKind = "decoy_hit"
+	KindAgenticScore  ObservationKind = "agentic_score"
+	KindBlockedEgress ObservationKind = "blocked_egress"
+	KindRateExceeded  ObservationKind = "rate_exceeded"
 )
 
 var validKinds = map[ObservationKind]bool{
@@ -41,11 +41,11 @@ type rawObservation struct {
 // The decision-relevant fields are trusted scalars validated against closed
 // sets; Note is retained only as a tainted value for audit/logging.
 type Observation struct {
-	Kind      ObservationKind    // validated enum (trusted)
-	SourceKey Tainted[string]    // a transport key: never an identity, kept tainted
-	Severity  Tainted[float64]   // numeric, validated into [0,1] -> trusted
-	Nonce     string             // for replay defense
-	Note      Tainted[string]    // quarantined free text, never read by a decision
+	Kind      ObservationKind  // validated enum (trusted)
+	SourceKey Tainted[string]  // a transport key: never an identity, kept tainted
+	Severity  Tainted[float64] // numeric, validated into [0,1] -> trusted
+	Nonce     string           // for replay defense
+	Note      Tainted[string]  // quarantined free text, never read by a decision
 	Prov      Provenance
 }
 

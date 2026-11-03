@@ -16,12 +16,12 @@ const actionSeconds = 2.0
 // of a defense — NOT the live engine — so H2 can be probed deterministically.
 type Arm struct {
 	Name              string  `json:"name"`
-	Depth             int     `json:"depth"`              // real steps to the objective
-	Decoys            int     `json:"decoys"`             // initial decoys polluting the surface
-	LureConsistency   float64 `json:"lure_consistency"`   // believability [0,1]
-	DetectOnDecoy     bool    `json:"detect_on_decoy"`    // touching a decoy triggers detection+containment
-	AdaptiveGrowth    int     `json:"adaptive_growth"`    // decoys added per contact (0 = static)
-	RateLimit         int     `json:"rate_limit"`         // actions before throttle/containment (0 = none)
+	Depth             int     `json:"depth"`               // real steps to the objective
+	Decoys            int     `json:"decoys"`              // initial decoys polluting the surface
+	LureConsistency   float64 `json:"lure_consistency"`    // believability [0,1]
+	DetectOnDecoy     bool    `json:"detect_on_decoy"`     // touching a decoy triggers detection+containment
+	AdaptiveGrowth    int     `json:"adaptive_growth"`     // decoys added per contact (0 = static)
+	RateLimit         int     `json:"rate_limit"`          // actions before throttle/containment (0 = none)
 	BenignRateLimited bool    `json:"benign_rate_limited"` // whether the arm's rate limit disrupts benign traffic
 }
 

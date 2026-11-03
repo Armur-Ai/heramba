@@ -7,7 +7,7 @@ LDFLAGS := -X $(PKG)/internal/version.Version=$(VERSION) \
            -X $(PKG)/internal/version.Commit=$(COMMIT) \
            -X $(PKG)/internal/version.Date=$(DATE)
 
-.PHONY: build test lint vet fmt install demos clean
+.PHONY: build test lint vet fmt install demos clean fuzz sbom vuln
 
 build: ## build the heramba binary into ./bin
 	go build -ldflags "$(LDFLAGS)" -o bin/$(BINARY) ./cmd/heramba
@@ -31,6 +31,20 @@ install: ## install heramba to GOBIN
 demos: ## render the vhs terminal demos (requires: vhs, ttyd, ffmpeg)
 	@command -v vhs >/dev/null 2>&1 || { echo "vhs not installed — see docs/demos/README.md"; exit 1; }
 	@for tape in docs/demos/*.tape; do echo "rendering $$tape"; vhs $$tape; done
+
+fuzz: ## smoke-fuzz every parser/router/policy target (FUZZTIME overridable)
+	@FUZZTIME=$${FUZZTIME:-10s}; \
+	go test ./internal/taint/ -run=x -fuzz=FuzzDecodeObservation -fuzztime=$$FUZZTIME && \
+	go test ./internal/decoy/ -run=x -fuzz=FuzzDecoyRouting -fuzztime=$$FUZZTIME && \
+	go test ./internal/evidence/ -run=x -fuzz=FuzzStoreLoad -fuzztime=$$FUZZTIME && \
+	go test ./internal/strategy/ -run=x -fuzz=FuzzPolicyEvaluate -fuzztime=$$FUZZTIME
+
+sbom: ## regenerate the CycloneDX SBOM (deterministic; commit the diff)
+	go run ./tools/sbom > sbom.cdx.json
+
+vuln: ## scan dependencies for known vulnerabilities (needs govulncheck)
+	@command -v govulncheck >/dev/null 2>&1 || { echo "install: go install golang.org/x/vuln/cmd/govulncheck@latest"; exit 1; }
+	govulncheck ./...
 
 clean: ## remove build artifacts
 	rm -rf bin dist

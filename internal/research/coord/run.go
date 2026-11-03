@@ -35,20 +35,20 @@ type FamilyConfusion struct {
 
 // Report is the complete, reproducible coordination-experiment artifact.
 type Report struct {
-	SchemaVersion    int               `json:"schema_version"`
-	CodeRevision     string            `json:"code_revision"`
-	Params           Params            `json:"params"`
-	Families         []string          `json:"families"`
+	SchemaVersion    int                `json:"schema_version"`
+	CodeRevision     string             `json:"code_revision"`
+	Params           Params             `json:"params"`
+	Families         []string           `json:"families"`
 	SeedsByFamily    map[string][]int64 `json:"seeds_by_family"`
-	Cohorts          int               `json:"cohorts"`
-	Positives        int               `json:"positive_cohorts"`
-	Negatives        int               `json:"negative_cohorts"`
-	Methods          []MethodResult    `json:"methods"`
-	Ablations        []MethodResult    `json:"ablations"`
-	PerFamily        []FamilyConfusion `json:"per_family_confusion"`
-	DetectionLatency stats.Interval    `json:"detection_latency_sec"` // FullHeramba, coordinated cohorts, session-granular
-	ThroughputRPS    float64           `json:"throughput_classifications_per_sec"`
-	NotMeasured      []string          `json:"not_measured"`
+	Cohorts          int                `json:"cohorts"`
+	Positives        int                `json:"positive_cohorts"`
+	Negatives        int                `json:"negative_cohorts"`
+	Methods          []MethodResult     `json:"methods"`
+	Ablations        []MethodResult     `json:"ablations"`
+	PerFamily        []FamilyConfusion  `json:"per_family_confusion"`
+	DetectionLatency stats.Interval     `json:"detection_latency_sec"` // FullHeramba, coordinated cohorts, session-granular
+	ThroughputRPS    float64            `json:"throughput_classifications_per_sec"`
+	NotMeasured      []string           `json:"not_measured"`
 }
 
 // Options configures a run.

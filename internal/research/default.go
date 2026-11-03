@@ -87,7 +87,7 @@ func DefaultProtocol() Protocol {
 		ActorModels: []ActorModel{
 			{
 				ID: "scripted_scanner", Kind: "scripted",
-				Capabilities: []string{"sequential_enumeration", "fixed_wordlist"},
+				Capabilities:  []string{"sequential_enumeration", "fixed_wordlist"},
 				RequestBudget: 200, TimeBudgetSec: 600, Objective: "find_admin_surface",
 				TargetVisibility: "none",
 				DefenderCanSee:   []string{"requests", "decoy_hits", "timing"},
@@ -95,7 +95,7 @@ func DefaultProtocol() Protocol {
 			},
 			{
 				ID: "independent_scanners", Kind: "independent",
-				Capabilities: []string{"parallel_sources", "no_shared_memory"},
+				Capabilities:  []string{"parallel_sources", "no_shared_memory"},
 				RequestBudget: 200, TimeBudgetSec: 600, Objective: "find_admin_surface",
 				TargetVisibility: "none",
 				DefenderCanSee:   []string{"requests", "decoy_hits", "timing"},
@@ -103,7 +103,7 @@ func DefaultProtocol() Protocol {
 			},
 			{
 				ID: "coordinated_swarm", Kind: "coordinated",
-				Capabilities: []string{"shared_observations", "divided_targeting", "synchronized_timing"},
+				Capabilities:  []string{"shared_observations", "divided_targeting", "synchronized_timing"},
 				RequestBudget: 200, TimeBudgetSec: 600, Objective: "find_and_exfiltrate",
 				TargetVisibility: "partial",
 				DefenderCanSee:   []string{"requests", "decoy_hits", "timing", "target_overlap"},
@@ -111,7 +111,7 @@ func DefaultProtocol() Protocol {
 			},
 			{
 				ID: "legit_automation", Kind: "legit_automation",
-				Capabilities: []string{"high_volume", "narrow_known_endpoints"},
+				Capabilities:  []string{"high_volume", "narrow_known_endpoints"},
 				RequestBudget: 400, TimeBudgetSec: 600, Objective: "",
 				TargetVisibility: "full",
 				DefenderCanSee:   []string{"requests", "timing"},
@@ -119,7 +119,7 @@ func DefaultProtocol() Protocol {
 			},
 			{
 				ID: "human_tester", Kind: "human",
-				Capabilities: []string{"low_volume", "exploratory", "irregular_timing"},
+				Capabilities:  []string{"low_volume", "exploratory", "irregular_timing"},
 				RequestBudget: 60, TimeBudgetSec: 600, Objective: "manual_probe",
 				TargetVisibility: "partial",
 				DefenderCanSee:   []string{"requests", "timing"},
@@ -127,7 +127,7 @@ func DefaultProtocol() Protocol {
 			},
 			{
 				ID: "deception_aware_swarm", Kind: "deception_aware",
-				Capabilities: []string{"shared_observations", "consistency_checking", "lure_rejection"},
+				Capabilities:  []string{"shared_observations", "consistency_checking", "lure_rejection"},
 				RequestBudget: 200, TimeBudgetSec: 600, Objective: "find_and_exfiltrate",
 				TargetVisibility: "partial",
 				DefenderCanSee:   []string{"requests", "decoy_hits", "timing", "target_overlap"},

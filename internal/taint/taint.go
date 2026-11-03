@@ -113,10 +113,10 @@ func DeriveString[T any](src Tainted[T], f func(T) string) Tainted[string] {
 
 // Errors.
 var (
-	ErrToolNotAllowed   = errors.New("taint: tool not on the allowlist (fail closed)")
+	ErrToolNotAllowed    = errors.New("taint: tool not on the allowlist (fail closed)")
 	ErrUntrustedDecision = errors.New("taint: decision input is not trusted")
-	ErrCrossTenant      = errors.New("taint: cross-tenant data use")
-	ErrReplay           = errors.New("taint: replayed nonce")
+	ErrCrossTenant       = errors.New("taint: cross-tenant data use")
+	ErrReplay            = errors.New("taint: replayed nonce")
 )
 
 // ToolAllowlist is an explicit, fail-closed allowlist of tool names. Anything

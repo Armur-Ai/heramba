@@ -1,0 +1,31 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "name": "github.com/Armur-Ai/heramba",
+      "type": "application"
+    },
+    "tools": [
+      {
+        "name": "heramba-sbom",
+        "vendor": "Armur"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "gopkg.in/check.v1",
+      "version": "v0.0.0-20161208181325-20d25e280405",
+      "purl": "pkg:golang/gopkg.in/check.v1@v0.0.0-20161208181325-20d25e280405"
+    },
+    {
+      "type": "library",
+      "name": "gopkg.in/yaml.v3",
+      "version": "v3.0.1",
+      "purl": "pkg:golang/gopkg.in/yaml.v3@v3.0.1"
+    }
+  ]
+}

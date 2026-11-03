@@ -26,13 +26,13 @@ import (
 
 // Consistency validation errors.
 var (
-	ErrNotSynthetic     = errors.New("consistency: record is not tagged synthetic")
-	ErrDanglingRef      = errors.New("consistency: reference to a non-existent record")
-	ErrPermIncoherent   = errors.New("consistency: incoherent permission (owner not a member)")
-	ErrRealEmailDomain  = errors.New("consistency: synthetic email uses a non-reserved (possibly real) domain")
-	ErrZeroTemporal     = errors.New("consistency: temporal state is zero/unset")
-	ErrDuplicateID      = errors.New("consistency: duplicate identifier")
-	ErrEmptyWorld       = errors.New("consistency: world has no users or projects")
+	ErrNotSynthetic    = errors.New("consistency: record is not tagged synthetic")
+	ErrDanglingRef     = errors.New("consistency: reference to a non-existent record")
+	ErrPermIncoherent  = errors.New("consistency: incoherent permission (owner not a member)")
+	ErrRealEmailDomain = errors.New("consistency: synthetic email uses a non-reserved (possibly real) domain")
+	ErrZeroTemporal    = errors.New("consistency: temporal state is zero/unset")
+	ErrDuplicateID     = errors.New("consistency: duplicate identifier")
+	ErrEmptyWorld      = errors.New("consistency: world has no users or projects")
 )
 
 // reservedEmailSuffixes are the only domains a synthetic user may use. They are

@@ -28,14 +28,14 @@ const TickSeconds = 1.0
 type Phase string
 
 const (
-	PhaseChange    Phase = "strategy_change"  // t_change: attacker shifts
-	PhaseObserved  Phase = "observed"         // t_observed
-	PhaseDetected  Phase = "detected"         // t_detected
-	PhaseDecision  Phase = "decision"         // t_decision
-	PhaseApplied   Phase = "applied"          // t_applied
-	PhaseEffective Phase = "effective"        // t_effective
+	PhaseChange    Phase = "strategy_change"    // t_change: attacker shifts
+	PhaseObserved  Phase = "observed"           // t_observed
+	PhaseDetected  Phase = "detected"           // t_detected
+	PhaseDecision  Phase = "decision"           // t_decision
+	PhaseApplied   Phase = "applied"            // t_applied
+	PhaseEffective Phase = "effective"          // t_effective
 	PhaseObjective Phase = "attacker_objective" // t_objective (attacker won the round)
-	PhaseRollback  Phase = "rollback"         // policy reverted (oscillation)
+	PhaseRollback  Phase = "rollback"           // policy reverted (oscillation)
 )
 
 // Event is one entry in the append-only, replayable log.
@@ -51,10 +51,10 @@ type Event struct {
 // takes longer to catch. ObjectiveTicks is how long the attacker needs to reach
 // its objective while uncountered.
 type Archetype struct {
-	Name          string  `json:"name"`
-	Detectability float64 `json:"detectability"` // (0,1]; higher = faster detection
-	ObjectiveTicks Tick   `json:"objective_ticks"`
-	Feints        bool    `json:"feints"` // shifts then reverts, to induce policy oscillation
+	Name           string  `json:"name"`
+	Detectability  float64 `json:"detectability"` // (0,1]; higher = faster detection
+	ObjectiveTicks Tick    `json:"objective_ticks"`
+	Feints         bool    `json:"feints"` // shifts then reverts, to induce policy oscillation
 }
 
 // Archetypes returns the bounded attacker families the lab races against.
@@ -115,17 +115,17 @@ func DefaultParams() Params {
 
 // RoundResult is the measured outcome of one strategy shift.
 type RoundResult struct {
-	Round            int   `json:"round"`
-	TChange          Tick  `json:"t_change"`
-	TDetected        Tick  `json:"t_detected"`
-	TEffective       Tick  `json:"t_effective"`
-	TObjective       Tick  `json:"t_objective"` // -1 if attacker did not complete
-	Countered        bool  `json:"countered"`   // effect reached before objective
-	Oscillated       bool  `json:"oscillated"`
-	AdaptationLatency Tick `json:"adaptation_latency"` // t_effective - t_change
-	DetectionComp    Tick  `json:"detection_component"` // t_detected - t_change
-	ResponseComp     Tick  `json:"response_component"`  // t_effective - t_detected
-	Utility          float64 `json:"utility"`
+	Round             int     `json:"round"`
+	TChange           Tick    `json:"t_change"`
+	TDetected         Tick    `json:"t_detected"`
+	TEffective        Tick    `json:"t_effective"`
+	TObjective        Tick    `json:"t_objective"` // -1 if attacker did not complete
+	Countered         bool    `json:"countered"`   // effect reached before objective
+	Oscillated        bool    `json:"oscillated"`
+	AdaptationLatency Tick    `json:"adaptation_latency"`  // t_effective - t_change
+	DetectionComp     Tick    `json:"detection_component"` // t_detected - t_change
+	ResponseComp      Tick    `json:"response_component"`  // t_effective - t_detected
+	Utility           float64 `json:"utility"`
 }
 
 // Sim is one archetype vs the defender across several rounds. It owns the
