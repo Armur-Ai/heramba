@@ -135,7 +135,10 @@ func TestHoneypotFallthroughHandler(t *testing.T) {
 
 	// A decoy path must STILL be handled by the edge (decoy served), not the
 	// fallthrough.
-	resp2, _ := http.Get(srv.URL + "/.env")
+	resp2, err := http.Get(srv.URL + "/.env")
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer resp2.Body.Close()
 	b2, _ := io.ReadAll(resp2.Body)
 	if string(b2) == "synthetic-app:/.env" {
