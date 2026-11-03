@@ -13,8 +13,8 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `VERIFIED`.
 | 2 | Campaign intelligence | VERIFIED | `609f45e` | `internal/campaign` |
 | 3 | Stateful deception | VERIFIED | `abd0eca` | `internal/deception` |
 | 4 | Attack graph + business logic | VERIFIED | `4cf706a` | `internal/assetgraph`, `internal/bizlogic` |
-| 5 | Strategy + containment | VERIFIED | pending | `internal/strategy` |
-| 6 | Swarm correlation + active learning | NOT_STARTED | — | `campaign/swarm`, `campaign/experiment` |
+| 5 | Strategy + containment | VERIFIED | `d08b4e6` | `internal/strategy` |
+| 6 | Swarm correlation + active learning | VERIFIED | pending | `campaign/swarm`, `campaign/experiment` |
 | 7 | Multi-sensor intelligence | NOT_STARTED | — | `evidence/sensor` |
 | 8 | Optimization + replay | NOT_STARTED | — | `internal/replay` |
 | 9 | Conference labs | NOT_STARTED | — | `labs/` |
