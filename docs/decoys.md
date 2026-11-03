@@ -61,8 +61,9 @@ decoys:
 ```
 
 The edge scans the request **path, query, and header values** (so a fake API key
-used in an `Authorization` header or a `?key=` param is caught). Scanning the
-request **body** is a roadmap item.
+used in an `Authorization` header or a `?key=` param is caught) **and a
+bounded prefix of the request body** (so a token planted in a POST/JSON field is
+caught too), restoring the body so it still reaches your app.
 
 ## Why this beats signatures
 

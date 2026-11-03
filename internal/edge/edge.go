@@ -16,7 +16,9 @@
 package edge
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -173,8 +175,42 @@ func (e *Engine) scanCanary(r *http.Request) (decoy.Canary, bool) {
 			return c, true
 		}
 	}
+	// Scan a bounded prefix of the body too (restoring it for the proxy), so a
+	// canary planted as a POST field / JSON value is caught.
+	if body := e.readBodyPrefix(r); body != "" {
+		for _, c := range cans {
+			if strings.Contains(body, c.Token) {
+				return c, true
+			}
+		}
+	}
 	return decoy.Canary{}, false
 }
+
+// maxBodyScan bounds how much request body is buffered for canary scanning.
+const maxBodyScan = 64 * 1024
+
+// readBodyPrefix reads up to maxBodyScan bytes of the body and restores the body
+// (prefix + remaining stream) so the reverse proxy still forwards it intact.
+func (e *Engine) readBodyPrefix(r *http.Request) string {
+	if r.Body == nil || r.Body == http.NoBody {
+		return ""
+	}
+	orig := r.Body
+	prefix, _ := io.ReadAll(io.LimitReader(orig, maxBodyScan))
+	r.Body = &replayBody{r: io.MultiReader(bytes.NewReader(prefix), orig), c: orig}
+	return string(prefix)
+}
+
+// replayBody re-serves an already-read prefix followed by the rest of the
+// original body, closing the original on Close.
+type replayBody struct {
+	r io.Reader
+	c io.Closer
+}
+
+func (b *replayBody) Read(p []byte) (int, error) { return b.r.Read(p) }
+func (b *replayBody) Close() error               { return b.c.Close() }
 
 // clientIP returns the peer address, or the left-most X-Forwarded-For entry
 // when the direct peer is a configured trusted proxy. By default no proxy is

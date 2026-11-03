@@ -12,8 +12,8 @@ follow [Semantic Versioning](https://semver.org/) once it tags a release.
 - **Deception surface** (`internal/decoy`): default decoy endpoints + a
   registry, and cryptographic **canary tokens** — zero-false-positive detection.
 - **Canary detection in the edge**: watched canary tokens (config
-  `decoys.canaries`) are detected in request path/query/headers; protect mode
-  denies the request.
+  `decoys.canaries`) are detected in request path/query/headers **and a bounded prefix of the body**;
+  protect mode denies the request.
 - **Agentic-traffic classifier** (`internal/classify`): deterministic,
   explainable scoring (cadence, client fingerprint, missing browser signals,
   enumeration). No LLM on the detection path.
