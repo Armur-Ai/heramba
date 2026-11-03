@@ -22,7 +22,7 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `PARTIAL` · `VERI
 | R6 | Proxy correctness & resilience | VERIFIED | `1aa9b17` | `go test ./internal/edge/...` |
 | R7 | Supply chain & release assurance | VERIFIED | `bfc8f36` | `make fuzz`; `make sbom`; CI |
 | R8 | Scientific statistics & targets | VERIFIED | this commit | `go test ./internal/research/{stats,scorecard}/...`; `heramba research stats` |
-| R9 | Operations, explainability & human control | NOT_STARTED | — | — |
+| R9 | Operations, explainability & human control | VERIFIED | this commit | `go test ./internal/incident/... ./internal/alert/...` |
 | R10 | Advanced training package | NOT_STARTED | — | — |
 | R11 | Final research & release review | NOT_STARTED | — | — |
 
@@ -375,3 +375,34 @@ no unstratified aggregate; observed explicitly separated from target.
 
 **Next action:** R9 — operations, explainability & human control (investigation
 timeline, incident reports).
+
+---
+
+## R9 — Operations, explainability & human control — VERIFIED (2026-11-03)
+
+**Files:** `internal/incident/{incident,report,incident_test}.go`,
+`internal/alert/{webhook,webhook_test}.go`,
+`docs/research/operations-explainability.md`.
+
+**What shipped:** an `incident.Builder` that links the full causal chain
+(observation → fact → hypothesis → proposed → approved → outcome) from the
+existing typed records, with observed-vs-inferred marking, confidence,
+uncertainty, contradicting-evidence counts, source health, and causal caveats.
+`Explain(actionID)` returns a single action's chain back to its evidence.
+Human-control gates are checked and tested: `AllConsequentialReversible` (an
+enforced action needs a rollback path) and `AllConsequentialHaveEvidence` (a
+state-changing action must cite evidence); per-action blast radius (bounded
+scope, legit-impact flag). Retention policy with `Prune`. Markdown/JSON incident
+export. A **functional, tested webhook alert sink** (verified against httptest:
+delivery, severity floor, error-on-500) — no fabricated integrations.
+
+**Commands / results:** `go test ./internal/incident/... ./internal/alert/...`
+ok (+race); full suite PASS; vet clean. Gates proven: enforced-without-token →
+not reversible; no-evidence action → evidence gate fails.
+
+**Limitations:** retention windows are a deployment choice; only
+text/JSONL/webhook sinks exist (Slack/SIEM would each need the same functional
+test first).
+
+**Next action:** R10 — advanced training package (prompt-injection + adaptation
+labs, course map).
