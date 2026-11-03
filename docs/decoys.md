@@ -48,9 +48,21 @@ heramba decoys canary db-password
 ```
 
 Tokens are 128-bit cryptographically random and prefixed `hrmb_` so a used one
-is unambiguously yours. (Wiring request-body/header canary matching into the
-edge is on the roadmap; today the CLI mints + tracks them and the library
-exposes `CanaryStore.Check`.)
+is unambiguously yours.
+
+Tell the edge which tokens to watch for, and it emits a zero-FP
+`canary_triggered` event when one appears in a request (and denies the request
+in protect mode):
+
+```yaml
+decoys:
+  canaries:
+    - hrmb_3a0ea0333739e3ff693757cd84aae412
+```
+
+The edge scans the request **path, query, and header values** (so a fake API key
+used in an `Authorization` header or a `?key=` param is caught). Scanning the
+request **body** is a roadmap item.
 
 ## Why this beats signatures
 

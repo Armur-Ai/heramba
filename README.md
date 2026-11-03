@@ -88,14 +88,13 @@ Deep dives: [architecture](docs/architecture.md) ·
 **Shipped (real, tested in this repo):**
 - ✅ Reverse-proxy edge runtime with observe/protect modes
 - ✅ Decoy endpoints + registry, zero-FP `decoy_hit` detection
-- ✅ Cryptographic canary tokens (mint/track/check)
+- ✅ Cryptographic canary tokens (mint/track) + edge detection of their use (path/query/headers)
 - ✅ Deterministic agentic-traffic classifier (explainable signals)
 - ✅ Signal denial: response-header normalization + timing jitter
 - ✅ Deny-by-default egress/callback firewall
 - ✅ Alert sinks (text / JSONL), CLI (`serve`/`decoys`/`config`/`doctor`)
 
 **Planned (not yet built — tracked honestly):**
-- ◻ Canary request-matching wired into the edge (library + CLI exist today)
 - ◻ Configurable classifier thresholds + more signals (JA3, header-order)
 - ◻ Content-level deception (believable fake responses)
 - ◻ More alert sinks (webhook/Slack/SIEM)
