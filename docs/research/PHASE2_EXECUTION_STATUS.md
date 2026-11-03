@@ -17,7 +17,7 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `PARTIAL` · `VERI
 | R1 | Research protocol & threat model | VERIFIED | `be6db33` | `go test ./internal/research/...`; `heramba research manifest` |
 | R2 | Fair coordination detection experiment | VERIFIED | this commit | `go test ./internal/research/{coord,stats}/...`; `heramba research coord` |
 | R3 | Deception & attack-objective experiment | VERIFIED | this commit | `go test ./internal/research/objective/...`; `heramba research objective` |
-| R4 | Adaptation race & co-evolution lab | NOT_STARTED | — | — |
+| R4 | Adaptation race & co-evolution lab | VERIFIED | this commit | `go test ./internal/research/coevolve/...`; `heramba research coevolve` |
 | R5 | Defender prompt-injection & data-plane safety | NOT_STARTED | — | — |
 | R6 | Proxy correctness & resilience | NOT_STARTED | — | — |
 | R7 | Supply chain & release assurance | NOT_STARTED | — | — |
@@ -217,3 +217,38 @@ measured here (R6 covers proxy overhead).
 
 **Next action:** R4 — adaptation race & co-evolution lab (event-sourced,
 t_change…t_objective, adaptation latency, utility/oscillation).
+
+---
+
+## R4 — Adaptation race & co-evolution lab — VERIFIED (2026-11-03)
+
+**Files:** `internal/research/coevolve/{coevolve,run,report,coevolve_test}.go`,
+`cmd/heramba/research_coevolve.go`, `docs/research/coevolution-lab.md`,
+`docs/research/artifacts/coevolve/` (summary + replayable event log).
+
+**What shipped:** a strictly-local, seeded, **event-sourced** adaptation race —
+no live targets, no exploitation, no propagation, only logical ticks and labeled
+events. Captures t_change…t_effective/t_objective; **adaptation latency =
+t_effective − t_change**, decomposed into detection and response components.
+Five bounded archetypes (scripted / independent / coordinated / deception-aware /
+feinting adversarial-varied) vs three defender modes (adaptive / no-adaptation /
+instant). Utility = objective-prevention − update costs − oscillation penalty.
+`heramba research coevolve`.
+
+**Results (679597c, 8 rounds × 100 seeds):** adaptive counters detectable shifts
+100% with **positive utility 0.93** (H3 null rejected); adaptation latency
+bounded and degrades gracefully (9→14s) as detectability falls; the **response
+component is a fixed 4.0s, inside the ≤5s target** (R8), detection is the variable
+part. The **feinting adversary exposes the limit**: 67% countered, 50% policy
+oscillation, utility 0.45 — honestly reported. Ablation: no-adaptation utility 0;
+adaptive matches the instant bound for stable adversaries.
+
+**Commands / results:** `go test ./internal/research/coevolve/...` ok (replay
+determinism, pipeline-order, H3, latency decomposition, oscillation, report);
+`go test ./...` PASS; `-race` ok.
+
+**Limitations:** logical ticks (not wall-clock); seeded bounded jitter;
+detectability is a parameter, not a claim about a real adversary.
+
+**Next action:** R5 — defender prompt-injection & data-plane safety (taint
+labels + typed contracts + adversarial test battery).

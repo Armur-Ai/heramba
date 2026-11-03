@@ -1,0 +1,314 @@
+[
+  {
+    "tick": 5,
+    "round": 0,
+    "phase": "strategy_change",
+    "detail": "adversarial_varied shifts strategy"
+  },
+  {
+    "tick": 6,
+    "round": 0,
+    "phase": "observed",
+    "detail": "activity observed"
+  },
+  {
+    "tick": 17,
+    "round": 0,
+    "phase": "detected",
+    "detail": "new pattern detected"
+  },
+  {
+    "tick": 19,
+    "round": 0,
+    "phase": "decision",
+    "detail": "bounded counter proposed"
+  },
+  {
+    "tick": 20,
+    "round": 0,
+    "phase": "applied",
+    "detail": "policy update applied (shadow→enforce)"
+  },
+  {
+    "tick": 21,
+    "round": 0,
+    "phase": "effective",
+    "detail": "countermeasure effective"
+  },
+  {
+    "tick": 45,
+    "round": 1,
+    "phase": "strategy_change",
+    "detail": "adversarial_varied shifts strategy"
+  },
+  {
+    "tick": 46,
+    "round": 1,
+    "phase": "observed",
+    "detail": "activity observed"
+  },
+  {
+    "tick": 57,
+    "round": 1,
+    "phase": "detected",
+    "detail": "new pattern detected"
+  },
+  {
+    "tick": 59,
+    "round": 1,
+    "phase": "decision",
+    "detail": "bounded counter proposed"
+  },
+  {
+    "tick": 60,
+    "round": 1,
+    "phase": "applied",
+    "detail": "policy update applied (shadow→enforce)"
+  },
+  {
+    "tick": 61,
+    "round": 1,
+    "phase": "effective",
+    "detail": "countermeasure effective"
+  },
+  {
+    "tick": 63,
+    "round": 1,
+    "phase": "rollback",
+    "detail": "feint reverted; policy rolled back (oscillation)"
+  },
+  {
+    "tick": 85,
+    "round": 2,
+    "phase": "strategy_change",
+    "detail": "adversarial_varied shifts strategy"
+  },
+  {
+    "tick": 86,
+    "round": 2,
+    "phase": "observed",
+    "detail": "activity observed"
+  },
+  {
+    "tick": 96,
+    "round": 2,
+    "phase": "detected",
+    "detail": "new pattern detected"
+  },
+  {
+    "tick": 98,
+    "round": 2,
+    "phase": "decision",
+    "detail": "bounded counter proposed"
+  },
+  {
+    "tick": 99,
+    "round": 2,
+    "phase": "applied",
+    "detail": "policy update applied (shadow→enforce)"
+  },
+  {
+    "tick": 100,
+    "round": 2,
+    "phase": "effective",
+    "detail": "countermeasure effective"
+  },
+  {
+    "tick": 102,
+    "round": 2,
+    "phase": "rollback",
+    "detail": "feint reverted; policy rolled back (oscillation)"
+  },
+  {
+    "tick": 125,
+    "round": 3,
+    "phase": "strategy_change",
+    "detail": "adversarial_varied shifts strategy"
+  },
+  {
+    "tick": 126,
+    "round": 3,
+    "phase": "observed",
+    "detail": "activity observed"
+  },
+  {
+    "tick": 137,
+    "round": 3,
+    "phase": "detected",
+    "detail": "new pattern detected"
+  },
+  {
+    "tick": 139,
+    "round": 3,
+    "phase": "decision",
+    "detail": "bounded counter proposed"
+  },
+  {
+    "tick": 140,
+    "round": 3,
+    "phase": "applied",
+    "detail": "policy update applied (shadow→enforce)"
+  },
+  {
+    "tick": 141,
+    "round": 3,
+    "phase": "effective",
+    "detail": "countermeasure effective"
+  },
+  {
+    "tick": 143,
+    "round": 3,
+    "phase": "rollback",
+    "detail": "feint reverted; policy rolled back (oscillation)"
+  },
+  {
+    "tick": 165,
+    "round": 4,
+    "phase": "strategy_change",
+    "detail": "adversarial_varied shifts strategy"
+  },
+  {
+    "tick": 166,
+    "round": 4,
+    "phase": "observed",
+    "detail": "activity observed"
+  },
+  {
+    "tick": 176,
+    "round": 4,
+    "phase": "detected",
+    "detail": "new pattern detected"
+  },
+  {
+    "tick": 178,
+    "round": 4,
+    "phase": "decision",
+    "detail": "bounded counter proposed"
+  },
+  {
+    "tick": 179,
+    "round": 4,
+    "phase": "applied",
+    "detail": "policy update applied (shadow→enforce)"
+  },
+  {
+    "tick": 180,
+    "round": 4,
+    "phase": "effective",
+    "detail": "countermeasure effective"
+  },
+  {
+    "tick": 205,
+    "round": 5,
+    "phase": "strategy_change",
+    "detail": "adversarial_varied shifts strategy"
+  },
+  {
+    "tick": 206,
+    "round": 5,
+    "phase": "observed",
+    "detail": "activity observed"
+  },
+  {
+    "tick": 216,
+    "round": 5,
+    "phase": "detected",
+    "detail": "new pattern detected"
+  },
+  {
+    "tick": 218,
+    "round": 5,
+    "phase": "decision",
+    "detail": "bounded counter proposed"
+  },
+  {
+    "tick": 219,
+    "round": 5,
+    "phase": "applied",
+    "detail": "policy update applied (shadow→enforce)"
+  },
+  {
+    "tick": 220,
+    "round": 5,
+    "phase": "effective",
+    "detail": "countermeasure effective"
+  },
+  {
+    "tick": 222,
+    "round": 5,
+    "phase": "rollback",
+    "detail": "feint reverted; policy rolled back (oscillation)"
+  },
+  {
+    "tick": 245,
+    "round": 6,
+    "phase": "strategy_change",
+    "detail": "adversarial_varied shifts strategy"
+  },
+  {
+    "tick": 246,
+    "round": 6,
+    "phase": "observed",
+    "detail": "activity observed"
+  },
+  {
+    "tick": 257,
+    "round": 6,
+    "phase": "detected",
+    "detail": "new pattern detected"
+  },
+  {
+    "tick": 259,
+    "round": 6,
+    "phase": "decision",
+    "detail": "bounded counter proposed"
+  },
+  {
+    "tick": 260,
+    "round": 6,
+    "phase": "applied",
+    "detail": "policy update applied (shadow→enforce)"
+  },
+  {
+    "tick": 261,
+    "round": 6,
+    "phase": "effective",
+    "detail": "countermeasure effective"
+  },
+  {
+    "tick": 285,
+    "round": 7,
+    "phase": "strategy_change",
+    "detail": "adversarial_varied shifts strategy"
+  },
+  {
+    "tick": 286,
+    "round": 7,
+    "phase": "observed",
+    "detail": "activity observed"
+  },
+  {
+    "tick": 297,
+    "round": 7,
+    "phase": "detected",
+    "detail": "new pattern detected"
+  },
+  {
+    "tick": 299,
+    "round": 7,
+    "phase": "decision",
+    "detail": "bounded counter proposed"
+  },
+  {
+    "tick": 300,
+    "round": 7,
+    "phase": "applied",
+    "detail": "policy update applied (shadow→enforce)"
+  },
+  {
+    "tick": 301,
+    "round": 7,
+    "phase": "effective",
+    "detail": "countermeasure effective"
+  }
+]

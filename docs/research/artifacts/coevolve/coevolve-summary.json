@@ -1,0 +1,754 @@
+{
+  "schema_version": 1,
+  "code_revision": "679597c",
+  "params": {
+    "ObserveDelay": 1,
+    "DetectBase": 3,
+    "DecisionDelay": 2,
+    "ApplyDelay": 1,
+    "EffectiveDelay": 1,
+    "WObjective": 1,
+    "FPCostPerUpdate": 0.05,
+    "ComputeCost": 0.02,
+    "FeintPenalty": 0.3
+  },
+  "rounds_per_race": 8,
+  "seeds": [
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122,
+    123,
+    124,
+    125,
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140,
+    141,
+    142,
+    143,
+    144,
+    145,
+    146,
+    147,
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    158,
+    159,
+    160,
+    161,
+    162,
+    163,
+    164,
+    165,
+    166,
+    167,
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174,
+    175,
+    176,
+    177,
+    178,
+    179,
+    180,
+    181,
+    182,
+    183,
+    184,
+    185,
+    186,
+    187,
+    188,
+    189,
+    190,
+    191,
+    192,
+    193,
+    194,
+    195,
+    196,
+    197,
+    198,
+    199
+  ],
+  "results": [
+    {
+      "archetype": "scripted",
+      "defender_mode": "adaptive",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 1,
+        "lo": 0.995221123794324,
+        "hi": 1,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 9.03125,
+        "lo": 8.97375,
+        "hi": 9.0875,
+        "n": 800
+      },
+      "detection_component_s": {
+        "point": 5.03125,
+        "lo": 4.975,
+        "hi": 5.0875,
+        "n": 800
+      },
+      "response_component_s": {
+        "point": 4,
+        "lo": 4,
+        "hi": 4,
+        "n": 800
+      },
+      "mean_utility": {
+        "point": 0.9299999999999885,
+        "lo": 0.9299999999999885,
+        "hi": 0.9299999999999885,
+        "n": 800
+      },
+      "utility_stddev": 1.1442450921716757e-14,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "scripted",
+      "defender_mode": "no_adaptation",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "detection_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "response_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "mean_utility": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "utility_stddev": 0,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "scripted",
+      "defender_mode": "instant",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 1,
+        "lo": 0.995221123794324,
+        "hi": 1,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "detection_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "response_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "mean_utility": {
+        "point": 0.9299999999999885,
+        "lo": 0.9299999999999885,
+        "hi": 0.9299999999999885,
+        "n": 800
+      },
+      "utility_stddev": 1.1442450921716757e-14,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "independent",
+      "defender_mode": "adaptive",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 1,
+        "lo": 0.995221123794324,
+        "hi": 1,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 10.03125,
+        "lo": 9.97375,
+        "hi": 10.0875,
+        "n": 800
+      },
+      "detection_component_s": {
+        "point": 6.03125,
+        "lo": 5.975,
+        "hi": 6.0875,
+        "n": 800
+      },
+      "response_component_s": {
+        "point": 4,
+        "lo": 4,
+        "hi": 4,
+        "n": 800
+      },
+      "mean_utility": {
+        "point": 0.9299999999999885,
+        "lo": 0.9299999999999885,
+        "hi": 0.9299999999999885,
+        "n": 800
+      },
+      "utility_stddev": 1.1442450921716757e-14,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "independent",
+      "defender_mode": "no_adaptation",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "detection_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "response_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "mean_utility": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "utility_stddev": 0,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "independent",
+      "defender_mode": "instant",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 1,
+        "lo": 0.995221123794324,
+        "hi": 1,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "detection_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "response_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "mean_utility": {
+        "point": 0.9299999999999885,
+        "lo": 0.9299999999999885,
+        "hi": 0.9299999999999885,
+        "n": 800
+      },
+      "utility_stddev": 1.1442450921716757e-14,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "coordinated",
+      "defender_mode": "adaptive",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 1,
+        "lo": 0.995221123794324,
+        "hi": 1,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 11.03125,
+        "lo": 10.97375,
+        "hi": 11.0875,
+        "n": 800
+      },
+      "detection_component_s": {
+        "point": 7.03125,
+        "lo": 6.975,
+        "hi": 7.0875,
+        "n": 800
+      },
+      "response_component_s": {
+        "point": 4,
+        "lo": 4,
+        "hi": 4,
+        "n": 800
+      },
+      "mean_utility": {
+        "point": 0.9299999999999885,
+        "lo": 0.9299999999999885,
+        "hi": 0.9299999999999885,
+        "n": 800
+      },
+      "utility_stddev": 1.1442450921716757e-14,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "coordinated",
+      "defender_mode": "no_adaptation",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "detection_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "response_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "mean_utility": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "utility_stddev": 0,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "coordinated",
+      "defender_mode": "instant",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 1,
+        "lo": 0.995221123794324,
+        "hi": 1,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "detection_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "response_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "mean_utility": {
+        "point": 0.9299999999999885,
+        "lo": 0.9299999999999885,
+        "hi": 0.9299999999999885,
+        "n": 800
+      },
+      "utility_stddev": 1.1442450921716757e-14,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "deception_aware",
+      "defender_mode": "adaptive",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 1,
+        "lo": 0.995221123794324,
+        "hi": 1,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 14.03125,
+        "lo": 13.97375,
+        "hi": 14.0875,
+        "n": 800
+      },
+      "detection_component_s": {
+        "point": 10.03125,
+        "lo": 9.975,
+        "hi": 10.0875,
+        "n": 800
+      },
+      "response_component_s": {
+        "point": 4,
+        "lo": 4,
+        "hi": 4,
+        "n": 800
+      },
+      "mean_utility": {
+        "point": 0.9299999999999885,
+        "lo": 0.9299999999999885,
+        "hi": 0.9299999999999885,
+        "n": 800
+      },
+      "utility_stddev": 1.1442450921716757e-14,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "deception_aware",
+      "defender_mode": "no_adaptation",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "detection_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "response_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "mean_utility": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "utility_stddev": 0,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "deception_aware",
+      "defender_mode": "instant",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 1,
+        "lo": 0.995221123794324,
+        "hi": 1,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "detection_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "response_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "mean_utility": {
+        "point": 0.9299999999999885,
+        "lo": 0.9299999999999885,
+        "hi": 0.9299999999999885,
+        "n": 800
+      },
+      "utility_stddev": 1.1442450921716757e-14,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "adversarial_varied",
+      "defender_mode": "adaptive",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 0.66875,
+        "lo": 0.635396930060697,
+        "hi": 0.7004901992198873,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 16.01625,
+        "lo": 15.96125,
+        "hi": 16.0725,
+        "n": 800
+      },
+      "detection_component_s": {
+        "point": 12.01625,
+        "lo": 11.96125,
+        "hi": 12.0725,
+        "n": 800
+      },
+      "response_component_s": {
+        "point": 4,
+        "lo": 4,
+        "hi": 4,
+        "n": 800
+      },
+      "mean_utility": {
+        "point": 0.4483750000000011,
+        "lo": 0.4135000000000009,
+        "hi": 0.48250312500000125,
+        "n": 800
+      },
+      "utility_stddev": 0.49594082913943643,
+      "oscillation_rate": {
+        "point": 0.50125,
+        "lo": 0.4666794257255975,
+        "hi": 0.5358086270838882,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "adversarial_varied",
+      "defender_mode": "no_adaptation",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "detection_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "response_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 0
+      },
+      "mean_utility": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "utility_stddev": 0,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    },
+    {
+      "archetype": "adversarial_varied",
+      "defender_mode": "instant",
+      "rounds": 800,
+      "countered_rate": {
+        "point": 1,
+        "lo": 0.995221123794324,
+        "hi": 1,
+        "n": 800
+      },
+      "adaptation_latency_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "detection_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "response_component_s": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0,
+        "n": 800
+      },
+      "mean_utility": {
+        "point": 0.9299999999999885,
+        "lo": 0.9299999999999885,
+        "hi": 0.9299999999999885,
+        "n": 800
+      },
+      "utility_stddev": 1.1442450921716757e-14,
+      "oscillation_rate": {
+        "point": 0,
+        "lo": 4.336808689942018e-19,
+        "hi": 0.004778876205676033,
+        "n": 800
+      }
+    }
+  ],
+  "not_measured": [
+    "wall-clock CPU: ticks are logical; TickSeconds maps them for reporting only",
+    "a non-seeded deployment adds observational nondeterminism; here jitter is seeded and bounded"
+  ]
+}

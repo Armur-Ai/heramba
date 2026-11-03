@@ -23,6 +23,8 @@ func runResearch(args []string) {
 		runResearchCoord(args[1:])
 	case "objective":
 		runResearchObjective(args[1:])
+	case "coevolve":
+		runResearchCoevolve(args[1:])
 	default:
 		fmt.Fprintf(os.Stderr, "heramba research: unknown subcommand %q\n\n", args[0])
 		researchUsage(os.Stderr)
@@ -40,6 +42,7 @@ subcommands:
   manifest   print the pre-registered protocol + hypotheses (JSON), validated
   coord      run the fair coordination-detection experiment (4 methods + ablations)
   objective  run the deception & attack-objective experiment (5 arms, H2)
+  coevolve   run the adaptation-race & co-evolution lab (H3)
 `)
 }
 
