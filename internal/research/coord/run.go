@@ -235,7 +235,7 @@ func detectionLatency(sessions []campaign.Session, det swarm.Detector, syncWindo
 	first := ordered[0].Start
 	for i := 1; i <= len(ordered); i++ {
 		f := det.Extract(ordered[:i])
-		if fullScore(f, syncWindow, fullSignals) >= OperatingThreshold {
+		if coordinatedScore(f, syncWindow) >= OperatingThreshold {
 			return ordered[i-1].Start.Sub(first), true
 		}
 	}
@@ -263,7 +263,7 @@ func measureThroughput(p research.Protocol, families []research.ScenarioFamily, 
 	for r := 0; r < reps; r++ {
 		for _, cs := range cohorts {
 			f := det.Extract(cs)
-			_ = fullScore(f, sw, fullSignals)
+			_ = coordinatedScore(f, sw)
 			n++
 		}
 	}

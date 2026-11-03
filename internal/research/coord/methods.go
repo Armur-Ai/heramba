@@ -70,12 +70,52 @@ func GraphCorrelation() Method {
 }
 
 // FullHeramba: the shipped signal set — synchrony gate + shared/divided
-// targeting + enumeration + decoy contact. Synchrony is the gate that
-// suppresses the false positives the correlation-only methods suffer.
+// targeting + enumeration + decoy contact. It mirrors swarm.Detector.Classify's
+// coordinated predicate exactly (asserted by the agreement test), so the
+// experiment measures the real detector. The returned score is continuous for
+// PR-AUC and crosses the operating threshold precisely when the detector would
+// classify the cohort as coordinated.
 func FullHeramba() Method {
-	return Method{Name: "full_heramba", Score: func(f swarm.Features, syncWindow time.Duration) float64 {
-		return fullScore(f, syncWindow, fullSignals)
-	}}
+	return Method{Name: "full_heramba", Score: coordinatedScore}
+}
+
+// coordinatedScore returns a continuous coordination score that is >= the
+// operating threshold iff swarm.Detector.Classify would return ClassCoordinated
+// for the same features. Coordination = synchrony AND (division of labor OR
+// shared targeting that is also broad enumeration / decoy contact) — the
+// enumeration gate on the shared-only path is what suppresses benign false
+// positives from synchronized clients sharing a few known endpoints.
+func coordinatedScore(f swarm.Features, syncWindow time.Duration) float64 {
+	d := swarm.DefaultDetector()
+	if f.Sources <= 1 {
+		return 0.1
+	}
+	synchronized := f.StartSpread <= syncWindow
+	sharedTargets := f.TargetJaccard >= d.OverlapThreshold
+	dividedLabor := f.Complementarity >= d.ComplementThreshold
+	enumerating := f.DistinctTargets >= d.EnumerationThreshold
+	coordinated := synchronized && (dividedLabor || (sharedTargets && (enumerating || f.DeceptionHits > 0)))
+
+	mag := 0.0
+	if synchronized {
+		mag += 0.4
+	}
+	if sharedTargets {
+		mag += 0.3
+	}
+	if dividedLabor {
+		mag += 0.3
+	}
+	if f.DeceptionHits > 0 {
+		mag += 0.1
+	}
+	if mag > 1 {
+		mag = 1
+	}
+	if coordinated {
+		return clamp01(0.5 + mag/2) // >= OperatingThreshold
+	}
+	return clamp01(0.4 * mag) // < OperatingThreshold
 }
 
 // signalSet toggles which signals FullHeramba may use (for ablations).

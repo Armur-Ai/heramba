@@ -44,8 +44,14 @@ func TestScorecardHonestOutcomes(t *testing.T) {
 	if !by["objective-completion reduction (adaptive vs unprotected)"].Met {
 		t.Errorf("objective-reduction target should be met")
 	}
-	if by["false-positive rate"].Met {
-		t.Errorf("FPR target is expected to MISS at 1%% on hard synthetic benign; must be reported honestly, not marked met")
+	// After the enumeration gate, the FPR point estimate meets the 1% target...
+	fpr := by["false-positive rate"]
+	if !fpr.Met {
+		t.Errorf("FPR point estimate should meet the 1%% target after the enumeration gate, got %.3f", fpr.Observed.Point)
+	}
+	// ...but the caveat (upper bound cannot yet exclude >1%) must still be disclosed.
+	if fpr.Observed.Hi > 0.01 && !strings.Contains(fpr.Context, "cannot yet exclude") {
+		t.Errorf("FPR row must disclose the upper-bound caveat when Hi>1%%, context=%q", fpr.Context)
 	}
 	if !by["policy-safe response latency (response component, worst archetype)"].Met {
 		t.Errorf("response-latency target should be met (<=5s)")

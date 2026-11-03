@@ -164,9 +164,19 @@ func (d Detector) Classify(sessions []campaign.Session) Verdict {
 		score = 1
 	}
 
-	if synchronized && (sharedTargets || dividedLabor) {
+	// Coordination requires synchrony AND a signal benign clients do not emit:
+	// division of labor, OR shared targeting that is *also* broad enumeration or
+	// trips a decoy. Synchronized clients merely sharing a few known endpoints
+	// (a deploy, a monitoring fleet, users hitting the same dashboard) are NOT a
+	// swarm — gating the shared-only path on enumeration/decoy breadth is what
+	// keeps the false-positive rate down.
+	sharedIsCoordinating := sharedTargets && (enumerating || f.DeceptionHits > 0)
+	if synchronized && (dividedLabor || sharedIsCoordinating) {
 		return Verdict{Class: ClassCoordinated, Score: score,
 			Confidence: clamp01(0.5 + score/2), Reasons: reasons}
+	}
+	if synchronized && sharedTargets && !enumerating && f.DeceptionHits == 0 {
+		add("synchronized and shared, but a narrow known surface with no decoy contact — reads as benign automation, not a swarm")
 	}
 	// Multiple sources, not synchronized/divided. Distinguish independent
 	// scanners (each enumerating a novel surface, or tripping decoys) from

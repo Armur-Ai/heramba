@@ -41,8 +41,10 @@ func DefaultParams() Params {
 		Window:          5 * time.Minute,
 		SurfaceSize:     40,
 		KnownEndpoints:  6,
-		BenignControls:  12,
-		SyncWindow:      90 * time.Second,
+		// Enough benign-control cohorts that a 0% false-positive observation has a
+		// Wilson upper bound under the 1% target (adequate power; see R8).
+		BenignControls: 400,
+		SyncWindow:     90 * time.Second,
 	}
 }
 
