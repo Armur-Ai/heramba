@@ -10,9 +10,9 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `VERIFIED`.
 |---|---|---|---|---|
 | 0 | Baseline | VERIFIED | _pending_ | build/vet/test green; state + plan documented |
 | 1 | Evidence infrastructure | VERIFIED | `83f07d0` | `internal/evidence` |
-| 2 | Campaign intelligence | IN_PROGRESS | — | `internal/campaign` |
-| 3 | Stateful deception | NOT_STARTED | — | `internal/deception` |
-| 4 | Attack graph + business logic | NOT_STARTED | — | `internal/assetgraph`, `internal/bizlogic` |
+| 2 | Campaign intelligence | VERIFIED | `609f45e` | `internal/campaign` |
+| 3 | Stateful deception | VERIFIED | `abd0eca` | `internal/deception` |
+| 4 | Attack graph + business logic | IN_PROGRESS | — | `internal/assetgraph`, `internal/bizlogic` |
 | 5 | Strategy + containment | NOT_STARTED | — | `internal/strategy` |
 | 6 | Swarm correlation + active learning | NOT_STARTED | — | `campaign/swarm`, `campaign/experiment` |
 | 7 | Multi-sensor intelligence | NOT_STARTED | — | `evidence/sensor` |
