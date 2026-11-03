@@ -49,6 +49,18 @@ func (s *CanaryStore) Mint(label string) (Canary, error) {
 	return c, nil
 }
 
+// Watch registers an externally-planted canary token (one minted elsewhere, or
+// configured by an operator) so the edge can detect its use. Unlike Mint it
+// does not generate a token; it records one to watch for.
+func (s *CanaryStore) Watch(token, label string) {
+	if token == "" {
+		return
+	}
+	s.mu.Lock()
+	s.byToken[token] = Canary{Token: token, Label: label, Planted: time.Now().UTC()}
+	s.mu.Unlock()
+}
+
 // Check reports whether a presented value is a known canary token (i.e. the
 // token has been used/observed). The lookup is exact-match on the full token.
 func (s *CanaryStore) Check(token string) (Canary, bool) {

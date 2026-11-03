@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/Armur-Ai/heramba/internal/alert"
@@ -50,6 +51,9 @@ func New(cfg config.Config, sink alert.Sink) (*Engine, error) {
 		sink = alert.Discard
 	}
 	e := &Engine{cfg: cfg, reg: decoy.NewRegistry(cfg.Decoys.Paths...), cls: classify.New(), sink: sink}
+	for _, tok := range cfg.Decoys.Canaries {
+		e.reg.Canaries().Watch(tok, "configured canary")
+	}
 	if cfg.Mode == config.ModeProtect {
 		e.norm = signal.DefaultNormalizer()
 		e.jit = signal.NewJitter(250*time.Millisecond, 1*time.Second)
@@ -89,7 +93,18 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			WithLabel("label", v.Label))
 	}
 
-	// 2. Deception surface: a decoy hit is zero-FP; the edge serves it.
+	// 2a. Canary use: a planted canary token appearing in the request is a
+	// confirmed intrusion (zero-FP). In protect mode the request is denied.
+	if c, ok := e.scanCanary(r); ok {
+		e.sink.Emit(event.Deception(event.KindCanaryTriggered, ip, c.Label,
+			"canary token used ("+c.Label+")").WithLabel("canary_label", c.Label))
+		if e.cfg.Mode == config.ModeProtect {
+			e.serveNeutral(w)
+			return
+		}
+	}
+
+	// 2b. Deception surface: a decoy hit is zero-FP; the edge serves it.
 	if _, ok := e.reg.IsDecoy(r.URL.Path); ok {
 		if ev, hit := e.reg.InspectPath(r.Method, r.URL.Path, ip); hit {
 			e.sink.Emit(ev)
@@ -119,6 +134,34 @@ func (e *Engine) serveNeutral(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusNotFound)
 	_, _ = w.Write([]byte("404 page not found\n"))
+}
+
+// scanCanary looks for any watched canary token in the request's path, query,
+// and header values (cookies/auth headers included). Body scanning is a roadmap
+// item; this covers the common vector (a planted fake credential used in a
+// header or query).
+func (e *Engine) scanCanary(r *http.Request) (decoy.Canary, bool) {
+	cans := e.reg.Canaries().All()
+	if len(cans) == 0 {
+		return decoy.Canary{}, false
+	}
+	var sb strings.Builder
+	sb.WriteString(r.URL.Path)
+	sb.WriteByte(' ')
+	sb.WriteString(r.URL.RawQuery)
+	for _, vals := range r.Header {
+		for _, v := range vals {
+			sb.WriteByte(' ')
+			sb.WriteString(v)
+		}
+	}
+	hay := sb.String()
+	for _, c := range cans {
+		if strings.Contains(hay, c.Token) {
+			return c, true
+		}
+	}
+	return decoy.Canary{}, false
 }
 
 func clientIP(r *http.Request) string {

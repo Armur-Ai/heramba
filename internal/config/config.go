@@ -39,8 +39,9 @@ type AlertConfig struct {
 
 // DecoyConfig controls decoy/canary behavior.
 type DecoyConfig struct {
-	Enabled bool     `yaml:"enabled"`
-	Paths   []string `yaml:"paths"` // extra decoy paths to serve/watch
+	Enabled  bool     `yaml:"enabled"`
+	Paths    []string `yaml:"paths"`    // extra decoy paths to serve/watch
+	Canaries []string `yaml:"canaries"` // canary tokens (planted elsewhere) to watch for in requests
 }
 
 // EgressConfig controls the callback firewall (PROTECT mode).
