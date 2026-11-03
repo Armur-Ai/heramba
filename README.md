@@ -190,10 +190,13 @@ See the full [capability matrix](docs/engineering/EXECUTION_STATUS.md) and
 - ◻ More alert sinks (webhook/Slack/SIEM)
 
 See the [CHANGELOG](CHANGELOG.md). Deep dives:
-[architecture](docs/architecture.md) · [decoys & canaries](docs/decoys.md) ·
+[architecture](docs/architecture.md) · [four planes](docs/architecture/planes.md) ·
+[evidence model](docs/evidence.md) · [campaign intelligence](docs/campaign.md) ·
+[strategy & containment](docs/strategy.md) · [decoys & canaries](docs/decoys.md) ·
 [classifier](docs/classifier.md) · [signal denial](docs/signal-denial.md) ·
 [counter-agent](docs/counter-agent.md) · [metrics](docs/metrics.md) ·
-[deployment](docs/deployment.md) · [threat model](docs/threat-model.md)
+[deployment](docs/deployment.md) · [threat model](docs/threat-model.md) ·
+[labs](labs/)
 
 ## Open source vs commercial
 
