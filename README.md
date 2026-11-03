@@ -1,55 +1,127 @@
-# Heramba  ·  community engine
+<div align="center">
 
-> **Product name: `Heramba`** — chosen 2026-11-02, **trademark clearance
-> pending** (not final until counsel signs off; a preliminary check found no
-> cybersecurity-space collision — see `../heramba-commercial/legal/IP_STRATEGY.md`).
-> An earlier codename, "Mirage", was dropped (already used by other security
-> projects). Do not treat the name as cleared yet.
->
-> **STATUS: pre-release. Licensing and contribution process are DRAFT and NOT yet
-> active** — see `docs/LICENSING.md` and `CONTRIBUTING.md`. Nothing here is legal
-> advice.
+<img src="docs/assets/banner.svg" alt="Heramba — active-deception defense for the app and API layer" width="100%">
 
-Active-deception & counter-agent defense for the app/API layer — the community
-engine. Defends the layer autonomous attack swarms target (app/API/business
-logic, pre-auth) by **denying the attacker clean ground-truth signal** and
-trapping it in deception, rather than matching payloads (WAF) or watching hosts
-(EDR/XDR).
+<p>
+  <img alt="status" src="https://img.shields.io/badge/status-pre--release-f5b35a">
+  <img alt="go" src="https://img.shields.io/badge/go-%E2%89%A5%201.25-00ADD8">
+  <img alt="license" src="https://img.shields.io/badge/license-FSL--1.1--ALv2-3ddc97">
+  <img alt="mode" src="https://img.shields.io/badge/default-observe%20(safe)-3ddc97">
+</p>
 
-## What this engine does (shipped vs. planned)
+**Active-deception & counter-agent defense for the app/API layer.**
+Deny the attacker clean ground truth — and trap autonomous agents in deception —
+instead of matching payloads (WAF) or watching hosts (EDR).
 
-> Distinguish clearly as the code lands. At pre-release, treat all of the below
-> as **planned** unless a feature's own docs say "shipped".
+</div>
 
-- Edge runtime (reverse-proxy / sidecar) with **observe mode** (default) and
-  inline **protect mode**.
-- Decoy/honeypot runtime with zero-false-positive alerting (decoy *content* is a
-  separate proprietary module).
-- Signal-denial primitives: response normalization, bounded latency, egress
-  control hooks (specific recipes are a separate proprietary module).
-- Base behavioral classifier (heuristics).
-- Plugin interfaces so premium/proprietary modules can extend it.
-- Local storage, local dashboard, webhook alerting.
+---
 
-## Licensing (PROPOSED — activate only after approval)
+> **Status: pre-release.** The engine's core is real and tested (see *What's
+> shipped* below), but this is early. **Observe mode is safe to run in front of
+> production** — it only watches. Every feature here is honestly marked
+> *shipped* or *planned*; nothing claims a defense it doesn't have.
 
-> The community engine is proposed to be **source-available under FSL-1.1-ALv2**.
-> Each version would also become available under **Apache License 2.0 on the
-> second anniversary** of its first availability under FSL. Armur Technologies
-> Inc. offers separate proprietary extensions and hosted services. Contributors
-> retain copyright and, through the applicable signed CLA, authorize Armur to use
-> and license their contributions in community and proprietary products.
+## Why
 
-This is **source-available, not OSI-approved open source** — do not display an
-OSI badge. See `docs/LICENSING.md`, `docs/LICENSING_FAQ.md`, `LICENSE`, and the
-future-license reference `LICENSES/Apache-2.0.txt`.
+Offense is going autonomous. Agentic attack tools enumerate your surface, chain
+weaknesses, and exfiltrate **without a human in the loop** — fast, tireless, and
+relentless at probing. Signature WAFs answer with payload matching and drown you
+in false positives; EDR watches hosts, not your app's business logic.
 
-## Links
-`LICENSE` · `docs/LICENSING.md` · `CONTRIBUTING.md` · `SECURITY.md` ·
-`docs/ACTIVE_DEFENSE_BOUNDARIES.md` · `docs/DATA_HANDLING.md` · `TRADEMARKS.md`
+Heramba takes the other road. It sits at the edge and:
 
-## Relationship to the commercial product
-A separate private repository holds proprietary modules + cloud control plane
-(fleet intelligence, managed hosting, dashboards). This engine is a genuinely
-useful standalone product; the commercial side wins on network-effect
-intelligence and no-ops, not by crippling this engine.
+- **plants deception** — decoy endpoints and canary tokens that *no legitimate
+  client ever touches*, so a hit is an attacker with **zero false positives**;
+- **denies signal** — strips fingerprinting headers and blunts timing oracles,
+  so automated tooling loses the clean ground truth it depends on;
+- **spots the robot** — scores how agentic a source looks from transparent,
+  deterministic behavioral signals (no LLM on the hot path).
+
+Autonomous attackers are *especially* vulnerable to this: they enumerate
+aggressively and walk straight into the decoys.
+
+## Quickstart
+
+```bash
+go install github.com/Armur-Ai/heramba/cmd/heramba@latest   # or: make build
+
+heramba config init          # writes a commented .heramba.yml (observe mode)
+heramba doctor               # advisory readiness check
+heramba serve                # run the edge in front of your app
+```
+
+Point your ingress at Heramba's `listen` address; it forwards real traffic to
+your `upstream` untouched (observe mode) and logs detections. Probe a decoy and
+watch it fire:
+
+```console
+$ heramba serve --listen 127.0.0.1:8080 &
+$ curl -s -o /dev/null http://127.0.0.1:8080/.env
+[02:01:38] high decoy_hit src=127.0.0.1 target="/.env" conf=1.00 GET /.env — decoy (environment/secret file probe)
+```
+
+## How it works
+
+![architecture](docs/assets/architecture.svg)
+
+Every request flows through the edge runtime: **classify** the source →
+**deception** check (decoys/canaries) → **signal denial** (protect mode) →
+**reverse proxy** to your app. Outbound, an **egress firewall** (protect mode)
+enforces a deny-by-default allowlist.
+
+| | observe (default) | protect (opt-in) |
+|---|---|---|
+| classify + detect | ✅ | ✅ |
+| serve decoys / canaries | ✅ | ✅ |
+| rewrite real responses | ❌ passthrough | ✅ normalize |
+| tarpit flagged sources | ❌ | ✅ |
+| egress firewall | ❌ | ✅ |
+
+Deep dives: [architecture](docs/architecture.md) ·
+[decoys & canaries](docs/decoys.md) · [classifier](docs/classifier.md) ·
+[signal denial](docs/signal-denial.md) · [deployment](docs/deployment.md) ·
+[threat model](docs/threat-model.md)
+
+## What's shipped vs planned
+
+**Shipped (real, tested in this repo):**
+- ✅ Reverse-proxy edge runtime with observe/protect modes
+- ✅ Decoy endpoints + registry, zero-FP `decoy_hit` detection
+- ✅ Cryptographic canary tokens (mint/track/check)
+- ✅ Deterministic agentic-traffic classifier (explainable signals)
+- ✅ Signal denial: response-header normalization + timing jitter
+- ✅ Deny-by-default egress/callback firewall
+- ✅ Alert sinks (text / JSONL), CLI (`serve`/`decoys`/`config`/`doctor`)
+
+**Planned (not yet built — tracked honestly):**
+- ◻ Canary request-matching wired into the edge (library + CLI exist today)
+- ◻ Configurable classifier thresholds + more signals (JA3, header-order)
+- ◻ Content-level deception (believable fake responses)
+- ◻ More alert sinks (webhook/Slack/SIEM)
+
+See the [CHANGELOG](CHANGELOG.md).
+
+## Open source vs commercial
+
+The engine is genuinely useful standalone and stays that way. The commercial
+tier adds what's valuable at scale and can't be copied off a laptop —
+AI-augmented classification, believable decoy *content*, managed cross-customer
+threat intelligence, and hosted operations. The OSS engine never has a basic
+withheld; it just doesn't ship the premium layers. (Boundary and rationale:
+[docs/](docs/).)
+
+## Safety & responsible use
+
+Heramba is **defensive**. Observe mode is the default and never alters or blocks
+legitimate traffic. Protect mode's inline actions are bounded and documented. No
+LLM sits on the detection path, so nothing an attacker sends can prompt-inject
+the decision. Report vulnerabilities via [SECURITY.md](SECURITY.md).
+
+## Contributing & license
+
+Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) (CLA required).
+Licensed under **FSL-1.1-ALv2** (converts to Apache-2.0 two years after each
+release); see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+<div align="center"><sub>Heramba is part of the Armur security suite.</sub></div>
