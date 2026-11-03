@@ -13,7 +13,9 @@ import (
 
 	"github.com/Armur-Ai/heramba/internal/alert"
 	"github.com/Armur-Ai/heramba/internal/config"
+	"github.com/Armur-Ai/heramba/internal/deception"
 	"github.com/Armur-Ai/heramba/internal/edge"
+	"github.com/Armur-Ai/heramba/internal/event"
 	"github.com/Armur-Ai/heramba/internal/evidence"
 	"github.com/Armur-Ai/heramba/internal/intel"
 )
@@ -25,6 +27,8 @@ func runServe(args []string) {
 	mode := fs.String("mode", "", "override mode: observe|protect")
 	listen := fs.String("listen", "", "override listen address, e.g. :8080")
 	upstream := fs.String("upstream", "", "override upstream, e.g. http://127.0.0.1:3000")
+	deceptionOn := fs.Bool("deception", false, "when there is no upstream, auto-mount the synthetic deception app for non-decoy paths")
+	deceptionSeed := fs.Int64("deception-seed", 1, "seed for the deterministic synthetic world")
 	_ = fs.Parse(args)
 
 	cfg := config.Default()
@@ -52,13 +56,41 @@ func runServe(args []string) {
 	// intelligence plane (evidence store + campaign reconstruction), and the
 	// strategy engine running inline in SHADOW mode (proposes bounded actions,
 	// never enforces).
-	ingestor := intel.NewIngestor(evidence.NewStore(), "edge")
+	store := evidence.NewStore()
+	ingestor := intel.NewIngestor(store, "edge")
 	advisor := newShadowAdvisor()
 	counting := alert.Count(alert.MultiSink{buildSink(cfg), ingestor, advisor})
 	engine, err := edge.New(cfg, counting)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "heramba: %v\n", err)
 		os.Exit(1)
+	}
+
+	// Opt-in: auto-mount the synthetic deception app for non-decoy paths when
+	// running honeypot-only (no upstream). Its interactions feed the same
+	// evidence store, so the intelligence rollup sees deception-app touches too.
+	if *deceptionOn {
+		if cfg.Upstream != "" {
+			fmt.Fprintln(os.Stderr, "heramba: --deception ignored because an upstream is configured (it only mounts honeypot-only)")
+		} else {
+			world := deception.GenerateWorld(*deceptionSeed, 8, 6, 20)
+			app := deception.NewApp(world)
+			app.OnInteraction = func(in deception.Interaction) {
+				if in.CanaryHit != "" {
+					_ = ingestWith(store, event.Deception(event.KindCanaryTriggered, in.SourceKey, in.CanaryHit, "synthetic token used in deception app"))
+					return
+				}
+				sev := event.SeverityLow
+				if in.Note == "authz_violation" {
+					sev = event.SeverityMedium
+				}
+				_ = ingestWith(store, event.New(event.KindProbe, sev, in.SourceKey, in.Path, "deception-app "+in.Method+" "+in.Path).
+					WithLabel("note", in.Note).WithLabel("sensor", "deception"))
+			}
+			engine.SetHoneypot(app)
+			fmt.Printf("  DECEPTION: synthetic app mounted (seed=%d, %d users, %d projects) for non-decoy paths.\n",
+				*deceptionSeed, len(world.Users), len(world.Projects))
+		}
 	}
 
 	srv := &http.Server{
