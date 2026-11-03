@@ -48,10 +48,13 @@ func runServe(args []string) {
 		os.Exit(1)
 	}
 
-	// Fan the live detection stream into both the operator's alert output and
-	// the intelligence plane (evidence store + campaign reconstruction).
+	// Fan the live detection stream into the operator's alert output, the
+	// intelligence plane (evidence store + campaign reconstruction), and the
+	// strategy engine running inline in SHADOW mode (proposes bounded actions,
+	// never enforces).
 	ingestor := intel.NewIngestor(evidence.NewStore(), "edge")
-	counting := alert.Count(alert.MultiSink{buildSink(cfg), ingestor})
+	advisor := newShadowAdvisor()
+	counting := alert.Count(alert.MultiSink{buildSink(cfg), ingestor, advisor})
 	engine, err := edge.New(cfg, counting)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "heramba: %v\n", err)
@@ -105,6 +108,25 @@ func runServe(args []string) {
 		for class, n := range s.SwarmClasses {
 			fmt.Printf("  %-22s %d actor(s)\n", class, n)
 		}
+	}
+
+	// Strategy rollup: what the engine WOULD propose (shadow mode — nothing was
+	// enforced). Each line is a policy-validated, bounded, reversible action an
+	// operator could approve; this is the opt-in bridge from detection to action.
+	if proposals := advisor.Propose(); len(proposals) > 0 {
+		enforcing := 0
+		for _, ex := range proposals {
+			if ex.Decision.Verdict != "deny" {
+				enforcing++
+			}
+		}
+		fmt.Printf("heramba strategy (shadow — not enforced): %d proposed action(s), %d would clear policy\n", len(proposals), enforcing)
+		for _, ex := range proposals {
+			kind, id := ex.Action.Scope.Subject()
+			fmt.Printf("  %-18s %s=%s  impact=%-6s verdict=%s\n",
+				ex.Action.Type, kind, id, ex.Action.Impact, ex.Decision.Verdict)
+		}
+		fmt.Println("  (shadow mode: validate + audit only. Enable the engine in enforce mode to act, with approval gates.)")
 	}
 }
 
