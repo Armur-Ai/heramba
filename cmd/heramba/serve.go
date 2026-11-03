@@ -46,8 +46,8 @@ func runServe(args []string) {
 		os.Exit(1)
 	}
 
-	sink := buildSink(cfg)
-	engine, err := edge.New(cfg, sink)
+	counting := alert.Count(buildSink(cfg))
+	engine, err := edge.New(cfg, counting)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "heramba: %v\n", err)
 		os.Exit(1)
@@ -83,6 +83,15 @@ func runServe(args []string) {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
+
+	if counting.Total() == 0 {
+		fmt.Println("heramba: no detections this session.")
+		return
+	}
+	fmt.Printf("heramba: %d detection(s) this session:\n", counting.Total())
+	for _, t := range counting.Snapshot() {
+		fmt.Printf("  %-18s %d\n", t.Kind, t.Count)
+	}
 }
 
 // buildSink wires the configured alert output.
