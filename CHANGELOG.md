@@ -21,6 +21,8 @@ follow [Semantic Versioning](https://semver.org/) once it tags a release.
   timing jitter.
 - **Egress firewall** (`internal/egress`): deny-by-default outbound allowlist
   (protect mode) that cuts SSRF/OOB callbacks and exfil.
+- **Per-source rate limiting** (`internal/ratelimit`): token-bucket throttle in
+  protect mode (429 + `rate_limited` event); never engaged in observe mode.
 - **Alerting** (`internal/alert`): text + JSONL sinks, fan-out.
 - **CLI** (`cmd/heramba`): `serve`, `decoys` (list / canary), `config`
   (init / show), `doctor`, `version`.

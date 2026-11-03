@@ -34,6 +34,11 @@ type Config struct {
 	Decoys         DecoyConfig      `yaml:"decoys"`
 	Egress         EgressConfig     `yaml:"egress"`
 	Classifier     ClassifierConfig `yaml:"classifier"`
+	// RateLimitRPS throttles each source to this many requests/second in PROTECT
+	// mode (0 = disabled; never engaged in observe mode). RateLimitBurst is the
+	// allowed burst (defaults to max(RateLimitRPS, 1)).
+	RateLimitRPS   float64 `yaml:"rate_limit_rps"`
+	RateLimitBurst float64 `yaml:"rate_limit_burst"`
 }
 
 // ClassifierConfig overrides the agentic-traffic classifier thresholds. Zero

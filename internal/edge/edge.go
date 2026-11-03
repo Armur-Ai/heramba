@@ -31,6 +31,7 @@ import (
 	"github.com/Armur-Ai/heramba/internal/config"
 	"github.com/Armur-Ai/heramba/internal/decoy"
 	"github.com/Armur-Ai/heramba/internal/event"
+	"github.com/Armur-Ai/heramba/internal/ratelimit"
 	"github.com/Armur-Ai/heramba/internal/signal"
 )
 
@@ -44,6 +45,7 @@ type Engine struct {
 	sink    alert.Sink
 	proxy   *httputil.ReverseProxy // nil in honeypot-only (no upstream)
 	trusted []*net.IPNet           // proxy CIDRs whose XFF we trust
+	limiter *ratelimit.Limiter     // per-source rate limit (protect mode only)
 }
 
 // New assembles an edge Engine from config. In PROTECT mode it enables response
@@ -71,6 +73,9 @@ func New(cfg config.Config, sink alert.Sink) (*Engine, error) {
 	if cfg.Mode == config.ModeProtect {
 		e.norm = signal.DefaultNormalizer()
 		e.jit = signal.NewJitter(250*time.Millisecond, 1*time.Second)
+		if cfg.RateLimitRPS > 0 {
+			e.limiter = ratelimit.New(cfg.RateLimitRPS, cfg.RateLimitBurst)
+		}
 	}
 	if cfg.Upstream != "" {
 		u, err := url.Parse(cfg.Upstream)
@@ -128,6 +133,18 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 3. Real application traffic.
+	// Rate limit abusive sources (protect mode only).
+	if e.limiter != nil && !e.limiter.Allow(ip) {
+		e.sink.Emit(event.New(event.KindRateLimited, event.SeverityMedium, ip, r.URL.Path,
+			"source exceeded request-rate budget"))
+		if e.norm != nil {
+			e.norm.Apply(w.Header())
+		}
+		w.Header().Set("Retry-After", "1")
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte("429 too many requests\n"))
+		return
+	}
 	if e.cfg.Mode == config.ModeProtect && v.Label == "agentic-suspected" && e.jit != nil {
 		e.jit.Sleep(r.Context()) // tarpit flagged sources
 	}

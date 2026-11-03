@@ -46,6 +46,7 @@ const (
 	KindCanaryTriggered Kind = "canary_triggered" // a planted canary token was used
 	KindAgenticTraffic  Kind = "agentic_traffic"  // behavioral classifier crossed threshold
 	KindEgressBlocked   Kind = "egress_blocked"   // an out-of-policy callback was denied
+	KindRateLimited     Kind = "rate_limited"     // a source exceeded its request-rate budget
 	KindProbe           Kind = "probe"            // suspicious probing of real surface
 )
 
