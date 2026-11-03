@@ -51,7 +51,13 @@ func New(cfg config.Config, sink alert.Sink) (*Engine, error) {
 	if sink == nil {
 		sink = alert.Discard
 	}
-	e := &Engine{cfg: cfg, reg: decoy.NewRegistry(cfg.Decoys.Paths...), cls: classify.New(), sink: sink}
+	cls := classify.NewWithOptions(classify.Options{
+		CadenceRPS:   cfg.Classifier.CadenceRPS,
+		EnumDistinct: cfg.Classifier.EnumDistinct,
+		ToolAt:       cfg.Classifier.ToolAt,
+		AgenticAt:    cfg.Classifier.AgenticAt,
+	})
+	e := &Engine{cfg: cfg, reg: decoy.NewRegistry(cfg.Decoys.Paths...), cls: cls, sink: sink}
 	for _, tok := range cfg.Decoys.Canaries {
 		e.reg.Canaries().Watch(tok, "configured canary")
 	}

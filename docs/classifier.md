@@ -31,11 +31,23 @@ A browser with normal headers scores ~0 → `human`. A `curl` one-shot scores 0.
 four signals → `agentic-suspected`, which emits an `agentic_traffic` event (and,
 in protect mode, tarpits the source).
 
+## Configuring thresholds
+
+All thresholds are configurable in `.heramba.yml` (zero values keep the
+conservative defaults):
+
+```yaml
+classifier:
+  cadence_rps: 5.0      # high_cadence fires above this req/s
+  enum_distinct: 12     # enumeration fires at/above this many distinct paths
+  tool_at: 0.4          # score >= this => "tool"
+  agentic_at: 0.7       # score >= this => "agentic-suspected"
+```
+
 ## Tuning & honesty
 
 Thresholds are deliberately conservative defaults. This is a **behavioral
 heuristic**, not identity: a flagged source is *suspected* automation, stated as
 such. The value is that the signals are transparent — you can see precisely why
-a source was flagged and decide what to do with it. Making thresholds
-configurable and adding more signals (TLS/JA3 fingerprint, header-order
+a source was flagged and decide what to do with it. Adding more signals (TLS/JA3 fingerprint, header-order
 fingerprint, request-timing variance) is on the roadmap.

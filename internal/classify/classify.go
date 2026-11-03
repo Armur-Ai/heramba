@@ -40,14 +40,39 @@ type Verdict struct {
 	Signals []Signal `json:"signals"`
 }
 
-// Tunables (deterministic thresholds).
-const (
-	cadenceWindow    = 10 * time.Second
-	cadenceReqPerSec = 5.0 // sustained >5 rps from one source is non-human
-	enumDistinctN    = 12  // distinct paths within the window => enumeration
-	labelToolAt      = 0.4
-	labelAgenticAt   = 0.7
-)
+// cadenceWindow is the sliding window over which request rate is measured.
+const cadenceWindow = 10 * time.Second
+
+// Options are the deterministic thresholds. Zero fields fall back to defaults.
+type Options struct {
+	CadenceRPS   float64 // sustained rate above this (req/s) fires high_cadence
+	EnumDistinct int     // distinct paths in-window at/above this fires enumeration
+	ToolAt       float64 // score >= this => "tool"
+	AgenticAt    float64 // score >= this => "agentic-suspected"
+}
+
+// DefaultOptions are the conservative built-in thresholds.
+func DefaultOptions() Options {
+	return Options{CadenceRPS: 5.0, EnumDistinct: 12, ToolAt: 0.4, AgenticAt: 0.7}
+}
+
+// withDefaults fills any zero field from DefaultOptions.
+func (o Options) withDefaults() Options {
+	d := DefaultOptions()
+	if o.CadenceRPS == 0 {
+		o.CadenceRPS = d.CadenceRPS
+	}
+	if o.EnumDistinct == 0 {
+		o.EnumDistinct = d.EnumDistinct
+	}
+	if o.ToolAt == 0 {
+		o.ToolAt = d.ToolAt
+	}
+	if o.AgenticAt == 0 {
+		o.AgenticAt = d.AgenticAt
+	}
+	return o
+}
 
 // knownToolAgents are substrings of non-browser client UAs.
 var knownToolAgents = []string{
@@ -61,6 +86,7 @@ var knownToolAgents = []string{
 type Classifier struct {
 	mu        sync.Mutex
 	perSource map[string]*sourceState
+	opts      Options
 }
 
 type sourceState struct {
@@ -68,8 +94,14 @@ type sourceState struct {
 	paths map[string]struct{}
 }
 
-// New returns a ready classifier.
-func New() *Classifier { return &Classifier{perSource: map[string]*sourceState{}} }
+// New returns a ready classifier with default thresholds.
+func New() *Classifier { return NewWithOptions(DefaultOptions()) }
+
+// NewWithOptions returns a classifier with custom thresholds (zero fields use
+// defaults).
+func NewWithOptions(opts Options) *Classifier {
+	return &Classifier{perSource: map[string]*sourceState{}, opts: opts.withDefaults()}
+}
 
 // Classify scores an observation and updates per-source state.
 func (c *Classifier) Classify(o Observation) Verdict {
@@ -82,8 +114,8 @@ func (c *Classifier) Classify(o Observation) Verdict {
 	signals := []Signal{
 		toolUASignal(ua),
 		missingBrowserSignal(ua, o.Headers),
-		cadenceSignal(cadence),
-		enumerationSignal(distinct),
+		cadenceSignal(cadence, c.opts.CadenceRPS),
+		enumerationSignal(distinct, c.opts.EnumDistinct),
 	}
 
 	var score float64
@@ -95,7 +127,7 @@ func (c *Classifier) Classify(o Observation) Verdict {
 	if score > 1 {
 		score = 1
 	}
-	return Verdict{Score: round2(score), Label: labelFor(score), Signals: signals}
+	return Verdict{Score: round2(score), Label: c.labelFor(score), Signals: signals}
 }
 
 func (c *Classifier) track(o Observation) (cadenceRPS float64, distinctPaths int) {
@@ -145,27 +177,27 @@ func missingBrowserSignal(ua string, h map[string]string) Signal {
 	return s
 }
 
-func cadenceSignal(rps float64) Signal {
+func cadenceSignal(rps, threshold float64) Signal {
 	s := Signal{Name: "high_cadence", Weight: 0.25}
-	if rps > cadenceReqPerSec {
+	if rps > threshold {
 		s.Fired, s.Detail = true, "sustained request rate above human threshold"
 	}
 	return s
 }
 
-func enumerationSignal(distinct int) Signal {
+func enumerationSignal(distinct, threshold int) Signal {
 	s := Signal{Name: "enumeration", Weight: 0.2}
-	if distinct >= enumDistinctN {
+	if distinct >= threshold {
 		s.Fired, s.Detail = true, "many distinct paths in a short window"
 	}
 	return s
 }
 
-func labelFor(score float64) string {
+func (c *Classifier) labelFor(score float64) string {
 	switch {
-	case score >= labelAgenticAt:
+	case score >= c.opts.AgenticAt:
 		return "agentic-suspected"
-	case score >= labelToolAt:
+	case score >= c.opts.ToolAt:
 		return "tool"
 	default:
 		return "human"

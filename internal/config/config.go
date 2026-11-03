@@ -29,10 +29,20 @@ type Config struct {
 	// TrustedProxies are CIDRs whose X-Forwarded-For header the edge will trust
 	// for the real client IP. Empty (default) = never trust XFF, use the direct
 	// peer address. Set this only to the CIDRs of your own load balancer.
-	TrustedProxies []string     `yaml:"trusted_proxies"`
-	Alert          AlertConfig  `yaml:"alert"`
-	Decoys         DecoyConfig  `yaml:"decoys"`
-	Egress         EgressConfig `yaml:"egress"`
+	TrustedProxies []string         `yaml:"trusted_proxies"`
+	Alert          AlertConfig      `yaml:"alert"`
+	Decoys         DecoyConfig      `yaml:"decoys"`
+	Egress         EgressConfig     `yaml:"egress"`
+	Classifier     ClassifierConfig `yaml:"classifier"`
+}
+
+// ClassifierConfig overrides the agentic-traffic classifier thresholds. Zero
+// values keep the conservative built-in defaults.
+type ClassifierConfig struct {
+	CadenceRPS   float64 `yaml:"cadence_rps"`   // high_cadence fires above this req/s
+	EnumDistinct int     `yaml:"enum_distinct"` // enumeration fires at/above this many distinct paths
+	ToolAt       float64 `yaml:"tool_at"`       // score >= this => "tool"
+	AgenticAt    float64 `yaml:"agentic_at"`    // score >= this => "agentic-suspected"
 }
 
 // AlertConfig controls where detections go.
