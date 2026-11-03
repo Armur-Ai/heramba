@@ -1,0 +1,45 @@
+# Heramba — Execution Status
+
+Authoritative journal for the capability build-out. **Repository state and
+executed tests supersede this journal.** A checkpoint is only `VERIFIED` once
+its acceptance tests pass in-tree.
+
+Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `VERIFIED`.
+
+| CP | Title | Status | Commit | Notes |
+|---|---|---|---|---|
+| 0 | Baseline | VERIFIED | _pending_ | build/vet/test green; state + plan documented |
+| 1 | Evidence infrastructure | NOT_STARTED | — | `internal/evidence` |
+| 2 | Campaign intelligence | NOT_STARTED | — | `internal/campaign` |
+| 3 | Stateful deception | NOT_STARTED | — | `internal/deception` |
+| 4 | Attack graph + business logic | NOT_STARTED | — | `internal/assetgraph`, `internal/bizlogic` |
+| 5 | Strategy + containment | NOT_STARTED | — | `internal/strategy` |
+| 6 | Swarm correlation + active learning | NOT_STARTED | — | `campaign/swarm`, `campaign/experiment` |
+| 7 | Multi-sensor intelligence | NOT_STARTED | — | `evidence/sensor` |
+| 8 | Optimization + replay | NOT_STARTED | — | `internal/replay` |
+| 9 | Conference labs | NOT_STARTED | — | `labs/` |
+| 10 | Hardening + final validation | NOT_STARTED | — | — |
+
+---
+
+## CP0 — Baseline — VERIFIED (2026-11-03)
+
+**Features (actual):** audited the full repo; recorded shipped packages and the
+twelve-capability gap in `../architecture/current-state.md`; wrote the
+dependency-ordered `../architecture/implementation-plan.md`.
+
+**Commands / results:**
+- `go build ./...` → clean
+- `go vet ./...` → clean
+- `go test ./...` → all packages pass
+- 39 Go files, ~3071 LOC
+
+**Limitations:** baseline is a data plane only; no intelligence/adaptive/research
+planes yet (that is the whole point of CP1–CP10).
+
+**Trust boundaries confirmed:** no LLM on enforcement path; observe mode never
+alters legitimate traffic; counter-agent lures are bait not payloads. These are
+re-asserted as gates in every later checkpoint.
+
+**Next action:** CP1 — `internal/evidence` normalized event + Observation/Fact/
+Hypothesis model with provenance, validation, and a persistence roundtrip.
