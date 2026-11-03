@@ -145,7 +145,7 @@ shutdown summary. Details: [metrics & alerting](docs/metrics.md).
 
 ## What's shipped vs planned
 
-**Shipped (real, tested in this repo):**
+**Data plane — shipped (real, tested, live in `serve`):**
 - ✅ Reverse-proxy edge runtime with observe/protect modes
 - ✅ Decoy endpoints + registry, zero-FP `decoy_hit` detection
 - ✅ Cryptographic canary tokens + edge detection (path/query/headers/body)
@@ -153,11 +153,30 @@ shutdown summary. Details: [metrics & alerting](docs/metrics.md).
 - ✅ Deterministic, **configurable** agentic-traffic classifier (explainable signals)
 - ✅ Signal denial: response-header normalization + timing jitter
 - ✅ Deny-by-default egress/callback firewall + per-source rate limiting (protect mode)
-- ✅ Alert sinks (text / JSONL) + detection counting/summary; CLI (`serve`/`decoys`/`config`/`doctor`)
+- ✅ Alert sinks (text / JSONL) + detection counting/summary; CLI (`serve`/`decoys`/`config`/`doctor`/`experiment`)
 
-**Planned (not yet built — tracked honestly):**
+**Intelligence plane — shipped, tested; evidence→campaign→swarm live-wired into `serve`:**
+- ✅ Normalized evidence model (`Observation`/`Fact`/`Hypothesis`) with provenance, validation, append-only persistence
+- ✅ Temporal **campaign reconstruction**: sessions (observed) vs actors/campaigns (inferred), never equating an IP with an identity; merge/split correction; explainable timelines
+- ✅ **Swarm-coordination detection** (sequential / independent / coordinated / legit-automation) — synchrony + shared/divided targeting + enumeration, *not* UA or rate alone
+- ✅ Business-logic detection (BOLA/IDOR + workflow-sequence abuse) via OpenAPI ingest
+- ✅ Multi-sensor correlation (app / auth / network) with dedup, health, backpressure
+- ✅ Bounded **active learning** (competing hypotheses, info-gain, budget)
+
+**Adaptive-defense & research planes — shipped as tested libraries + labs + `heramba experiment`:**
+- ✅ Deterministic policy + bounded **adaptive containment** (shadow default, approval/expiry/rollback, emergency disable, injection-proof)
+- ✅ Stateful **deception app** (seeded coherent synthetic world, production-isolated)
+- ✅ Defender-controlled real/synthetic **attack graphs** (real graph fails closed on export)
+- ✅ Reproducible **four-baseline evaluation** harness with measured metrics + uncertainty
+- ✅ Six locally-gradable **conference labs** (`labs/`)
+
+See the full [capability matrix](docs/engineering/EXECUTION_STATUS.md) and
+[implementation plan](docs/architecture/implementation-plan.md).
+
+**Planned / next integration steps (tracked honestly):**
+- ◻ Auto-mount the deception app and run the strategy engine inline from `serve`
 - ◻ More classifier signals (JA3/TLS, header-order fingerprint)
-- ◻ Content-level deception (believable fake responses)
+- ◻ Content-level deception (believable fake responses); online deception-policy optimization
 - ◻ More alert sinks (webhook/Slack/SIEM)
 
 See the [CHANGELOG](CHANGELOG.md). Deep dives:

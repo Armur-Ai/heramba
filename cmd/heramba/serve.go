@@ -14,6 +14,8 @@ import (
 	"github.com/Armur-Ai/heramba/internal/alert"
 	"github.com/Armur-Ai/heramba/internal/config"
 	"github.com/Armur-Ai/heramba/internal/edge"
+	"github.com/Armur-Ai/heramba/internal/evidence"
+	"github.com/Armur-Ai/heramba/internal/intel"
 )
 
 // runServe loads config, builds the edge engine, and serves until interrupted.
@@ -46,7 +48,10 @@ func runServe(args []string) {
 		os.Exit(1)
 	}
 
-	counting := alert.Count(buildSink(cfg))
+	// Fan the live detection stream into both the operator's alert output and
+	// the intelligence plane (evidence store + campaign reconstruction).
+	ingestor := intel.NewIngestor(evidence.NewStore(), "edge")
+	counting := alert.Count(alert.MultiSink{buildSink(cfg), ingestor})
 	engine, err := edge.New(cfg, counting)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "heramba: %v\n", err)
@@ -91,6 +96,15 @@ func runServe(args []string) {
 	fmt.Printf("heramba: %d detection(s) this session:\n", counting.Total())
 	for _, t := range counting.Snapshot() {
 		fmt.Printf("  %-18s %d\n", t.Kind, t.Count)
+	}
+
+	// Intelligence rollup: what the correlator made of the session.
+	if s := ingestor.Summarize(); s.Events > 0 {
+		fmt.Printf("heramba intelligence: %d event(s) → %d session(s), %d actor(s), %d campaign(s)\n",
+			s.Events, s.Sessions, s.Actors, s.Campaigns)
+		for class, n := range s.SwarmClasses {
+			fmt.Printf("  %-22s %d actor(s)\n", class, n)
+		}
 	}
 }
 
