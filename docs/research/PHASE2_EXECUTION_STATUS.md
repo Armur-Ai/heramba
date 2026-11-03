@@ -14,8 +14,8 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `PARTIAL` · `VERI
 | R | Title | Status | Commit | Evidence |
 |---|---|---|---|---|
 | R0 | Safe handoff & gap analysis | VERIFIED | `38f533d` | baseline below |
-| R1 | Research protocol & threat model | VERIFIED | this commit | `go test ./internal/research/...`; `heramba research manifest` |
-| R2 | Fair coordination detection experiment | NOT_STARTED | — | — |
+| R1 | Research protocol & threat model | VERIFIED | `be6db33` | `go test ./internal/research/...`; `heramba research manifest` |
+| R2 | Fair coordination detection experiment | VERIFIED | this commit | `go test ./internal/research/{coord,stats}/...`; `heramba research coord` |
 | R3 | Deception & attack-objective experiment | NOT_STARTED | — | — |
 | R4 | Adaptation race & co-evolution lab | NOT_STARTED | — | — |
 | R5 | Defender prompt-injection & data-plane safety | NOT_STARTED | — | — |
@@ -139,3 +139,42 @@ LLM; synthetic traffic is more separable than production (declared in
 
 **Next action:** R2 — the fair coordination-detection experiment on these
 families (4 methods + ablations, CIs, one command).
+
+---
+
+## R2 — Fair coordination-detection experiment — VERIFIED (2026-11-03)
+
+**Files:** `internal/research/stats/{stats,stats_test}.go`,
+`internal/research/coord/{workload,methods,run,report,coord_test}.go`,
+`cmd/heramba/research_coord.go`, `docs/research/coordination-experiment.md`,
+`docs/research/artifacts/coord/` (reference bundle).
+
+**What shipped:** matched-workload generator (every cohort = 200 requests / 5m
+window, so aggregate rate is not discriminative); four methods
+(request-only / static-correlation / graph-correlation / full-Heramba) and four
+ablations over identical cohorts; a stats package (Wilson intervals, bootstrap,
+PR-AUC, confusion) with its own tests. Evaluation on **held-out** test families
+(seeds 9000+, incl. the deception-aware swarm) plus rate-matched benign-control
+negatives. `heramba research coord` is the single command; `--artifacts` writes
+the manifest + raw + summary bundle.
+
+**Results (revision `be6db33`, 52 cohorts, 20 coordinated):**
+full-Heramba PR-AUC **0.935**, recall **1.00 [0.84,1.00]**, FPR **0.09 [0.03,0.24]**
+— strictly beats request-only (0.192), static (0.192), graph (0.692). **H1 null
+rejected.** Ablations: dropping cross-source → recall 0.00; dropping synchrony →
+FPR 1.00; dropping decoy → PR-AUC unchanged (coordination caught without lures;
+deception-aware swarm 10/10 TP).
+
+**Commands / results:**
+- `go test ./internal/research/{coord,stats}/...` → ok (incl. agreement-with-shipped-detector, determinism, H1, ablation tests)
+- `go test ./...` → ALL PASS; `go test -race ./internal/research/...` → ok, no races
+- metrics byte-identical across reruns (throughput excluded, it is a timing measurement)
+
+**Limitations (reported, not hidden):** FPR 9.4% exceeds the 1% aspirational
+target — benign clients that hit the same endpoints in a tight window look
+synchronized+shared to the shipped detector's coordinated branch. Faithful to
+CP6; enumeration-gating is the tracked mitigation. Synthetic traffic is more
+separable than production.
+
+**Next action:** R3 — deception & attack-objective experiment (5 arms,
+consistency validator, deception-aware adversary, real/synthetic isolation tests).

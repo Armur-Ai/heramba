@@ -19,6 +19,8 @@ func runResearch(args []string) {
 	switch args[0] {
 	case "manifest":
 		runResearchManifest(args[1:])
+	case "coord":
+		runResearchCoord(args[1:])
 	default:
 		fmt.Fprintf(os.Stderr, "heramba research: unknown subcommand %q\n\n", args[0])
 		researchUsage(os.Stderr)
@@ -34,6 +36,7 @@ usage:
 
 subcommands:
   manifest   print the pre-registered protocol + hypotheses (JSON), validated
+  coord      run the fair coordination-detection experiment (4 methods + ablations)
 `)
 }
 

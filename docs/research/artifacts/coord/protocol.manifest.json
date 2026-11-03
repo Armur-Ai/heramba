@@ -1,0 +1,464 @@
+{
+  "schema_version": 1,
+  "title": "Heramba Phase 2: coordinated autonomous attack detection \u0026 mitigation",
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "Coordinated autonomous activity is distinguishable from independent scanning and legitimate automation using behavioral coordination features, without relying on IP or user-agent.",
+      "null": "Coordination features provide no recall/FPR improvement over a request-rate-only heuristic at matched request budgets.",
+      "prediction": "Full Heramba achieves higher recall at equal-or-lower FPR than request-only and static-correlation baselines on held-out coordinated families.",
+      "primary_endpoint": "recall",
+      "secondary_endpoints": [
+        "false_positive_rate",
+        "precision",
+        "pr_auc",
+        "detection_latency_sec"
+      ],
+      "preregistered": true
+    },
+    {
+      "id": "H2",
+      "statement": "Adaptive deception reduces attacker objective completion relative to no defense, conventional rate limiting, and static decoys.",
+      "null": "Adaptive deception yields no reduction in objective completion versus the predeclared baseline.",
+      "prediction": "Adaptive deception lowers objective-completion rate and raises time-to-objective versus all weaker arms.",
+      "primary_endpoint": "objective_completion_rate",
+      "secondary_endpoints": [
+        "time_to_objective_sec",
+        "diverted_action_fraction",
+        "deception_discovery_rate"
+      ],
+      "preregistered": true
+    },
+    {
+      "id": "H3",
+      "statement": "The defender can adapt to a bounded attacker strategy shift quickly enough to retain positive defender utility.",
+      "null": "Defender adaptation latency is unbounded or net defender utility is non-positive after a strategy shift.",
+      "prediction": "Adaptation latency stays within the policy-safe response target and net utility remains positive after shifts.",
+      "primary_endpoint": "adaptation_latency_sec",
+      "secondary_endpoints": [
+        "defender_utility",
+        "objective_completion_rate"
+      ],
+      "preregistered": true
+    },
+    {
+      "id": "H4",
+      "statement": "Detection degrades gracefully, not catastrophically, when a sensor is missing.",
+      "null": "Removing any single sensor collapses recall to the request-only baseline.",
+      "prediction": "Recall under a missing sensor stays above the request-only baseline, with a measured, bounded drop.",
+      "primary_endpoint": "recall",
+      "secondary_endpoints": [
+        "false_positive_rate"
+      ],
+      "preregistered": true
+    },
+    {
+      "id": "H5",
+      "statement": "Safety holds and overhead stays bounded: attacker-controlled text never changes policy, and added latency/disruption stay within target.",
+      "null": "Attacker-controlled input can alter a policy decision, or added latency/disruption exceed target.",
+      "prediction": "Zero policy changes from attacker-controlled fields; benign disruption and added latency within target.",
+      "primary_endpoint": "benign_disruption",
+      "secondary_endpoints": [
+        "throughput_rps"
+      ],
+      "preregistered": true
+    }
+  ],
+  "actor_models": [
+    {
+      "id": "scripted_scanner",
+      "kind": "scripted",
+      "capabilities": [
+        "sequential_enumeration",
+        "fixed_wordlist"
+      ],
+      "request_budget": 200,
+      "time_budget_sec": 600,
+      "objective": "find_admin_surface",
+      "target_visibility": "none",
+      "defender_can_see": [
+        "requests",
+        "decoy_hits",
+        "timing"
+      ],
+      "defender_controls": [
+        "rate_limit",
+        "decoy",
+        "restrict_session"
+      ],
+      "adaptive": false
+    },
+    {
+      "id": "independent_scanners",
+      "kind": "independent",
+      "capabilities": [
+        "parallel_sources",
+        "no_shared_memory"
+      ],
+      "request_budget": 200,
+      "time_budget_sec": 600,
+      "objective": "find_admin_surface",
+      "target_visibility": "none",
+      "defender_can_see": [
+        "requests",
+        "decoy_hits",
+        "timing"
+      ],
+      "defender_controls": [
+        "rate_limit",
+        "decoy"
+      ],
+      "adaptive": false
+    },
+    {
+      "id": "coordinated_swarm",
+      "kind": "coordinated",
+      "capabilities": [
+        "shared_observations",
+        "divided_targeting",
+        "synchronized_timing"
+      ],
+      "request_budget": 200,
+      "time_budget_sec": 600,
+      "objective": "find_and_exfiltrate",
+      "target_visibility": "partial",
+      "defender_can_see": [
+        "requests",
+        "decoy_hits",
+        "timing",
+        "target_overlap"
+      ],
+      "defender_controls": [
+        "rate_limit",
+        "decoy",
+        "restrict_session",
+        "escalate"
+      ],
+      "adaptive": false
+    },
+    {
+      "id": "legit_automation",
+      "kind": "legit_automation",
+      "capabilities": [
+        "high_volume",
+        "narrow_known_endpoints"
+      ],
+      "request_budget": 400,
+      "time_budget_sec": 600,
+      "objective": "",
+      "target_visibility": "full",
+      "defender_can_see": [
+        "requests",
+        "timing"
+      ],
+      "defender_controls": [
+        "rate_limit"
+      ],
+      "adaptive": false
+    },
+    {
+      "id": "human_tester",
+      "kind": "human",
+      "capabilities": [
+        "low_volume",
+        "exploratory",
+        "irregular_timing"
+      ],
+      "request_budget": 60,
+      "time_budget_sec": 600,
+      "objective": "manual_probe",
+      "target_visibility": "partial",
+      "defender_can_see": [
+        "requests",
+        "timing"
+      ],
+      "defender_controls": [
+        "rate_limit"
+      ],
+      "adaptive": false
+    },
+    {
+      "id": "deception_aware_swarm",
+      "kind": "deception_aware",
+      "capabilities": [
+        "shared_observations",
+        "consistency_checking",
+        "lure_rejection"
+      ],
+      "request_budget": 200,
+      "time_budget_sec": 600,
+      "objective": "find_and_exfiltrate",
+      "target_visibility": "partial",
+      "defender_can_see": [
+        "requests",
+        "decoy_hits",
+        "timing",
+        "target_overlap"
+      ],
+      "defender_controls": [
+        "rate_limit",
+        "decoy",
+        "restrict_session",
+        "escalate"
+      ],
+      "adaptive": true
+    }
+  ],
+  "scenario_families": [
+    {
+      "name": "coord-train",
+      "actor_model": "coordinated_swarm",
+      "partition": "train",
+      "seeds": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007
+      ],
+      "concurrency_level": 3,
+      "benign_mix": true,
+      "held_out": false
+    },
+    {
+      "name": "indep-train",
+      "actor_model": "independent_scanners",
+      "partition": "train",
+      "seeds": [
+        1100,
+        1101,
+        1102,
+        1103,
+        1104,
+        1105,
+        1106,
+        1107
+      ],
+      "concurrency_level": 3,
+      "benign_mix": true,
+      "held_out": false
+    },
+    {
+      "name": "legit-tune",
+      "actor_model": "legit_automation",
+      "partition": "tune",
+      "seeds": [
+        1200,
+        1201,
+        1202,
+        1203,
+        1204,
+        1205
+      ],
+      "concurrency_level": 2,
+      "benign_mix": true,
+      "held_out": false
+    },
+    {
+      "name": "coord-val",
+      "actor_model": "coordinated_swarm",
+      "partition": "validation",
+      "seeds": [
+        1300,
+        1301,
+        1302,
+        1303,
+        1304,
+        1305
+      ],
+      "concurrency_level": 4,
+      "benign_mix": true,
+      "held_out": false
+    },
+    {
+      "name": "coord-test",
+      "actor_model": "coordinated_swarm",
+      "partition": "test",
+      "seeds": [
+        9000,
+        9001,
+        9002,
+        9003,
+        9004,
+        9005,
+        9006,
+        9007,
+        9008,
+        9009
+      ],
+      "concurrency_level": 5,
+      "benign_mix": true,
+      "held_out": true
+    },
+    {
+      "name": "indep-test",
+      "actor_model": "independent_scanners",
+      "partition": "test",
+      "seeds": [
+        9100,
+        9101,
+        9102,
+        9103,
+        9104,
+        9105,
+        9106,
+        9107,
+        9108,
+        9109
+      ],
+      "concurrency_level": 5,
+      "benign_mix": true,
+      "held_out": true
+    },
+    {
+      "name": "legit-test",
+      "actor_model": "legit_automation",
+      "partition": "test",
+      "seeds": [
+        9200,
+        9201,
+        9202,
+        9203,
+        9204,
+        9205,
+        9206,
+        9207,
+        9208,
+        9209
+      ],
+      "concurrency_level": 4,
+      "benign_mix": true,
+      "held_out": true
+    },
+    {
+      "name": "deception-aware-test",
+      "actor_model": "deception_aware_swarm",
+      "partition": "test",
+      "seeds": [
+        9300,
+        9301,
+        9302,
+        9303,
+        9304,
+        9305,
+        9306,
+        9307,
+        9308,
+        9309
+      ],
+      "concurrency_level": 5,
+      "benign_mix": true,
+      "held_out": true
+    }
+  ],
+  "endpoints": [
+    {
+      "name": "recall",
+      "unit": "fraction",
+      "primary": true,
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "false_positive_rate",
+      "unit": "fraction",
+      "primary": true,
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "precision",
+      "unit": "fraction",
+      "primary": false,
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "pr_auc",
+      "unit": "fraction",
+      "primary": false,
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "detection_latency_sec",
+      "unit": "seconds",
+      "primary": false,
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "objective_completion_rate",
+      "unit": "fraction",
+      "primary": true,
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "time_to_objective_sec",
+      "unit": "seconds",
+      "primary": false,
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "diverted_action_fraction",
+      "unit": "fraction",
+      "primary": false,
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "adaptation_latency_sec",
+      "unit": "seconds",
+      "primary": true,
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "defender_utility",
+      "unit": "score",
+      "primary": false,
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "benign_disruption",
+      "unit": "fraction",
+      "primary": true,
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "throughput_rps",
+      "unit": "rps",
+      "primary": false,
+      "direction": "higher_is_better"
+    },
+    {
+      "name": "deception_discovery_rate",
+      "unit": "fraction",
+      "primary": false,
+      "direction": "lower_is_better"
+    }
+  ],
+  "statistical_methods": [
+    "Wilson score interval for proportions (recall/FPR/objective-completion)",
+    "nonparametric bootstrap (10000 resamples) for mean metrics and differences",
+    "per-scenario confusion matrices with stratified reporting",
+    "effect sizes reported alongside point estimates; no p-value-only claims"
+  ],
+  "stopping_rules": [
+    "seeds and sample sizes fixed before running; no peeking-then-extending",
+    "at 1% target FPR, evaluate \u003e= 300 benign sessions per arm for a usable Wilson interval",
+    "a run is valid only if it emits complete artifacts (config, seeds, revision, raw, summary)"
+  ],
+  "leakage_prevention": [
+    "test seeds disjoint from all tuning seeds (enforced by Protocol.Validate)",
+    "no feature derived from IP octets, user-agent string, or simulator-specific constants",
+    "held-out attacker families (deception_aware_swarm) never used for tuning",
+    "the scoring labels (IsAttacker/IsGoal) are never visible to any detector"
+  ],
+  "confounders": [
+    "request volume correlated with actor kind -\u003e matched request budgets",
+    "timing artifacts of the generator -\u003e jittered, seed-varied offsets",
+    "target-set size -\u003e equalized target visibility where feasible"
+  ],
+  "threats_to_validity": [
+    "synthetic traffic is more separable than production; numbers are not field claims",
+    "deception-aware adversary is a modeled heuristic, not a real LLM agent",
+    "deterministic harness cannot measure CPU/memory/recovery; those are marked not-measured"
+  ]
+}

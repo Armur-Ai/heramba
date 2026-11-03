@@ -1,0 +1,815 @@
+{
+  "schema_version": 1,
+  "code_revision": "be6db33",
+  "params": {
+    "MatchedRequests": 200,
+    "Window": 300000000000,
+    "SurfaceSize": 40,
+    "KnownEndpoints": 6,
+    "BenignControls": 12,
+    "SyncWindow": 90000000000
+  },
+  "families": [
+    "coord-test",
+    "deception-aware-test",
+    "indep-test",
+    "legit-test",
+    "benign-control"
+  ],
+  "seeds_by_family": {
+    "benign-control": [
+      7000,
+      7001,
+      7002,
+      7003,
+      7004,
+      7005,
+      7006,
+      7007,
+      7008,
+      7009,
+      7010,
+      7011
+    ],
+    "coord-test": [
+      9000,
+      9001,
+      9002,
+      9003,
+      9004,
+      9005,
+      9006,
+      9007,
+      9008,
+      9009
+    ],
+    "deception-aware-test": [
+      9300,
+      9301,
+      9302,
+      9303,
+      9304,
+      9305,
+      9306,
+      9307,
+      9308,
+      9309
+    ],
+    "indep-test": [
+      9100,
+      9101,
+      9102,
+      9103,
+      9104,
+      9105,
+      9106,
+      9107,
+      9108,
+      9109
+    ],
+    "legit-test": [
+      9200,
+      9201,
+      9202,
+      9203,
+      9204,
+      9205,
+      9206,
+      9207,
+      9208,
+      9209
+    ]
+  },
+  "cohorts": 52,
+  "positive_cohorts": 20,
+  "negative_cohorts": 32,
+  "methods": [
+    {
+      "method": "request_only",
+      "threshold": 0.5,
+      "confusion": {
+        "TP": 0,
+        "FP": 1,
+        "TN": 31,
+        "FN": 20
+      },
+      "recall": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0.16112515805281938,
+        "n": 20
+      },
+      "fpr": {
+        "point": 0.03125,
+        "lo": 0.005537860164003122,
+        "hi": 0.15744263820012558,
+        "n": 32
+      },
+      "precision": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0.7934506856227626,
+        "n": 1
+      },
+      "pr_auc": 0.19230769230769232
+    },
+    {
+      "method": "static_correlation",
+      "threshold": 0.5,
+      "confusion": {
+        "TP": 0,
+        "FP": 32,
+        "TN": 0,
+        "FN": 20
+      },
+      "recall": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0.16112515805281938,
+        "n": 20
+      },
+      "fpr": {
+        "point": 1,
+        "lo": 0.8928208017449293,
+        "hi": 1,
+        "n": 32
+      },
+      "precision": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0.1071791982550706,
+        "n": 32
+      },
+      "pr_auc": 0.19230769230769232
+    },
+    {
+      "method": "graph_correlation",
+      "threshold": 0.5,
+      "confusion": {
+        "TP": 20,
+        "FP": 32,
+        "TN": 0,
+        "FN": 0
+      },
+      "recall": {
+        "point": 1,
+        "lo": 0.8388748419471806,
+        "hi": 1,
+        "n": 20
+      },
+      "fpr": {
+        "point": 1,
+        "lo": 0.8928208017449293,
+        "hi": 1,
+        "n": 32
+      },
+      "precision": {
+        "point": 0.38461538461538464,
+        "lo": 0.26470463780216213,
+        "hi": 0.5204012628418061,
+        "n": 52
+      },
+      "pr_auc": 0.6923076923076923
+    },
+    {
+      "method": "full_heramba",
+      "threshold": 0.5,
+      "confusion": {
+        "TP": 20,
+        "FP": 3,
+        "TN": 29,
+        "FN": 0
+      },
+      "recall": {
+        "point": 1,
+        "lo": 0.8388748419471806,
+        "hi": 1,
+        "n": 20
+      },
+      "fpr": {
+        "point": 0.09375,
+        "lo": 0.032401551298366194,
+        "hi": 0.24218154728387864,
+        "n": 32
+      },
+      "precision": {
+        "point": 0.8695652173913043,
+        "lo": 0.6787251772990404,
+        "hi": 0.9546234090636876,
+        "n": 23
+      },
+      "pr_auc": 0.9347826086956521
+    }
+  ],
+  "ablations": [
+    {
+      "method": "ablate_no_campaign_memory",
+      "threshold": 0.5,
+      "confusion": {
+        "TP": 20,
+        "FP": 32,
+        "TN": 0,
+        "FN": 0
+      },
+      "recall": {
+        "point": 1,
+        "lo": 0.8388748419471806,
+        "hi": 1,
+        "n": 20
+      },
+      "fpr": {
+        "point": 1,
+        "lo": 0.8928208017449293,
+        "hi": 1,
+        "n": 32
+      },
+      "precision": {
+        "point": 0.38461538461538464,
+        "lo": 0.26470463780216213,
+        "hi": 0.5204012628418061,
+        "n": 52
+      },
+      "pr_auc": 0.5961538461538461
+    },
+    {
+      "method": "ablate_no_cross_source",
+      "threshold": 0.5,
+      "confusion": {
+        "TP": 0,
+        "FP": 32,
+        "TN": 0,
+        "FN": 20
+      },
+      "recall": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0.16112515805281938,
+        "n": 20
+      },
+      "fpr": {
+        "point": 1,
+        "lo": 0.8928208017449293,
+        "hi": 1,
+        "n": 32
+      },
+      "precision": {
+        "point": 0,
+        "lo": 0,
+        "hi": 0.1071791982550706,
+        "n": 32
+      },
+      "pr_auc": 0.21520146520146521
+    },
+    {
+      "method": "ablate_no_graph_motifs",
+      "threshold": 0.5,
+      "confusion": {
+        "TP": 20,
+        "FP": 3,
+        "TN": 29,
+        "FN": 0
+      },
+      "recall": {
+        "point": 1,
+        "lo": 0.8388748419471806,
+        "hi": 1,
+        "n": 20
+      },
+      "fpr": {
+        "point": 0.09375,
+        "lo": 0.032401551298366194,
+        "hi": 0.24218154728387864,
+        "n": 32
+      },
+      "precision": {
+        "point": 0.8695652173913043,
+        "lo": 0.6787251772990404,
+        "hi": 0.9546234090636876,
+        "n": 23
+      },
+      "pr_auc": 0.6020066889632107
+    },
+    {
+      "method": "ablate_no_active_probes",
+      "threshold": 0.5,
+      "confusion": {
+        "TP": 20,
+        "FP": 3,
+        "TN": 29,
+        "FN": 0
+      },
+      "recall": {
+        "point": 1,
+        "lo": 0.8388748419471806,
+        "hi": 1,
+        "n": 20
+      },
+      "fpr": {
+        "point": 0.09375,
+        "lo": 0.032401551298366194,
+        "hi": 0.24218154728387864,
+        "n": 32
+      },
+      "precision": {
+        "point": 0.8695652173913043,
+        "lo": 0.6787251772990404,
+        "hi": 0.9546234090636876,
+        "n": 23
+      },
+      "pr_auc": 0.9347826086956521
+    }
+  ],
+  "per_family_confusion": [
+    {
+      "family": "benign-control",
+      "actor_kind": "benign",
+      "coordinated_ground_truth": false,
+      "method": "ablate_no_active_probes",
+      "confusion": {
+        "TP": 0,
+        "FP": 3,
+        "TN": 9,
+        "FN": 0
+      }
+    },
+    {
+      "family": "coord-test",
+      "actor_kind": "coordinated",
+      "coordinated_ground_truth": true,
+      "method": "ablate_no_active_probes",
+      "confusion": {
+        "TP": 10,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "deception-aware-test",
+      "actor_kind": "deception_aware",
+      "coordinated_ground_truth": true,
+      "method": "ablate_no_active_probes",
+      "confusion": {
+        "TP": 10,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "indep-test",
+      "actor_kind": "independent",
+      "coordinated_ground_truth": false,
+      "method": "ablate_no_active_probes",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 10,
+        "FN": 0
+      }
+    },
+    {
+      "family": "legit-test",
+      "actor_kind": "legit_automation",
+      "coordinated_ground_truth": false,
+      "method": "ablate_no_active_probes",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 10,
+        "FN": 0
+      }
+    },
+    {
+      "family": "benign-control",
+      "actor_kind": "benign",
+      "coordinated_ground_truth": false,
+      "method": "ablate_no_campaign_memory",
+      "confusion": {
+        "TP": 0,
+        "FP": 12,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "coord-test",
+      "actor_kind": "coordinated",
+      "coordinated_ground_truth": true,
+      "method": "ablate_no_campaign_memory",
+      "confusion": {
+        "TP": 10,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "deception-aware-test",
+      "actor_kind": "deception_aware",
+      "coordinated_ground_truth": true,
+      "method": "ablate_no_campaign_memory",
+      "confusion": {
+        "TP": 10,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "indep-test",
+      "actor_kind": "independent",
+      "coordinated_ground_truth": false,
+      "method": "ablate_no_campaign_memory",
+      "confusion": {
+        "TP": 0,
+        "FP": 10,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "legit-test",
+      "actor_kind": "legit_automation",
+      "coordinated_ground_truth": false,
+      "method": "ablate_no_campaign_memory",
+      "confusion": {
+        "TP": 0,
+        "FP": 10,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "benign-control",
+      "actor_kind": "benign",
+      "coordinated_ground_truth": false,
+      "method": "ablate_no_cross_source",
+      "confusion": {
+        "TP": 0,
+        "FP": 12,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "coord-test",
+      "actor_kind": "coordinated",
+      "coordinated_ground_truth": true,
+      "method": "ablate_no_cross_source",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 0,
+        "FN": 10
+      }
+    },
+    {
+      "family": "deception-aware-test",
+      "actor_kind": "deception_aware",
+      "coordinated_ground_truth": true,
+      "method": "ablate_no_cross_source",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 0,
+        "FN": 10
+      }
+    },
+    {
+      "family": "indep-test",
+      "actor_kind": "independent",
+      "coordinated_ground_truth": false,
+      "method": "ablate_no_cross_source",
+      "confusion": {
+        "TP": 0,
+        "FP": 10,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "legit-test",
+      "actor_kind": "legit_automation",
+      "coordinated_ground_truth": false,
+      "method": "ablate_no_cross_source",
+      "confusion": {
+        "TP": 0,
+        "FP": 10,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "benign-control",
+      "actor_kind": "benign",
+      "coordinated_ground_truth": false,
+      "method": "ablate_no_graph_motifs",
+      "confusion": {
+        "TP": 0,
+        "FP": 3,
+        "TN": 9,
+        "FN": 0
+      }
+    },
+    {
+      "family": "coord-test",
+      "actor_kind": "coordinated",
+      "coordinated_ground_truth": true,
+      "method": "ablate_no_graph_motifs",
+      "confusion": {
+        "TP": 10,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "deception-aware-test",
+      "actor_kind": "deception_aware",
+      "coordinated_ground_truth": true,
+      "method": "ablate_no_graph_motifs",
+      "confusion": {
+        "TP": 10,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "indep-test",
+      "actor_kind": "independent",
+      "coordinated_ground_truth": false,
+      "method": "ablate_no_graph_motifs",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 10,
+        "FN": 0
+      }
+    },
+    {
+      "family": "legit-test",
+      "actor_kind": "legit_automation",
+      "coordinated_ground_truth": false,
+      "method": "ablate_no_graph_motifs",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 10,
+        "FN": 0
+      }
+    },
+    {
+      "family": "benign-control",
+      "actor_kind": "benign",
+      "coordinated_ground_truth": false,
+      "method": "full_heramba",
+      "confusion": {
+        "TP": 0,
+        "FP": 3,
+        "TN": 9,
+        "FN": 0
+      }
+    },
+    {
+      "family": "coord-test",
+      "actor_kind": "coordinated",
+      "coordinated_ground_truth": true,
+      "method": "full_heramba",
+      "confusion": {
+        "TP": 10,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "deception-aware-test",
+      "actor_kind": "deception_aware",
+      "coordinated_ground_truth": true,
+      "method": "full_heramba",
+      "confusion": {
+        "TP": 10,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "indep-test",
+      "actor_kind": "independent",
+      "coordinated_ground_truth": false,
+      "method": "full_heramba",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 10,
+        "FN": 0
+      }
+    },
+    {
+      "family": "legit-test",
+      "actor_kind": "legit_automation",
+      "coordinated_ground_truth": false,
+      "method": "full_heramba",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 10,
+        "FN": 0
+      }
+    },
+    {
+      "family": "benign-control",
+      "actor_kind": "benign",
+      "coordinated_ground_truth": false,
+      "method": "graph_correlation",
+      "confusion": {
+        "TP": 0,
+        "FP": 12,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "coord-test",
+      "actor_kind": "coordinated",
+      "coordinated_ground_truth": true,
+      "method": "graph_correlation",
+      "confusion": {
+        "TP": 10,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "deception-aware-test",
+      "actor_kind": "deception_aware",
+      "coordinated_ground_truth": true,
+      "method": "graph_correlation",
+      "confusion": {
+        "TP": 10,
+        "FP": 0,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "indep-test",
+      "actor_kind": "independent",
+      "coordinated_ground_truth": false,
+      "method": "graph_correlation",
+      "confusion": {
+        "TP": 0,
+        "FP": 10,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "legit-test",
+      "actor_kind": "legit_automation",
+      "coordinated_ground_truth": false,
+      "method": "graph_correlation",
+      "confusion": {
+        "TP": 0,
+        "FP": 10,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "benign-control",
+      "actor_kind": "benign",
+      "coordinated_ground_truth": false,
+      "method": "request_only",
+      "confusion": {
+        "TP": 0,
+        "FP": 1,
+        "TN": 11,
+        "FN": 0
+      }
+    },
+    {
+      "family": "coord-test",
+      "actor_kind": "coordinated",
+      "coordinated_ground_truth": true,
+      "method": "request_only",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 0,
+        "FN": 10
+      }
+    },
+    {
+      "family": "deception-aware-test",
+      "actor_kind": "deception_aware",
+      "coordinated_ground_truth": true,
+      "method": "request_only",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 0,
+        "FN": 10
+      }
+    },
+    {
+      "family": "indep-test",
+      "actor_kind": "independent",
+      "coordinated_ground_truth": false,
+      "method": "request_only",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 10,
+        "FN": 0
+      }
+    },
+    {
+      "family": "legit-test",
+      "actor_kind": "legit_automation",
+      "coordinated_ground_truth": false,
+      "method": "request_only",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 10,
+        "FN": 0
+      }
+    },
+    {
+      "family": "benign-control",
+      "actor_kind": "benign",
+      "coordinated_ground_truth": false,
+      "method": "static_correlation",
+      "confusion": {
+        "TP": 0,
+        "FP": 12,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "coord-test",
+      "actor_kind": "coordinated",
+      "coordinated_ground_truth": true,
+      "method": "static_correlation",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 0,
+        "FN": 10
+      }
+    },
+    {
+      "family": "deception-aware-test",
+      "actor_kind": "deception_aware",
+      "coordinated_ground_truth": true,
+      "method": "static_correlation",
+      "confusion": {
+        "TP": 0,
+        "FP": 0,
+        "TN": 0,
+        "FN": 10
+      }
+    },
+    {
+      "family": "indep-test",
+      "actor_kind": "independent",
+      "coordinated_ground_truth": false,
+      "method": "static_correlation",
+      "confusion": {
+        "TP": 0,
+        "FP": 10,
+        "TN": 0,
+        "FN": 0
+      }
+    },
+    {
+      "family": "legit-test",
+      "actor_kind": "legit_automation",
+      "coordinated_ground_truth": false,
+      "method": "static_correlation",
+      "confusion": {
+        "TP": 0,
+        "FP": 10,
+        "TN": 0,
+        "FN": 0
+      }
+    }
+  ],
+  "detection_latency_sec": {
+    "point": 14.360434519199998,
+    "lo": 9.020125048685,
+    "hi": 20.121536512157498,
+    "n": 20
+  },
+  "throughput_classifications_per_sec": 338619.52270223794,
+  "not_measured": [
+    "cpu_time / memory_rss: not measured by this deterministic harness",
+    "calibration reliability curve: scores are heuristic, not probabilistic; PR-AUC is reported instead"
+  ]
+}
