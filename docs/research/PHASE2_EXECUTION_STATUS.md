@@ -19,7 +19,7 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `PARTIAL` · `VERI
 | R3 | Deception & attack-objective experiment | VERIFIED | this commit | `go test ./internal/research/objective/...`; `heramba research objective` |
 | R4 | Adaptation race & co-evolution lab | VERIFIED | this commit | `go test ./internal/research/coevolve/...`; `heramba research coevolve` |
 | R5 | Defender prompt-injection & data-plane safety | VERIFIED | this commit | `go test ./internal/taint/...` |
-| R6 | Proxy correctness & resilience | NOT_STARTED | — | — |
+| R6 | Proxy correctness & resilience | VERIFIED | this commit | `go test ./internal/edge/...` |
 | R7 | Supply chain & release assurance | NOT_STARTED | — | — |
 | R8 | Scientific statistics & targets | NOT_STARTED | — | — |
 | R9 | Operations, explainability & human control | NOT_STARTED | — | — |
@@ -287,3 +287,30 @@ live ingestion path is a tracked integration step (not yet every call site).
 
 **Next action:** R6 — proxy correctness & resilience suite + SLOs + fault
 injection.
+
+---
+
+## R6 — Proxy correctness & resilience — VERIFIED (2026-11-03)
+
+**Files:** `internal/edge/resilience_test.go`, `docs/security/proxy-resilience.md`.
+
+**What shipped:** a correctness + resilience + SLO suite against the real
+`edge.Engine` and live httptest backends. Correctness: keep-alive reuse,
+chunked/streaming, SSE passthrough, 8 MiB body byte-for-byte (both modes), gzip
+never corrupted, Set-Cookie/Cache-Control/redirect passthrough, POST body
+forwarding, observe/protect body parity (unsafe transforms off by default; the
+only protect rewrite skips any Content-Encoding and fixes Content-Length).
+Resilience/fault-injection: upstream outage → 502; alert-sink (telemetry) outage
+→ traffic unaffected; client cancellation → no wedge; graceful shutdown drains
+in-flight. Added-latency SLO measured against a realistic backend.
+
+**Results:** `go test ./internal/edge/...` all pass; `-race` clean. Added
+latency p50 ~47µs, p95 ~62µs, p99 ~169µs (suite asserts p99 < 50ms ceiling).
+
+**Limitations (declared):** HTTP/2 and WebSocket upgrade are carried by the
+stdlib proxy but not separately asserted (no TLS/h2 fixture yet); the alert sink
+is synchronous (use a buffered sink in production); CPU/mem saturation not
+measured (overhead test, not a load test); latency is single-machine.
+
+**Next action:** R7 — supply-chain & release assurance (CI, SBOM, fuzz,
+dependency policy).
