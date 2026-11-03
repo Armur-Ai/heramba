@@ -17,6 +17,7 @@ package edge
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -29,6 +30,7 @@ import (
 	"github.com/Armur-Ai/heramba/internal/alert"
 	"github.com/Armur-Ai/heramba/internal/classify"
 	"github.com/Armur-Ai/heramba/internal/config"
+	"github.com/Armur-Ai/heramba/internal/counter"
 	"github.com/Armur-Ai/heramba/internal/decoy"
 	"github.com/Armur-Ai/heramba/internal/event"
 	"github.com/Armur-Ai/heramba/internal/ratelimit"
@@ -37,16 +39,24 @@ import (
 
 // Engine is the configured edge runtime. Build with New, serve with ServeHTTP.
 type Engine struct {
-	cfg     config.Config
-	reg     *decoy.Registry
-	cls     *classify.Classifier
-	norm    *signal.Normalizer // protect mode only
-	jit     *signal.Jitter     // protect-mode tarpit for flagged sources
-	sink    alert.Sink
-	proxy   *httputil.ReverseProxy // nil in honeypot-only (no upstream)
-	trusted []*net.IPNet           // proxy CIDRs whose XFF we trust
-	limiter *ratelimit.Limiter     // per-source rate limit (protect mode only)
+	cfg       config.Config
+	reg       *decoy.Registry
+	cls       *classify.Classifier
+	norm      *signal.Normalizer // protect mode only
+	jit       *signal.Jitter     // protect-mode tarpit for flagged sources
+	sink      alert.Sink
+	proxy     *httputil.ReverseProxy // nil in honeypot-only (no upstream)
+	trusted   []*net.IPNet           // proxy CIDRs whose XFF we trust
+	limiter   *ratelimit.Limiter     // per-source rate limit (protect mode only)
+	counterOn bool                   // counter-agent prompt-decoy injection (protect mode)
 }
+
+// ctxKey is a private request-context key type.
+type ctxKey int
+
+// ctxFlagAgentic marks a request whose source was flagged agentic, so the proxy
+// response modifier can decide to inject a counter-agent lure.
+const ctxFlagAgentic ctxKey = iota
 
 // New assembles an edge Engine from config. In PROTECT mode it enables response
 // normalization and a tarpit. An upstream (reverse-proxy target) is optional in
@@ -76,6 +86,7 @@ func New(cfg config.Config, sink alert.Sink) (*Engine, error) {
 		if cfg.RateLimitRPS > 0 {
 			e.limiter = ratelimit.New(cfg.RateLimitRPS, cfg.RateLimitBurst)
 		}
+		e.counterOn = cfg.Counter.Enabled
 	}
 	if cfg.Upstream != "" {
 		u, err := url.Parse(cfg.Upstream)
@@ -83,16 +94,66 @@ func New(cfg config.Config, sink alert.Sink) (*Engine, error) {
 			return nil, fmt.Errorf("edge: bad upstream %q: %w", cfg.Upstream, err)
 		}
 		rp := httputil.NewSingleHostReverseProxy(u)
-		if e.norm != nil {
-			norm := e.norm
-			rp.ModifyResponse = func(resp *http.Response) error {
-				norm.Apply(resp.Header)
-				return nil
-			}
+		if e.norm != nil || e.counterOn {
+			rp.ModifyResponse = e.modifyResponse
 		}
 		e.proxy = rp
 	}
 	return e, nil
+}
+
+// modifyResponse applies protect-mode response transforms: header normalization
+// (signal denial) and, for flagged agentic sources, counter-agent lure
+// injection into HTML/JS bodies.
+func (e *Engine) modifyResponse(resp *http.Response) error {
+	if e.norm != nil {
+		e.norm.Apply(resp.Header)
+	}
+	if !e.counterOn || resp.Request == nil {
+		return nil
+	}
+	if flag, _ := resp.Request.Context().Value(ctxFlagAgentic).(bool); !flag {
+		return nil
+	}
+	// Only inject into uncompressed HTML/JS we can safely rewrite.
+	if resp.Header.Get("Content-Encoding") != "" {
+		return nil
+	}
+	ct := resp.Header.Get("Content-Type")
+	isHTML := strings.Contains(ct, "text/html")
+	isJS := strings.Contains(ct, "javascript")
+	if !isHTML && !isJS {
+		return nil
+	}
+	body, err := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if err != nil {
+		resp.Body = io.NopCloser(bytes.NewReader(body))
+		return nil // never break the response over an injection failure
+	}
+	lure := counter.Generate(-1)
+	var out []byte
+	if isHTML {
+		out = counter.InjectHTML(body, lure)
+	} else {
+		out = counter.InjectJS(body, lure)
+	}
+	resp.Body = io.NopCloser(bytes.NewReader(out))
+	resp.ContentLength = int64(len(out))
+	resp.Header.Set("Content-Length", itoaLen(len(out)))
+
+	// Close the loop: the fabricated paths become decoys; the key a canary.
+	for _, p := range lure.Paths {
+		e.reg.Add(p, "counter-agent lure")
+	}
+	e.reg.Canaries().Watch(lure.Key, "counter-agent lure key")
+	e.sink.Emit(event.New(event.KindCounterDeployed, event.SeverityInfo, "", resp.Request.URL.Path,
+		"injected counter-agent lure").WithLabel("lure_key", lure.Key))
+	return nil
+}
+
+func itoaLen(n int) string {
+	return fmt.Sprintf("%d", n)
 }
 
 // Handler returns the edge as an http.Handler.
@@ -147,6 +208,9 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if e.cfg.Mode == config.ModeProtect && v.Label == "agentic-suspected" && e.jit != nil {
 		e.jit.Sleep(r.Context()) // tarpit flagged sources
+	}
+	if e.counterOn && v.Label == "agentic-suspected" {
+		r = r.WithContext(context.WithValue(r.Context(), ctxFlagAgentic, true))
 	}
 	if e.proxy != nil {
 		e.proxy.ServeHTTP(w, r)

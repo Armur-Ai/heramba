@@ -33,6 +33,7 @@ type Config struct {
 	Alert          AlertConfig      `yaml:"alert"`
 	Decoys         DecoyConfig      `yaml:"decoys"`
 	Egress         EgressConfig     `yaml:"egress"`
+	Counter        CounterConfig    `yaml:"counter"`
 	Classifier     ClassifierConfig `yaml:"classifier"`
 	// RateLimitRPS throttles each source to this many requests/second in PROTECT
 	// mode (0 = disabled; never engaged in observe mode). RateLimitBurst is the
@@ -61,6 +62,14 @@ type DecoyConfig struct {
 	Enabled  bool     `yaml:"enabled"`
 	Paths    []string `yaml:"paths"`    // extra decoy paths to serve/watch
 	Canaries []string `yaml:"canaries"` // canary tokens (planted elsewhere) to watch for in requests
+}
+
+// CounterConfig controls counter-agent prompt-decoy injection (PROTECT mode).
+// Off by default: when enabled, HTML/JS responses served to classifier-flagged
+// agentic sources get a fabricated-lead comment injected (invisible to humans),
+// whose fake paths become decoys and whose key is watched as a canary.
+type CounterConfig struct {
+	Enabled bool `yaml:"enabled"`
 }
 
 // EgressConfig controls the callback firewall (PROTECT mode).
