@@ -1,0 +1,14 @@
+# Binaries
+/bin/
+*.exe
+*.test
+*.out
+dist/
+
+# Rendered demo output (regenerate with `make demos` + vhs)
+docs/demos/*.gif
+
+# Editor / OS
+.DS_Store
+.idea/
+*.swp
