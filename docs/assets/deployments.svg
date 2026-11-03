@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 360" role="img" aria-label="Three Heramba deployment shapes: reverse proxy in front of an app, sidecar next to the app, and honeypot-only with no upstream">
+  <defs>
+    <linearGradient id="dbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1119"/><stop offset="1" stop-color="#0e1722"/></linearGradient>
+    <marker id="da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#3ddc97"/></marker>
+    <style>
+      .t{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#dce7ee;font-weight:700}
+      .s{font-family:'SFMono-Regular',Consolas,monospace;fill:#8aa0ad;font-size:11px}
+      .b{fill:#121d29;stroke:#27384a;stroke-width:1.5}
+      .h{fill:#10261d;stroke:#3ddc97;stroke-width:1.5}
+      .f{stroke:#3ddc97;stroke-width:2;fill:none}
+      .cap{font-family:'Segoe UI',sans-serif;fill:#3ddc97;font-weight:700;font-size:13px}
+    </style>
+  </defs>
+  <rect width="1120" height="360" fill="url(#dbg)"/>
+  <text class="t" x="40" y="44" font-size="22">Deployment shapes</text>
+
+  <!-- reverse proxy -->
+  <text class="cap" x="40" y="86">reverse proxy</text>
+  <rect class="b" x="40" y="104" width="70" height="60" rx="8"/><text class="s" x="75" y="138" text-anchor="middle">client</text>
+  <rect class="h" x="140" y="104" width="86" height="60" rx="8"/><text class="t" x="183" y="130" font-size="12" text-anchor="middle">heramba</text><text class="s" x="183" y="148" text-anchor="middle">edge</text>
+  <rect class="b" x="256" y="104" width="80" height="60" rx="8"/><text class="s" x="296" y="138" text-anchor="middle">your app</text>
+  <path class="f" d="M110 134 H140" marker-end="url(#da)"/>
+  <path class="f" d="M226 134 H256" marker-end="url(#da)"/>
+
+  <!-- sidecar -->
+  <text class="cap" x="420" y="86">sidecar</text>
+  <rect class="b" x="420" y="104" width="70" height="60" rx="8"/><text class="s" x="455" y="138" text-anchor="middle">client</text>
+  <rect class="h" x="520" y="92" width="180" height="120" rx="10" fill="none" stroke="#2a3b49" stroke-dasharray="4 4"/>
+  <text class="s" x="610" y="108" text-anchor="middle">pod / host</text>
+  <rect class="h" x="534" y="124" width="72" height="54" rx="8"/><text class="t" x="570" y="148" font-size="11" text-anchor="middle">heramba</text><text class="s" x="570" y="164" text-anchor="middle">:public</text>
+  <rect class="b" x="620" y="124" width="68" height="54" rx="8"/><text class="s" x="654" y="152" text-anchor="middle">app :loopback</text>
+  <path class="f" d="M490 134 H534" marker-end="url(#da)"/>
+  <path class="f" d="M606 151 H620" marker-end="url(#da)"/>
+
+  <!-- honeypot-only -->
+  <text class="cap" x="800" y="86">honeypot-only</text>
+  <rect class="b" x="800" y="104" width="70" height="60" rx="8"/><text class="s" x="835" y="138" text-anchor="middle">scanner</text>
+  <rect class="h" x="900" y="104" width="100" height="60" rx="8"/><text class="t" x="950" y="130" font-size="12" text-anchor="middle">heramba</text><text class="s" x="950" y="148" text-anchor="middle">decoys + 404</text>
+  <path class="f" d="M870 134 H900" marker-end="url(#da)"/>
+  <text class="s" x="900" y="188">no upstream — pure sensor surface</text>
+
+  <text class="s" x="40" y="250" font-size="12">All three run the same engine and config. Start in observe in front of production; flip to protect when the detections look right.</text>
+</svg>

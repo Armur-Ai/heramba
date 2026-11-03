@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 440" role="img" aria-label="Observe vs Protect mode comparison: both classify, detect, and serve decoys; only protect normalizes responses, tarpits, rate-limits, firewalls egress, and injects counter-agent lures">
+  <defs>
+    <linearGradient id="mbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1119"/><stop offset="1" stop-color="#0e1722"/></linearGradient>
+    <style>
+      .t{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#dce7ee;font-weight:700}
+      .s{font-family:'SFMono-Regular',Consolas,monospace;fill:#8aa0ad;font-size:13px}
+      .obs{fill:#10261d;stroke:#3ddc97;stroke-width:1.5}
+      .pro{fill:#0e2630;stroke:#36c6e0;stroke-width:1.5}
+      .yes{fill:#3ddc97}.no{fill:#5f7384}
+      .row{font-family:'Segoe UI',sans-serif;fill:#dce7ee;font-size:14px}
+    </style>
+  </defs>
+  <rect width="1000" height="440" fill="url(#mbg)"/>
+  <text class="t" x="40" y="46" font-size="22">Observe vs Protect</text>
+  <text class="s" x="40" y="70">observe is the safe default — detection only, never alters traffic · protect adds inline action</text>
+
+  <rect class="obs" x="300" y="96" width="320" height="40" rx="8"/>
+  <text class="t" x="460" y="122" font-size="15" text-anchor="middle">OBSERVE (default)</text>
+  <rect class="pro" x="640" y="96" width="320" height="40" rx="8"/>
+  <text class="t" x="800" y="122" font-size="15" text-anchor="middle">PROTECT (opt-in)</text>
+
+  <g>
+    <!-- rows -->
+    <g font-size="14">
+      <text class="row" x="40" y="172">classify + detect agentic traffic</text>
+      <circle class="yes" cx="460" cy="167" r="8"/><circle class="yes" cx="800" cy="167" r="8"/>
+
+      <text class="row" x="40" y="212">serve decoys + canaries (zero-FP)</text>
+      <circle class="yes" cx="460" cy="207" r="8"/><circle class="yes" cx="800" cy="207" r="8"/>
+
+      <text class="row" x="40" y="252">normalize response headers (signal denial)</text>
+      <circle class="no" cx="460" cy="247" r="8"/><text class="s" x="452" y="251">—</text><circle class="yes" cx="800" cy="247" r="8"/>
+
+      <text class="row" x="40" y="292">tarpit + rate-limit flagged sources</text>
+      <circle class="no" cx="460" cy="287" r="8"/><text class="s" x="452" y="291">—</text><circle class="yes" cx="800" cy="287" r="8"/>
+
+      <text class="row" x="40" y="332">egress / callback firewall</text>
+      <circle class="no" cx="460" cy="327" r="8"/><text class="s" x="452" y="331">—</text><circle class="yes" cx="800" cy="327" r="8"/>
+
+      <text class="row" x="40" y="372">counter-agent lure injection</text>
+      <circle class="no" cx="460" cy="367" r="8"/><text class="s" x="452" y="371">—</text><circle class="yes" cx="800" cy="367" r="8"/>
+
+      <text class="row" x="40" y="412">alters legitimate traffic</text>
+      <text class="s" x="440" y="416" fill="#3ddc97">never</text><text class="s" x="770" y="416" fill="#36c6e0">bounded, documented</text>
+    </g>
+  </g>
+</svg>
