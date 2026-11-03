@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 420" role="img" aria-label="Positioning: signature WAFs match payloads and drown in false positives; EDR watches hosts; Heramba denies the attacker ground truth and traps autonomous agents in deception at the app and API layer">
+  <defs>
+    <linearGradient id="gbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1119"/><stop offset="1" stop-color="#0e1722"/></linearGradient>
+    <style>
+      .t{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#dce7ee;font-weight:700}
+      .s{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#8aa0ad;font-size:13px}
+      .card{fill:#121d29;stroke:#27384a;stroke-width:1.5}
+      .me{fill:#10261d;stroke:#3ddc97;stroke-width:2}
+      .acc{fill:#3ddc97}
+    </style>
+  </defs>
+  <rect width="1040" height="420" fill="url(#gbg)"/>
+  <text class="t" x="40" y="48" font-size="22">Defense for the age of autonomous offense</text>
+  <text class="s" x="40" y="74">Agentic attackers enumerate, chain, and exfiltrate with no human in the loop. Signatures drown in false positives; EDR watches hosts, not your business logic.</text>
+
+  <rect class="card" x="40" y="110" width="300" height="150" rx="12"/>
+  <text class="t" x="60" y="144" font-size="16">Signature WAF</text>
+  <text class="s" x="60" y="174">matches known-bad payloads</text>
+  <text class="s" x="60" y="198">· false-positive tax</text>
+  <text class="s" x="60" y="220">· blind to novel / logic abuse</text>
+  <text class="s" x="60" y="242">· tells the attacker it's there</text>
+
+  <rect class="card" x="370" y="110" width="300" height="150" rx="12"/>
+  <text class="t" x="390" y="144" font-size="16">EDR / XDR</text>
+  <text class="s" x="390" y="174">watches hosts &amp; processes</text>
+  <text class="s" x="390" y="198">· not the app / API layer</text>
+  <text class="s" x="390" y="220">· not business-logic abuse</text>
+  <text class="s" x="390" y="242">· post-compromise focus</text>
+
+  <rect class="me" x="700" y="110" width="300" height="150" rx="12"/>
+  <text class="acc" x="720" y="144" font-size="16" font-family="'Segoe UI',sans-serif" font-weight="800">Heramba</text>
+  <text class="s" x="720" y="174" fill="#cfe9df">denies clean ground truth</text>
+  <text class="s" x="720" y="198" fill="#cfe9df">· deception — zero false positives</text>
+  <text class="s" x="720" y="220" fill="#cfe9df">· traps autonomous agents</text>
+  <text class="s" x="720" y="242" fill="#cfe9df">· app / API layer, inline or observe</text>
+
+  <text class="s" x="40" y="320" font-size="14" fill="#dce7ee">Heramba doesn't describe the attack — it plants ground only an attacker steps on, and starves the oracles automated tooling depends on.</text>
+  <text class="s" x="40" y="348">It changes the economics of attacking you; it is not a signature database and not a patch.</text>
+</svg>

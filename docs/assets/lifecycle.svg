@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 300" role="img" aria-label="Decoy and canary lifecycle: plant, serve, an attacker touches it, a zero-false-positive high-confidence detection fires, then triage">
+  <defs>
+    <linearGradient id="lbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1119"/><stop offset="1" stop-color="#0e1722"/></linearGradient>
+    <marker id="la" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#3ddc97"/></marker>
+    <style>
+      .t{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#dce7ee;font-weight:700}
+      .s{font-family:'SFMono-Regular',Consolas,monospace;fill:#8aa0ad;font-size:11px}
+      .b{fill:#121d29;stroke:#27384a;stroke-width:1.5}
+      .hit{fill:#10261d;stroke:#3ddc97;stroke-width:2}
+      .f{stroke:#3ddc97;stroke-width:2;fill:none}
+      .n{font-family:'Segoe UI',sans-serif;fill:#0b1119;font-weight:800;font-size:12px}
+    </style>
+  </defs>
+  <rect width="1060" height="300" fill="url(#lbg)"/>
+  <text class="t" x="40" y="46" font-size="22">Decoy &amp; canary lifecycle</text>
+
+  <g>
+    <rect class="b" x="40" y="110" width="170" height="80" rx="10"/>
+    <circle fill="#3ddc97" cx="58" cy="100" r="11"/><text class="n" x="58" y="104" text-anchor="middle">1</text>
+    <text class="t" x="125" y="142" font-size="13" text-anchor="middle">Plant</text>
+    <text class="s" x="125" y="162" text-anchor="middle">decoy paths +</text>
+    <text class="s" x="125" y="177" text-anchor="middle">canary tokens</text>
+
+    <rect class="b" x="250" y="110" width="170" height="80" rx="10"/>
+    <circle fill="#3ddc97" cx="268" cy="100" r="11"/><text class="n" x="268" y="104" text-anchor="middle">2</text>
+    <text class="t" x="335" y="142" font-size="13" text-anchor="middle">Serve &amp; watch</text>
+    <text class="s" x="335" y="162" text-anchor="middle">edge serves decoys,</text>
+    <text class="s" x="335" y="177" text-anchor="middle">watches for tokens</text>
+
+    <rect class="b" x="460" y="110" width="170" height="80" rx="10"/>
+    <circle fill="#3ddc97" cx="478" cy="100" r="11"/><text class="n" x="478" y="104" text-anchor="middle">3</text>
+    <text class="t" x="545" y="142" font-size="13" text-anchor="middle">Attacker touches</text>
+    <text class="s" x="545" y="162" text-anchor="middle">requests a decoy /</text>
+    <text class="s" x="545" y="177" text-anchor="middle">uses a canary</text>
+
+    <rect class="hit" x="670" y="110" width="170" height="80" rx="10"/>
+    <circle fill="#3ddc97" cx="688" cy="100" r="11"/><text class="n" x="688" y="104" text-anchor="middle">4</text>
+    <text class="t" x="755" y="142" font-size="13" text-anchor="middle" fill="#cfe9df">Detect</text>
+    <text class="s" x="755" y="162" text-anchor="middle">conf 1.0 · high</text>
+    <text class="s" x="755" y="177" text-anchor="middle">zero false positive</text>
+
+    <rect class="b" x="880" y="110" width="150" height="80" rx="10"/>
+    <circle fill="#3ddc97" cx="898" cy="100" r="11"/><text class="n" x="898" y="104" text-anchor="middle">5</text>
+    <text class="t" x="955" y="142" font-size="13" text-anchor="middle">Alert</text>
+    <text class="s" x="955" y="162" text-anchor="middle">text / jsonl</text>
+    <text class="s" x="955" y="177" text-anchor="middle">+ summary</text>
+  </g>
+
+  <path class="f" d="M210 150 H250" marker-end="url(#la)"/>
+  <path class="f" d="M420 150 H460" marker-end="url(#la)"/>
+  <path class="f" d="M630 150 H670" marker-end="url(#la)"/>
+  <path class="f" d="M840 150 H880" marker-end="url(#la)"/>
+  <text class="s" x="40" y="236">No legitimate client ever reaches steps 3–5 — that is why the signal is clean. Nothing to tune, no false-positive rate.</text>
+</svg>
