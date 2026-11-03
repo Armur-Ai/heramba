@@ -23,6 +23,8 @@ func main() {
 	switch os.Args[1] {
 	case "serve":
 		runServe(os.Args[2:])
+	case "decoys":
+		runDecoys(os.Args[2:])
 	case "version", "-v", "--version":
 		fmt.Println(version.String())
 	case "help", "-h", "--help":
