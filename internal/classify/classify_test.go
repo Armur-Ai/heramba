@@ -96,3 +96,48 @@ func itoaT(n int) string {
 	}
 	return string(b[i:])
 }
+
+func TestUAHeaderMismatchSignal(t *testing.T) {
+	c := New()
+	// A UA claiming Chrome but with no client-hint / Sec-Fetch headers = spoofed.
+	spoof := c.Classify(Observation{
+		Source: "198.51.100.7", Method: "GET", Path: "/api/x",
+		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+		Headers:   map[string]string{"accept": "*/*"},
+	})
+	var fired bool
+	for _, s := range spoof.Signals {
+		if s.Name == "ua_header_mismatch" && s.Fired {
+			fired = true
+		}
+	}
+	if !fired {
+		t.Fatalf("expected ua_header_mismatch to fire on a spoofed Chrome UA, signals=%+v", spoof.Signals)
+	}
+
+	// A real Chrome request (with the client-hint headers) must NOT fire it.
+	real := c.Classify(Observation{
+		Source: "198.51.100.8", Method: "GET", Path: "/",
+		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+		Headers: map[string]string{
+			"accept": "text/html", "accept-language": "en-US", "accept-encoding": "gzip, br",
+			"sec-ch-ua": `"Chromium";v="120"`, "sec-fetch-mode": "navigate",
+		},
+	})
+	for _, s := range real.Signals {
+		if s.Name == "ua_header_mismatch" && s.Fired {
+			t.Fatalf("ua_header_mismatch must not fire on a real Chrome request: %+v", s)
+		}
+	}
+
+	// A non-browser UA (curl) must not fire THIS signal (it's for spoofed browsers).
+	curl := c.Classify(Observation{
+		Source: "198.51.100.9", Method: "GET", Path: "/", UserAgent: "curl/8.1.2",
+		Headers: map[string]string{},
+	})
+	for _, s := range curl.Signals {
+		if s.Name == "ua_header_mismatch" && s.Fired {
+			t.Fatalf("ua_header_mismatch should not fire for a non-browser UA: %+v", s)
+		}
+	}
+}

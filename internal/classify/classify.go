@@ -115,6 +115,7 @@ func (c *Classifier) Classify(o Observation) Verdict {
 		toolUASignal(ua),
 		missingBrowserSignal(ua, o.Headers),
 		acceptSignal(o.Headers),
+		uaHeaderMismatchSignal(ua, o.Headers),
 		cadenceSignal(cadence, c.opts.CadenceRPS),
 		enumerationSignal(distinct, c.opts.EnumDistinct),
 	}
@@ -188,6 +189,31 @@ func acceptSignal(h map[string]string) Signal {
 	browserishAccept := strings.Contains(accept, "text/html")
 	if !browserishAccept && !hasEnc {
 		s.Fired, s.Detail = true, "no text/html Accept and no Accept-Encoding"
+	}
+	return s
+}
+
+// uaHeaderMismatchSignal fires when a request's User-Agent claims a modern
+// Chromium browser but the request is missing the header fingerprint that real
+// Chromium always sends — the client-hint (`Sec-CH-UA`) and `Sec-Fetch-*`
+// headers. Spoofing a browser UA string is trivial; replicating the full,
+// consistent header fingerprint is not, so a UA/header mismatch is a strong,
+// hard-to-forge agentic tell. This complements missing_browser_signals (which
+// fires when the UA is *not* a browser); this one catches a UA that *pretends*
+// to be one.
+//
+// True wire-level fingerprinting (JA3/JA4 TLS, raw header ordering) needs
+// capture below net/http, which discards header order — tracked separately.
+func uaHeaderMismatchSignal(ua string, h map[string]string) Signal {
+	s := Signal{Name: "ua_header_mismatch", Weight: 0.3}
+	claimsChromium := strings.Contains(ua, "chrome/") || strings.Contains(ua, "chromium") || strings.Contains(ua, "edg/")
+	if !claimsChromium {
+		return s // only meaningful when the UA claims a client whose fingerprint we know
+	}
+	_, hasCHUA := h["sec-ch-ua"]
+	_, hasSecFetch := h["sec-fetch-mode"]
+	if !hasCHUA && !hasSecFetch {
+		s.Fired, s.Detail = true, "UA claims Chromium but sends no Sec-CH-UA / Sec-Fetch headers (spoofed UA fingerprint)"
 	}
 	return s
 }
