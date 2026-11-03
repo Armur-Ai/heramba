@@ -466,3 +466,17 @@ deception app / strategy engine not auto-mounted into live serve.
 
 R0–R11 VERIFIED (H4 PARTIAL, disclosed). All critical tests pass under
 `go test -race ./...`; every experiment reproduces from a committed command.
+
+---
+
+## Post-review improvements (2026-11-03, after R11)
+
+Tracked next-items from the R11 review, now addressed (journal entries above are
+point-in-time; repository state supersedes them):
+
+- **Coordination FPR mitigation (`f2769d6`).** Added an enumeration gate to the
+  swarm coordinated branch: synchrony now requires division of labor, or shared
+  targeting that is also broad enumeration / decoy contact. Held-out FPR dropped
+  **9.4% → 0.7%** (`0.007 [0.002, 0.021]`, n=420) at recall 1.00; the R8 FPR row
+  now meets the 1% target at the point estimate (upper bound caveat disclosed).
+  CP6 four-class benchmark unaffected.
