@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" role="img" aria-label="Heramba per-request detection pipeline: classify, deception, signal denial, rate limit, reverse proxy, counter-agent, with detections to the alert sink">
+  <defs>
+    <linearGradient id="pbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1119"/><stop offset="1" stop-color="#0e1722"/></linearGradient>
+    <marker id="pa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#3ddc97"/></marker>
+    <style>
+      .b{fill:#121d29;stroke:#27384a;stroke-width:1.5}
+      .t{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#dce7ee;font-weight:700}
+      .s{font-family:'SFMono-Regular',Consolas,monospace;fill:#8aa0ad;font-size:11px}
+      .f{stroke:#3ddc97;stroke-width:2;fill:none}
+      .acc{fill:#3ddc97}.pro{fill:#36c6e0}
+      .num{font-family:'Segoe UI',sans-serif;fill:#0b1119;font-weight:800;font-size:13px}
+    </style>
+  </defs>
+  <rect width="1200" height="440" fill="url(#pbg)"/>
+  <text class="t" x="40" y="46" font-size="22">Per-request pipeline</text>
+  <text class="s" x="40" y="68" font-size="13">green = both modes · cyan = protect-mode only (inline)</text>
+
+  <!-- client -->
+  <rect class="b" x="40" y="150" width="120" height="76" rx="10"/>
+  <text class="t" x="100" y="184" font-size="14" text-anchor="middle">Client</text>
+  <text class="s" x="100" y="204" text-anchor="middle">user · agent</text>
+
+  <!-- stages -->
+  <g>
+    <rect class="b" x="210" y="150" width="140" height="76" rx="10"/>
+    <circle class="acc" cx="228" cy="140" r="11"/><text class="num" x="228" y="144" text-anchor="middle">1</text>
+    <text class="t" x="280" y="182" font-size="13" text-anchor="middle">Classify</text>
+    <text class="s" x="280" y="202" text-anchor="middle">agentic score</text>
+
+    <rect class="b" x="390" y="150" width="150" height="76" rx="10"/>
+    <circle class="acc" cx="408" cy="140" r="11"/><text class="num" x="408" y="144" text-anchor="middle">2</text>
+    <text class="t" x="465" y="176" font-size="13" text-anchor="middle">Deception</text>
+    <text class="s" x="465" y="196" text-anchor="middle">decoys + canaries</text>
+    <text class="s" x="465" y="212" text-anchor="middle">zero-FP</text>
+
+    <rect class="b" x="580" y="150" width="150" height="76" rx="10"/>
+    <circle class="pro" cx="598" cy="140" r="11"/><text class="num" x="598" y="144" text-anchor="middle">3</text>
+    <text class="t" x="655" y="176" font-size="13" text-anchor="middle">Signal denial</text>
+    <text class="s" x="655" y="196" text-anchor="middle">normalize · jitter</text>
+    <text class="s" x="655" y="212" text-anchor="middle">rate limit</text>
+
+    <rect class="b" x="770" y="150" width="140" height="76" rx="10"/>
+    <circle class="acc" cx="788" cy="140" r="11"/><text class="num" x="788" y="144" text-anchor="middle">4</text>
+    <text class="t" x="840" y="182" font-size="13" text-anchor="middle">Reverse proxy</text>
+    <text class="s" x="840" y="202" text-anchor="middle">pass-through</text>
+
+    <rect class="b" x="950" y="150" width="140" height="76" rx="10"/>
+    <circle class="pro" cx="968" cy="140" r="11"/><text class="num" x="968" y="144" text-anchor="middle">5</text>
+    <text class="t" x="1020" y="176" font-size="13" text-anchor="middle">Counter-agent</text>
+    <text class="s" x="1020" y="196" text-anchor="middle">inject lure for</text>
+    <text class="s" x="1020" y="212" text-anchor="middle">flagged agents</text>
+  </g>
+
+  <!-- upstream -->
+  <rect class="b" x="950" y="300" width="140" height="66" rx="10"/>
+  <text class="t" x="1020" y="330" font-size="13" text-anchor="middle">Your app</text>
+  <text class="s" x="1020" y="350" text-anchor="middle">upstream</text>
+
+  <!-- flows across stages -->
+  <path class="f" d="M160 188 H210" marker-end="url(#pa)"/>
+  <path class="f" d="M350 188 H390" marker-end="url(#pa)"/>
+  <path class="f" d="M540 188 H580" marker-end="url(#pa)"/>
+  <path class="f" d="M730 188 H770" marker-end="url(#pa)"/>
+  <path class="f" d="M910 188 H950" marker-end="url(#pa)"/>
+  <path class="f" d="M1020 226 V300" marker-end="url(#pa)"/>
+
+  <!-- detections to sink -->
+  <rect class="b" x="210" y="330" width="520" height="54" rx="8"/>
+  <text class="acc" x="470" y="362" font-size="13" font-weight="700" text-anchor="middle" font-family="'Segoe UI',sans-serif">detections → alert sink (text / jsonl) + session summary</text>
+  <path class="f" d="M280 226 V330" marker-end="url(#pa)"/>
+  <path class="f" d="M465 226 V330" marker-end="url(#pa)"/>
+  <path class="f" d="M655 226 V330" marker-end="url(#pa)"/>
+</svg>

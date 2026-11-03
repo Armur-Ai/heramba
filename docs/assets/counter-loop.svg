@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 460" role="img" aria-label="Counter-agent closed loop: Heramba plants a fabricated lure, the agent chases the fake path and trips a decoy, or echoes the key and trips a canary">
+  <defs>
+    <linearGradient id="cbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1119"/><stop offset="1" stop-color="#0e1722"/></linearGradient>
+    <marker id="ca" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#36c6e0"/></marker>
+    <marker id="cg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#3ddc97"/></marker>
+    <style>
+      .b{fill:#121d29;stroke:#27384a;stroke-width:1.5}
+      .hit{fill:#10261d;stroke:#3ddc97;stroke-width:1.5}
+      .t{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#dce7ee;font-weight:700}
+      .s{font-family:'SFMono-Regular',Consolas,monospace;fill:#8aa0ad;font-size:12px}
+      .acc{fill:#3ddc97}
+      .lbl{font-family:'Segoe UI',sans-serif;fill:#8aa0ad;font-size:12px}
+    </style>
+  </defs>
+  <rect width="1100" height="460" fill="url(#cbg)"/>
+  <text class="t" x="40" y="48" font-size="22">Counter-agent closed loop</text>
+  <text class="s" x="40" y="70" font-size="13">plant deception · waste the agent · catch it when it bites (zero false positives)</text>
+
+  <rect class="b" x="60" y="150" width="210" height="96" rx="12"/>
+  <text class="t" x="165" y="188" font-size="15" text-anchor="middle">Heramba edge</text>
+  <text class="s" x="165" y="210" text-anchor="middle">flags an agentic source,</text>
+  <text class="s" x="165" y="228" text-anchor="middle">injects a lure in the response</text>
+
+  <rect class="b" x="440" y="150" width="230" height="96" rx="12"/>
+  <text class="t" x="555" y="182" font-size="15" text-anchor="middle">AI assessment agent</text>
+  <text class="s" x="555" y="206" text-anchor="middle">reads the fabricated lead</text>
+  <text class="s" x="555" y="224" text-anchor="middle">&lt;!-- assessment-note[key]: … --&gt;</text>
+
+  <rect class="hit" x="840" y="92" width="210" height="82" rx="12"/>
+  <text class="acc" x="945" y="126" font-size="14" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-weight="800">decoy_hit</text>
+  <text class="s" x="945" y="148" text-anchor="middle">chases the fake path</text>
+  <text class="s" x="945" y="164" text-anchor="middle">conf 1.0</text>
+
+  <rect class="hit" x="840" y="222" width="210" height="82" rx="12"/>
+  <text class="acc" x="945" y="256" font-size="14" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-weight="800">canary_triggered</text>
+  <text class="s" x="945" y="278" text-anchor="middle">echoes the planted key</text>
+  <text class="s" x="945" y="294" text-anchor="middle">conf 1.0</text>
+
+  <!-- plant -->
+  <path d="M270 198 H440" class="x" fill="none" stroke="#36c6e0" stroke-width="2" marker-end="url(#ca)"/>
+  <text class="lbl" x="355" y="188" text-anchor="middle">1 · plant lure</text>
+
+  <!-- bite -> detections -->
+  <path d="M670 180 C760 150, 790 140, 840 133" fill="none" stroke="#3ddc97" stroke-width="2" marker-end="url(#cg)"/>
+  <text class="lbl" x="755" y="150" text-anchor="middle">2 · bites</text>
+  <path d="M670 216 C760 250, 790 258, 840 263" fill="none" stroke="#3ddc97" stroke-width="2" marker-end="url(#cg)"/>
+
+  <!-- loop back -->
+  <path d="M945 304 C945 390, 300 400, 180 246" fill="none" stroke="#3ddc97" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#cg)"/>
+  <text class="lbl" x="560" y="404" text-anchor="middle">3 · detection → alert sink (the edge planted the paths as decoys + the key as a canary)</text>
+</svg>
