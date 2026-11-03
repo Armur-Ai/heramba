@@ -205,6 +205,39 @@ func PRAUC(scores []float64, labels []bool) float64 {
 	return auc
 }
 
+// PrecisionAtPrevalence computes precision implied by a recall and FPR at a
+// stated base rate (prevalence of positives). Pooled precision on a balanced
+// synthetic set overstates field precision, where attacks are rare; this makes
+// the realistic-prevalence number explicit. Returns 0 if nothing is predicted
+// positive.
+func PrecisionAtPrevalence(recall, fpr, prevalence float64) float64 {
+	tp := recall * prevalence
+	fp := fpr * (1 - prevalence)
+	if tp+fp == 0 {
+		return 0
+	}
+	return tp / (tp + fp)
+}
+
+// RequiredNForProportionCI returns the sample size needed for a two-sided 95%
+// Wilson interval around a proportion p to have at most the given half-width.
+// It is used to check that, at a 1% FPR target, enough benign sessions are
+// evaluated to make the interval meaningful. Uses the normal-approximation
+// n = z^2 p(1-p)/h^2 as a close, honest estimate.
+func RequiredNForProportionCI(p, halfWidth float64) int {
+	if halfWidth <= 0 {
+		return 0
+	}
+	if p < 0 {
+		p = 0
+	}
+	if p > 1 {
+		p = 1
+	}
+	n := Z95 * Z95 * p * (1 - p) / (halfWidth * halfWidth)
+	return int(math.Ceil(n))
+}
+
 func percentile(sorted []float64, p float64) float64 {
 	if len(sorted) == 0 {
 		return 0

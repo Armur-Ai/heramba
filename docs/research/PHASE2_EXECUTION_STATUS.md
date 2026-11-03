@@ -15,13 +15,13 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `PARTIAL` · `VERI
 |---|---|---|---|---|
 | R0 | Safe handoff & gap analysis | VERIFIED | `38f533d` | baseline below |
 | R1 | Research protocol & threat model | VERIFIED | `be6db33` | `go test ./internal/research/...`; `heramba research manifest` |
-| R2 | Fair coordination detection experiment | VERIFIED | this commit | `go test ./internal/research/{coord,stats}/...`; `heramba research coord` |
-| R3 | Deception & attack-objective experiment | VERIFIED | this commit | `go test ./internal/research/objective/...`; `heramba research objective` |
-| R4 | Adaptation race & co-evolution lab | VERIFIED | this commit | `go test ./internal/research/coevolve/...`; `heramba research coevolve` |
-| R5 | Defender prompt-injection & data-plane safety | VERIFIED | this commit | `go test ./internal/taint/...` |
-| R6 | Proxy correctness & resilience | VERIFIED | this commit | `go test ./internal/edge/...` |
-| R7 | Supply chain & release assurance | VERIFIED | this commit | `make fuzz`; `make sbom`; CI |
-| R8 | Scientific statistics & targets | NOT_STARTED | — | — |
+| R2 | Fair coordination detection experiment | VERIFIED | `fe40522` | `go test ./internal/research/{coord,stats}/...`; `heramba research coord` |
+| R3 | Deception & attack-objective experiment | VERIFIED | `679597c` | `go test ./internal/research/objective/...`; `heramba research objective` |
+| R4 | Adaptation race & co-evolution lab | VERIFIED | `ec3664c` | `go test ./internal/research/coevolve/...`; `heramba research coevolve` |
+| R5 | Defender prompt-injection & data-plane safety | VERIFIED | `c22524a` | `go test ./internal/taint/...` |
+| R6 | Proxy correctness & resilience | VERIFIED | `1aa9b17` | `go test ./internal/edge/...` |
+| R7 | Supply chain & release assurance | VERIFIED | `bfc8f36` | `make fuzz`; `make sbom`; CI |
+| R8 | Scientific statistics & targets | VERIFIED | this commit | `go test ./internal/research/{stats,scorecard}/...`; `heramba research stats` |
 | R9 | Operations, explainability & human control | NOT_STARTED | — | — |
 | R10 | Advanced training package | NOT_STARTED | — | — |
 | R11 | Final research & release review | NOT_STARTED | — | — |
@@ -345,3 +345,33 @@ owner-draft fields.
 
 **Next action:** R8 — scientific statistics & targets (reproduce scripts,
 targets-vs-observed).
+
+---
+
+## R8 — Scientific statistics & targets — VERIFIED (2026-11-03)
+
+**Files:** `internal/research/stats/stats.go` (+PrecisionAtPrevalence,
+RequiredNForProportionCI, tests), `internal/research/scorecard/{scorecard,report,scorecard_test}.go`,
+`cmd/heramba/research_stats.go`, `docs/research/statistics.md`,
+`docs/research/artifacts/scorecard/`.
+
+**What shipped:** a target-vs-observed scorecard that reruns the three
+experiments and scores them against the directive's aspirational thresholds with
+Wilson/bootstrap intervals, matched-comparison effect sizes, precision at a
+realistic 1% prevalence, and sample-size adequacy. `heramba research stats`.
+
+**Reference scorecard (bfc8f36):** recall 1.00 ✅ (≥0.90); **FPR 0.094 ❌ MISS**
+(≤0.01) and flagged **underpowered** (n=32 ≪ ~381 needed for ±1%); objective
+reduction 1.00 ✅ (≥0.50); response latency 4.0s ✅ (≤5s); valid-run rate 1.00 ✅.
+Effect size: adaptive prevents 0.884 [0.856,0.912] more objectives than static.
+Precision at 1% prevalence: 0.097 (shows why 9.4% FPR fails rare-event
+detection).
+
+**Commands / results:** `go test ./internal/research/{stats,scorecard}/...` ok
+(incl. honest-MISS and positive-effect assertions); full suite PASS; vet clean.
+
+**Honesty rules enforced:** a MISS is reported as a MISS; no zero-substitution;
+no unstratified aggregate; observed explicitly separated from target.
+
+**Next action:** R9 — operations, explainability & human control (investigation
+timeline, incident reports).

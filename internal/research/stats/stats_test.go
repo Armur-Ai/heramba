@@ -89,3 +89,31 @@ func TestPRAUCInformativeBeatsInverted(t *testing.T) {
 		t.Fatal("informative scores should have higher PR-AUC than anti-correlated")
 	}
 }
+
+func TestPrecisionAtPrevalence(t *testing.T) {
+	// Perfect recall, 10% FPR: at 50% prevalence precision is high; at 1% it collapses.
+	balanced := PrecisionAtPrevalence(1.0, 0.1, 0.5)
+	rare := PrecisionAtPrevalence(1.0, 0.1, 0.01)
+	if balanced <= rare {
+		t.Fatalf("precision should drop at low prevalence: balanced=%.3f rare=%.3f", balanced, rare)
+	}
+	if rare > 0.2 {
+		t.Fatalf("at 1%% prevalence with 10%% FPR, precision should be low, got %.3f", rare)
+	}
+	// No positives predicted -> 0.
+	if PrecisionAtPrevalence(0, 0, 0.5) != 0 {
+		t.Fatal("expected 0 precision when nothing predicted positive")
+	}
+}
+
+func TestRequiredNForProportionCI(t *testing.T) {
+	// For a 1% proportion and a tight 0.5% half-width, need a few thousand samples.
+	n := RequiredNForProportionCI(0.01, 0.005)
+	if n < 1000 || n > 3000 {
+		t.Fatalf("unexpected required n=%d for p=0.01 hw=0.005", n)
+	}
+	// Smaller half-width needs more samples.
+	if RequiredNForProportionCI(0.01, 0.0025) <= n {
+		t.Fatal("tighter interval should require more samples")
+	}
+}
