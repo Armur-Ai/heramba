@@ -9,8 +9,8 @@ Status legend: `NOT_STARTED` · `IN_PROGRESS` · `BLOCKED` · `VERIFIED`.
 | CP | Title | Status | Commit | Notes |
 |---|---|---|---|---|
 | 0 | Baseline | VERIFIED | _pending_ | build/vet/test green; state + plan documented |
-| 1 | Evidence infrastructure | NOT_STARTED | — | `internal/evidence` |
-| 2 | Campaign intelligence | NOT_STARTED | — | `internal/campaign` |
+| 1 | Evidence infrastructure | VERIFIED | `83f07d0` | `internal/evidence` |
+| 2 | Campaign intelligence | IN_PROGRESS | — | `internal/campaign` |
 | 3 | Stateful deception | NOT_STARTED | — | `internal/deception` |
 | 4 | Attack graph + business logic | NOT_STARTED | — | `internal/assetgraph`, `internal/bizlogic` |
 | 5 | Strategy + containment | NOT_STARTED | — | `internal/strategy` |
@@ -43,3 +43,36 @@ re-asserted as gates in every later checkpoint.
 
 **Next action:** CP1 — `internal/evidence` normalized event + Observation/Fact/
 Hypothesis model with provenance, validation, and a persistence roundtrip.
+
+## CP1 — Evidence infrastructure — VERIFIED (2026-11-03, `83f07d0`)
+
+**Features (actual):** `internal/evidence` package.
+- `SchemaVersion`, time-sortable `ID`, mandatory `Provenance` (sensor + raw ref
+  + observed/recorded times).
+- `SecurityEvent`: normalized versioned atomic observation; `FromDetection`
+  lifts the flat data-plane `event.Event`, carrying confidence/labels and
+  mapping a kind→tentative attack `Stage`.
+- Claim vocabulary: `Fact` (restates observations, conf 1.0, requires ≥1
+  derivation), `Hypothesis` (supporting + contradicting evidence, confidence,
+  uncertainty, `Support`/`Contradict`/`Decay`/`Expire`, status lifecycle).
+- Typed directed `Relationship` edges; `IsInference()` separates probabilistic
+  links (`same_actor`) from observational ones (`same_source`).
+- `Store`: concurrency-safe, validates-before-accept, append-only JSONL
+  durability with tagged envelopes, `EventsBySource`/`EventsInWindow` queries,
+  unknown-schema soft-skip on reload.
+
+**Commands / results:** `go test ./internal/evidence/` → ok; full `go vet` +
+`go test ./...` green.
+
+**Gate:** ✅ valid events roundtrip (`TestPersistenceRoundTrip`); invalid
+rejected safely (`TestStoreRejectsInvalid`, `TestSecurityEventValidate`);
+evidence persists; proxy/edge regression suite still green; unknown schema
+skipped not fatal.
+
+**Limitations:** store is single-file JSONL (fine for local/edge scale; no
+compaction yet). Entity resolution deferred to CP2 (correctly — IP is a
+transport key here, not an identity).
+
+**Next action:** CP2 — `internal/campaign`: temporal graph over evidence,
+entity resolution (probabilistic, as Hypotheses), multi-session reconstruction,
+investigation API.
