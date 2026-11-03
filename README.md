@@ -99,7 +99,17 @@ run it in front of production and measure before enabling any inline behavior.
 | tarpit flagged sources | ❌ | ✅ |
 | egress firewall | ❌ | ✅ |
 
-See the full [architecture](docs/architecture.md).
+See the full [architecture](docs/architecture.md). Beyond the edge, Heramba is
+organized into four planes — data, intelligence, adaptive-defense, research:
+
+<img src="docs/assets/four-planes.svg" alt="Heramba four-plane architecture" width="100%">
+
+Detections flow up into an evidence model that keeps **what was observed**
+(sessions) distinct from **what is inferred** (actors, campaigns):
+
+<img src="docs/assets/intelligence-pipeline.svg" alt="Intelligence pipeline: observed vs inferred" width="100%">
+
+Full write-up: [the four planes](docs/architecture/planes.md).
 
 ## Decoys & canaries
 

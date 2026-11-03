@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 360" role="img" aria-label="Strategy safety envelope: a proposed action passes deterministic policy, runs in shadow or awaits approval, enforces through a bounded executor, then expires and rolls back; attacker text and LLM proposals cannot bypass policy">
+  <defs>
+    <linearGradient id="ssbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1119"/><stop offset="1" stop-color="#0e1722"/></linearGradient>
+    <marker id="ssa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#f5b35a"/></marker>
+    <style>
+      .t{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#dce7ee;font-weight:700}
+      .s{font-family:'SFMono-Regular',Consolas,monospace;fill:#8aa0ad;font-size:11px}
+      .box{fill:#121d29;stroke:#27384a;stroke-width:1.5}
+      .gate{fill:#241c10;stroke:#f5b35a;stroke-width:2}
+      .deny{fill:#2a1216;stroke:#ff5d6e;stroke-width:1.8}
+      .ok{fill:#10261d;stroke:#3ddc97;stroke-width:1.8}
+      .f{stroke:#f5b35a;stroke-width:2.2;fill:none}
+    </style>
+  </defs>
+  <rect width="1080" height="360" fill="url(#ssbg)"/>
+  <text class="t" x="40" y="44" font-size="22">Strategy — the safety envelope</text>
+  <text class="s" x="40" y="68" font-size="12">Policy is deterministic code that reads only typed fields. No attacker text and no LLM proposal can change a decision — they take the same gate.</text>
+
+  <rect class="box" x="40" y="104" width="150" height="70" rx="10"/>
+  <text class="t" x="115" y="135" font-size="12" text-anchor="middle">Proposal</text>
+  <text class="s" x="115" y="156" text-anchor="middle">planner or LLM</text>
+
+  <rect class="gate" x="230" y="104" width="160" height="70" rx="10"/>
+  <text class="t" x="310" y="131" font-size="12" text-anchor="middle" fill="#f5b35a">Policy gate</text>
+  <text class="s" x="310" y="150" text-anchor="middle">typed fields only</text>
+  <text class="s" x="310" y="165" text-anchor="middle">bounded scope + expiry</text>
+
+  <rect class="deny" x="230" y="240" width="160" height="56" rx="10"/>
+  <text class="t" x="310" y="264" font-size="12" text-anchor="middle" fill="#ff5d6e">Deny</text>
+  <text class="s" x="310" y="282" text-anchor="middle">unbounded / no-evidence</text>
+
+  <rect class="box" x="430" y="104" width="160" height="70" rx="10"/>
+  <text class="t" x="510" y="131" font-size="12" text-anchor="middle">Shadow / approval</text>
+  <text class="s" x="510" y="150" text-anchor="middle">default: validate only</text>
+  <text class="s" x="510" y="165" text-anchor="middle">medium+ → human</text>
+
+  <rect class="ok" x="630" y="104" width="150" height="70" rx="10"/>
+  <text class="t" x="705" y="131" font-size="12" text-anchor="middle" fill="#cfe9df">Enforce</text>
+  <text class="s" x="705" y="150" text-anchor="middle">bounded executor</text>
+  <text class="s" x="705" y="165" text-anchor="middle">(only effect path)</text>
+
+  <rect class="box" x="820" y="104" width="220" height="70" rx="10"/>
+  <text class="t" x="930" y="131" font-size="12" text-anchor="middle">Expire · rollback · audit</text>
+  <text class="s" x="930" y="150" text-anchor="middle">duration cap + auto-revert</text>
+  <text class="s" x="930" y="165" text-anchor="middle">emergency disable (kill-switch)</text>
+
+  <path class="f" d="M190 139 H230" marker-end="url(#ssa)"/>
+  <path class="f" d="M390 139 H430" marker-end="url(#ssa)"/>
+  <path class="f" d="M310 174 V240" marker-end="url(#ssa)" stroke="#ff5d6e"/>
+  <path class="f" d="M590 139 H630" marker-end="url(#ssa)"/>
+  <path class="f" d="M780 139 H820" marker-end="url(#ssa)"/>
+
+  <text class="s" x="40" y="330" font-size="12">Injection-proof by construction: the policy function has no field an attacker can populate that it trusts. Shadow mode never calls the executor.</text>
+</svg>

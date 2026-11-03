@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 360" role="img" aria-label="Intelligence pipeline: detections become normalized evidence, evidence is sessionized (observed), sessions resolve into actors and campaigns (inferred), and the result drives strategy and swarm analysis">
+  <defs>
+    <linearGradient id="ipbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1119"/><stop offset="1" stop-color="#0e1722"/></linearGradient>
+    <marker id="ipa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b93ff"/></marker>
+    <style>
+      .t{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#dce7ee;font-weight:700}
+      .s{font-family:'SFMono-Regular',Consolas,monospace;fill:#8aa0ad;font-size:11px}
+      .obs{fill:#10261d;stroke:#3ddc97;stroke-width:1.8}
+      .inf{fill:#121d2e;stroke:#5b93ff;stroke-width:1.8}
+      .box{fill:#121d29;stroke:#27384a;stroke-width:1.5}
+      .f{stroke:#5b93ff;stroke-width:2.2;fill:none}
+      .lbl{font-family:'Segoe UI',sans-serif;font-size:11px;font-weight:700}
+    </style>
+  </defs>
+  <rect width="1080" height="360" fill="url(#ipbg)"/>
+  <text class="t" x="40" y="44" font-size="22">Intelligence pipeline — observed vs inferred</text>
+  <text class="s" x="40" y="68" font-size="12">An IP is a transport key, never an identity. Sessions are OBSERVED; actors and campaigns are INFERRED hypotheses with confidence, uncertainty, and evidence.</text>
+
+  <!-- detections -->
+  <rect class="box" x="40" y="110" width="150" height="120" rx="10"/>
+  <text class="t" x="115" y="150" font-size="13" text-anchor="middle">Detections</text>
+  <text class="s" x="115" y="174" text-anchor="middle">decoy_hit, agentic,</text>
+  <text class="s" x="115" y="190" text-anchor="middle">canary, egress…</text>
+  <text class="s" x="115" y="214" text-anchor="middle">event.Event</text>
+
+  <!-- evidence -->
+  <rect class="box" x="230" y="110" width="160" height="120" rx="10"/>
+  <text class="t" x="310" y="150" font-size="13" text-anchor="middle">Evidence</text>
+  <text class="s" x="310" y="174" text-anchor="middle">SecurityEvent +</text>
+  <text class="s" x="310" y="190" text-anchor="middle">provenance</text>
+  <text class="s" x="310" y="214" text-anchor="middle">Fact / Hypothesis</text>
+
+  <!-- sessions (observed) -->
+  <rect class="obs" x="430" y="110" width="160" height="120" rx="10"/>
+  <text class="lbl" x="510" y="134" fill="#3ddc97" text-anchor="middle">OBSERVED</text>
+  <text class="t" x="510" y="160" font-size="13" text-anchor="middle">Sessions</text>
+  <text class="s" x="510" y="184" text-anchor="middle">source key +</text>
+  <text class="s" x="510" y="200" text-anchor="middle">idle-gap grouping</text>
+
+  <!-- actors (inferred) -->
+  <rect class="inf" x="630" y="110" width="160" height="120" rx="10"/>
+  <text class="lbl" x="710" y="134" fill="#5b93ff" text-anchor="middle">INFERRED</text>
+  <text class="t" x="710" y="160" font-size="13" text-anchor="middle">Actors</text>
+  <text class="s" x="710" y="184" text-anchor="middle">entity resolution</text>
+  <text class="s" x="710" y="200" text-anchor="middle">merge / split</text>
+
+  <!-- campaigns (inferred) -->
+  <rect class="inf" x="830" y="110" width="160" height="120" rx="10"/>
+  <text class="lbl" x="910" y="134" fill="#5b93ff" text-anchor="middle">INFERRED</text>
+  <text class="t" x="910" y="160" font-size="13" text-anchor="middle">Campaigns</text>
+  <text class="s" x="910" y="184" text-anchor="middle">synchrony +</text>
+  <text class="s" x="910" y="200" text-anchor="middle">shared targeting</text>
+
+  <path class="f" d="M190 170 H230" marker-end="url(#ipa)"/>
+  <path class="f" d="M390 170 H430" marker-end="url(#ipa)"/>
+  <path class="f" d="M590 170 H630" marker-end="url(#ipa)"/>
+  <path class="f" d="M790 170 H830" marker-end="url(#ipa)"/>
+
+  <text class="s" x="40" y="286" font-size="12">Downstream: campaign/swarm classifies coordination (sequential · independent · coordinated · legit-automation); strategy proposes bounded,</text>
+  <text class="s" x="40" y="304" font-size="12">policy-gated actions; campaign/experiment runs budgeted, information-gain-ranked decoy experiments to resolve ambiguity.</text>
+</svg>
