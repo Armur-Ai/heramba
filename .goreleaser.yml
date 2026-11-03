@@ -1,0 +1,35 @@
+version: 2
+project_name: heramba
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: heramba
+    main: ./cmd/heramba
+    binary: heramba
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w
+      - -X github.com/Armur-Ai/heramba/internal/version.Version={{.Version}}
+      - -X github.com/Armur-Ai/heramba/internal/version.Commit={{.ShortCommit}}
+      - -X github.com/Armur-Ai/heramba/internal/version.Date={{.Date}}
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github
+  sort: asc
+
+release:
+  draft: true
+  prerelease: auto

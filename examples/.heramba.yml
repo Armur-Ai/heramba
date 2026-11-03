@@ -1,0 +1,15 @@
+# Example: run Heramba in front of examples/sample-app in observe mode.
+mode: observe
+listen: "127.0.0.1:8080"
+upstream: "http://127.0.0.1:3000"
+
+alert:
+  format: text
+
+decoys:
+  enabled: true
+  paths:
+    - /internal/debug
+  # Plant this fake token somewhere an attacker would find it, then watch:
+  canaries:
+    - hrmb_3a0ea0333739e3ff693757cd84aae412
