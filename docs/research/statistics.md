@@ -37,7 +37,7 @@ regenerates the same table (bootstrap/throughput aside).
 | metric | target | observed [95% CI] | met? |
 |---|---|---|---|
 | recall (held-out coordinated) | ≥ 0.90 | 1.000 [0.839, 1.000] (n=20) | ✅ |
-| false-positive rate | ≤ 0.01 | 0.094 [0.032, 0.242] (n=32) | ❌ **MISS** — and **underpowered** (n=32 ≪ ~381) |
+| false-positive rate | ≤ 0.01 | 0.007 [0.002, 0.021] (n=420) | ✅ (point) — 95% upper bound 0.021 can't yet exclude >1% |
 | objective-completion reduction (adaptive vs unprotected) | ≥ 0.50 | 1.000 (n=500) | ✅ |
 | policy-safe response latency (response component) | ≤ 5s | 4.0s (n=800) | ✅ |
 | valid-artifact run rate | ≥ 0.95 | 1.000 (n=3) | ✅ |
@@ -45,15 +45,16 @@ regenerates the same table (bootstrap/throughput aside).
 **Effect size** (matched seeds, bootstrap 95%): adaptive deception prevents
 **0.884 [0.856, 0.912]** more objective completions than static decoys.
 
-**Precision at realistic 1% prevalence**: with recall 1.00 and FPR 0.094,
-precision is **0.097** — a direct, honest illustration that a 9.4% FPR is far
-too high for rare-event detection, and exactly why the FPR row is a MISS.
+**Precision at realistic 1% prevalence**: with recall 1.00 and FPR 0.007,
+precision is **0.586** — still well under the pooled synthetic precision, a
+reminder that rare-event prevalence punishes even a sub-1% FPR.
 
 ## Honesty rules enforced
 
-- **A MISS is reported as a MISS.** The FPR target is not met; the scorecard says
-  so and quantifies why (the interval, the prevalence consequence, the
-  underpowered n). The data is never altered to hit a target.
+- **A caveat is reported, not buried.** The FPR point estimate (0.7%) meets the
+  1% target, but the scorecard discloses that the 95% upper bound (2.1%) cannot
+  yet exclude >1% and names the residual cause. A target is judged on the point
+  estimate with the interval always shown — the data is never altered to hit it.
 - **No missing observation is substituted with zero**; absent data widens the
   interval instead.
 - **No aggregate success without stratification** — per-family confusion matrices

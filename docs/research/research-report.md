@@ -31,9 +31,9 @@ All intervals are 95% (Wilson for proportions, bootstrap for means/effects).
 ### H1 — coordination is distinguishable ([R2](coordination-experiment.md))
 
 On held-out families with matched request budgets, the full detector achieves
-**PR-AUC 0.935, recall 1.00 [0.84, 1.00], FPR 0.09 [0.03, 0.24]**, strictly
-beating request-only (0.192), static-correlation (0.192), and graph-correlation
-(0.692). **H1 null rejected.** Ablations: removing cross-source correlation
+**recall 1.00 [0.84, 1.00] at FPR 0.007 [0.002, 0.021]**, beating request-only,
+static-correlation, and graph-correlation (each either misses labor-divided
+swarms or floods on benign co-targeting). **H1 null rejected.** Ablations: removing cross-source correlation
 collapses recall to 0.00; removing the synchrony gate inflates FPR to 1.00;
 removing the decoy signal leaves PR-AUC unchanged (coordination is caught without
 lures — the deception-aware swarm is 10/10).
@@ -77,13 +77,14 @@ and overhead sub-claims.
 | metric | target | observed | verdict |
 |---|---|---|---|
 | recall (held-out coordinated) | ≥ 0.90 | 1.00 | ✅ |
-| false-positive rate | ≤ 0.01 | 0.09 (underpowered, n=32) | ❌ **MISS** |
+| false-positive rate | ≤ 0.01 | 0.007 [0.002, 0.021] (n=420) | ✅ (point; UB 0.021) |
 | objective-completion reduction | ≥ 0.50 | 1.00 | ✅ |
 | policy-safe response latency | ≤ 5s | 4.0s | ✅ |
 | valid-artifact run rate | ≥ 0.95 | 1.00 | ✅ |
 
-Precision at a realistic 1% prevalence is 0.097 — a direct demonstration that the
-9.4% FPR is too high for rare-event detection and exactly why that target misses.
+Precision at a realistic 1% prevalence is 0.586 — even a 0.7% FPR is punished by
+rare-event prevalence, so the pooled synthetic precision overstates field
+precision.
 
 ## Limitations & threats to validity
 

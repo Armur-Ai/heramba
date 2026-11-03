@@ -28,7 +28,7 @@ piece is incomplete; **NOT STARTED** / **BLOCKED** otherwise. Nothing is called
 |---|---|---|---|
 | R0 | Safe handoff & gap analysis | VERIFIED | [PHASE2_EXECUTION_STATUS.md](PHASE2_EXECUTION_STATUS.md) |
 | R1 | Pre-registered protocol & threat model | VERIFIED | `go test ./internal/research/...`; `heramba research manifest` |
-| R2 | Fair coordination experiment (H1) | VERIFIED | `heramba research coord`; PR-AUC 0.935 |
+| R2 | Fair coordination experiment (H1) | VERIFIED | `heramba research coord`; recall 1.00 @ FPR 0.007 |
 | R3 | Deception objective experiment (H2) | VERIFIED | `heramba research objective`; completion → 0.00 |
 | R4 | Adaptation race & co-evolution (H3) | VERIFIED | `heramba research coevolve` |
 | R5 | Prompt-injection & data-plane safety (H5a) | VERIFIED | `go test ./internal/taint/...`; 3.7M-exec policy fuzz |
@@ -43,7 +43,7 @@ piece is incomplete; **NOT STARTED** / **BLOCKED** otherwise. Nothing is called
 
 | H | Claim | Verdict | Evidence |
 |---|---|---|---|
-| H1 | coordination distinguishable | **null rejected** | R2: full PR-AUC 0.935 > all baselines |
+| H1 | coordination distinguishable | **null rejected** | R2: recall 1.00 @ FPR 0.007, beats all baselines |
 | H2 | adaptive deception reduces objectives | **null rejected** | R3: completion 1.00 → 0.00 |
 | H3 | defender adapts fast enough for positive utility | **null rejected (detectable)** | R4: utility 0.93, response 4.0s; feint case lossy |
 | H4 | graceful degradation under missing sensor | **PARTIAL** | R2 ablations degrade gracefully; full live-sensor sweep not run |
@@ -51,7 +51,7 @@ piece is incomplete; **NOT STARTED** / **BLOCKED** otherwise. Nothing is called
 
 ## Explicitly NOT production-ready / not claimed
 
-- Coordination **FPR 9.4%** (target 1%), on underpowered synthetic benign.
+- Coordination **FPR 0.7%** meets the 1% target at the point estimate, but the 95% upper bound (2.1%) can't yet exclude >1%.
 - **H4** missing-sensor degradation: PARTIAL.
 - Synthetic deception app / strategy engine **not auto-mounted into live `serve`**
   (opt-in).

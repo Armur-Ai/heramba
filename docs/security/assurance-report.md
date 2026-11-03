@@ -79,8 +79,8 @@ observation→fact→hypothesis→action→outcome and exports a report. See
 
 ## Known risks / open items
 
-- **Coordination FPR (9.4%) exceeds the 1% target** on hard synthetic benign, and
-  the benign sample is underpowered; not production-tuned.
+- **Coordination FPR is 0.7%** (point estimate under the 1% target); the 95%
+  upper bound (2.1%) cannot yet firmly exclude >1%. Not production-tuned.
 - **H4 (missing-sensor degradation) is PARTIAL** — not a full live-sensor sweep.
 - **No signed releases / SLSA provenance yet.**
 - **SECURITY.md has owner-draft fields** (security contact, supported versions)

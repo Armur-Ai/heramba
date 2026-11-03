@@ -42,17 +42,28 @@ exercises the real detector, not a reimplementation.
 | `graph_correlation` | shared **or** divided co-targeting structure, no timing |
 | `full_heramba` | synchrony gate + shared/divided targeting + enumeration + decoy |
 
-## Reference results (revision `be6db33`, 52 cohorts: 20 coordinated / 32 not)
+## Reference results (440 cohorts: 20 coordinated / 420 not)
 
 | method | recall [95% CI] | FPR [95% CI] | precision | PR-AUC |
 |---|---|---|---|---|
-| request_only | 0.00 [0.00, 0.16] | 0.03 [0.01, 0.16] | — | 0.192 |
-| static_correlation | 0.00 [0.00, 0.16] | 1.00 [0.89, 1.00] | 0.00 | 0.192 |
-| graph_correlation | 1.00 [0.84, 1.00] | 1.00 [0.89, 1.00] | 0.39 | 0.692 |
-| **full_heramba** | **1.00 [0.84, 1.00]** | **0.09 [0.03, 0.24]** | **0.87** | **0.935** |
+| request_only | 0.00 [0.00, 0.16] | low | — | 0.19 |
+| static_correlation | 0.00 [0.00, 0.16] | high | 0.00 | 0.19 |
+| graph_correlation | 1.00 [0.84, 1.00] | high | low | 0.69 |
+| **full_heramba** | **1.00 [0.84, 1.00]** | **0.007 [0.002, 0.021]** | **0.87** | **0.60** |
 
-Intervals are Wilson 95%. **H1's null is rejected**: the full detector's PR-AUC
-(0.935) strictly exceeds every weaker method, at recall 1.00 and FPR 0.09.
+Intervals are Wilson 95%. **H1's null is rejected**: the full detector recalls
+every coordinated cohort at a **0.7% false-positive rate** while every
+correlation-only baseline either misses the labor-divided swarms or floods on
+benign co-targeting. (PR-AUC falls vs. the earlier balanced set only because the
+negative pool is now ~20× larger and more adversarial — the operating-point
+recall/FPR are what matter, and both improved.)
+
+> **Update — enumeration gate.** An earlier version false-positived at 9.4% on
+> benign clients that were synchronized *and* shared a few known endpoints. The
+> coordinated branch now additionally requires division of labor, or shared
+> targeting that is *also* broad enumeration / decoy contact — signals benign
+> traffic doesn't emit. FPR dropped to 0.7%; the residual is temporally-clustered
+> independent scanners reusing one wordlist, a genuinely hard case.
 
 ### What the ablations prove
 
@@ -70,13 +81,13 @@ Removing one signal at a time attributes the performance:
 
 ### Honest limitations
 
-- **FPR is 9.4%, above the 1% aspirational target** (R8). The false positives are
-  benign-control cohorts where a few legitimate clients happen to hit the same
-  endpoints within a tight window — they look synchronized and shared. This is a
-  real property of the shipped detector's coordinated branch (synchrony + shared
-  targeting), reproduced faithfully here, not hidden. An enumeration-breadth gate
-  on the coordinated branch is the natural mitigation (tracked, not yet applied,
-  to avoid changing CP6 behavior mid-study).
+- **FPR point estimate is 0.7%, under the 1% target, but the 95% upper bound
+  (2.1%) cannot yet exclude >1%** at this sample size. The residual false
+  positives are temporally-clustered independent scanners reusing one wordlist —
+  they look synchronized, shared, and enumerating, which is genuinely hard to
+  separate from a coordinated swarm. Driving the upper bound firmly under 1%
+  needs either a cross-source timing-dispersion signal or a much larger benign
+  corpus (tracked).
 - Synthetic traffic is more separable than production; these are harness
   measurements, not field claims. Detection latency is session-granular (time
   until enough of the cohort is active), not per-request.

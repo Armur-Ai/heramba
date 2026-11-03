@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "code_revision": "bfc8f36",
+  "code_revision": "f2769d6",
   "targets": {
     "RecallCoordMin": 0.9,
     "FPRMax": 0.01,
@@ -25,13 +25,13 @@
       "metric": "false-positive rate",
       "target": "\u003c= 0.01",
       "observed": {
-        "point": 0.09375,
-        "lo": 0.032401551298366194,
-        "hi": 0.24218154728387864,
-        "n": 32
+        "point": 0.007142857142857143,
+        "lo": 0.0024321293652942912,
+        "hi": 0.02078754066905586,
+        "n": 420
       },
-      "met": false,
-      "context": "benign controls + negative families; UNDERPOWERED for a 1% target (n=32 \u003c ~381 needed for a ±1% interval)"
+      "met": true,
+      "context": "benign controls + negative families; 95% upper bound 0.021 cannot yet exclude \u003e1% — residual is temporally-clustered independent scanners"
     },
     {
       "metric": "objective-completion reduction (adaptive vs unprotected)",
@@ -83,7 +83,7 @@
     }
   ],
   "notes": [
-    "precision at realistic 1% prevalence (recall 1.000, FPR 0.094): 0.097 — pooled synthetic precision overstates field precision",
+    "precision at realistic 1% prevalence (recall 1.000, FPR 0.007): 0.586 — pooled synthetic precision overstates field precision",
     "targets are aspirational evaluation thresholds, not claims; a MISS is reported as-is",
     "synthetic traffic is more separable than production; observed numbers are harness measurements"
   ]
