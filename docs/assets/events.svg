@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 300" role="img" aria-label="Heramba event kinds and severity legend">
+  <defs>
+    <linearGradient id="ebg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1119"/><stop offset="1" stop-color="#0e1722"/></linearGradient>
+    <style>
+      .t{font-family:'Segoe UI',Helvetica,Arial,sans-serif;fill:#dce7ee;font-weight:700}
+      .s{font-family:'SFMono-Regular',Consolas,monospace;fill:#8aa0ad;font-size:12px}
+      .k{font-family:'SFMono-Regular',Consolas,monospace;fill:#dce7ee;font-size:13px}
+      .b{fill:#121d29;stroke:#27384a;stroke-width:1.5}
+    </style>
+  </defs>
+  <rect width="1040" height="300" fill="url(#ebg)"/>
+  <text class="t" x="40" y="44" font-size="22">Detection events</text>
+
+  <!-- event kinds -->
+  <g>
+    <rect class="b" x="40" y="74" width="300" height="34" rx="6"/><circle cx="60" cy="91" r="7" fill="#ff5d6e"/><text class="k" x="78" y="95">decoy_hit</text><text class="s" x="210" y="95">conf 1.0</text>
+    <rect class="b" x="40" y="116" width="300" height="34" rx="6"/><circle cx="60" cy="133" r="7" fill="#ff5d6e"/><text class="k" x="78" y="137">canary_triggered</text><text class="s" x="210" y="137">conf 1.0</text>
+    <rect class="b" x="40" y="158" width="300" height="34" rx="6"/><circle cx="60" cy="175" r="7" fill="#f5b35a"/><text class="k" x="78" y="179">agentic_traffic</text><text class="s" x="210" y="179">heuristic</text>
+    <rect class="b" x="360" y="74" width="300" height="34" rx="6"/><circle cx="380" cy="91" r="7" fill="#ff5d6e"/><text class="k" x="398" y="95">egress_blocked</text>
+    <rect class="b" x="360" y="116" width="300" height="34" rx="6"/><circle cx="380" cy="133" r="7" fill="#f5b35a"/><text class="k" x="398" y="137">rate_limited</text>
+    <rect class="b" x="360" y="158" width="300" height="34" rx="6"/><circle cx="380" cy="175" r="7" fill="#5b93ff"/><text class="k" x="398" y="179">counter_deployed</text>
+  </g>
+
+  <!-- severity legend -->
+  <text class="t" x="700" y="68" font-size="14">severity</text>
+  <g font-size="12">
+    <circle cx="712" cy="90" r="7" fill="#ff5d6e"/><text class="s" x="728" y="94">critical / high</text>
+    <circle cx="712" cy="118" r="7" fill="#f5b35a"/><text class="s" x="728" y="122">medium</text>
+    <circle cx="712" cy="146" r="7" fill="#5b93ff"/><text class="s" x="728" y="150">low / info</text>
+  </g>
+
+  <text class="s" x="40" y="236">Deception events (decoy_hit, canary_triggered) are high-confidence by construction — zero false positives. agentic_traffic is a</text>
+  <text class="s" x="40" y="256">transparent behavioral heuristic. Every event is emitted to the alert sink as text or JSONL, with a per-session shutdown summary.</text>
+</svg>
