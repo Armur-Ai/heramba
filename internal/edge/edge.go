@@ -34,13 +34,14 @@ import (
 
 // Engine is the configured edge runtime. Build with New, serve with ServeHTTP.
 type Engine struct {
-	cfg   config.Config
-	reg   *decoy.Registry
-	cls   *classify.Classifier
-	norm  *signal.Normalizer // protect mode only
-	jit   *signal.Jitter     // protect-mode tarpit for flagged sources
-	sink  alert.Sink
-	proxy *httputil.ReverseProxy // nil in honeypot-only (no upstream)
+	cfg     config.Config
+	reg     *decoy.Registry
+	cls     *classify.Classifier
+	norm    *signal.Normalizer // protect mode only
+	jit     *signal.Jitter     // protect-mode tarpit for flagged sources
+	sink    alert.Sink
+	proxy   *httputil.ReverseProxy // nil in honeypot-only (no upstream)
+	trusted []*net.IPNet           // proxy CIDRs whose XFF we trust
 }
 
 // New assembles an edge Engine from config. In PROTECT mode it enables response
@@ -53,6 +54,11 @@ func New(cfg config.Config, sink alert.Sink) (*Engine, error) {
 	e := &Engine{cfg: cfg, reg: decoy.NewRegistry(cfg.Decoys.Paths...), cls: classify.New(), sink: sink}
 	for _, tok := range cfg.Decoys.Canaries {
 		e.reg.Canaries().Watch(tok, "configured canary")
+	}
+	for _, c := range cfg.TrustedProxies {
+		if _, n, err := net.ParseCIDR(c); err == nil {
+			e.trusted = append(e.trusted, n)
+		}
 	}
 	if cfg.Mode == config.ModeProtect {
 		e.norm = signal.DefaultNormalizer()
@@ -80,7 +86,7 @@ func New(cfg config.Config, sink alert.Sink) (*Engine, error) {
 func (e *Engine) Handler() http.Handler { return e }
 
 func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ip := clientIP(r)
+	ip := e.clientIP(r)
 
 	// 1. Classify the source (both modes — detection is the point of observe).
 	v := e.cls.Classify(classify.Observation{
@@ -164,11 +170,43 @@ func (e *Engine) scanCanary(r *http.Request) (decoy.Canary, bool) {
 	return decoy.Canary{}, false
 }
 
-func clientIP(r *http.Request) string {
-	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+// clientIP returns the peer address, or the left-most X-Forwarded-For entry
+// when the direct peer is a configured trusted proxy. By default no proxy is
+// trusted, so a client can never spoof its IP via a forged XFF header.
+func (e *Engine) clientIP(r *http.Request) string {
+	host := r.RemoteAddr
+	if h, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		host = h
+	}
+	if len(e.trusted) == 0 {
 		return host
 	}
-	return r.RemoteAddr
+	peer := net.ParseIP(host)
+	if peer == nil || !e.isTrusted(peer) {
+		return host
+	}
+	xff := r.Header.Get("X-Forwarded-For")
+	if xff == "" {
+		return host
+	}
+	first := xff
+	if i := strings.IndexByte(xff, ','); i >= 0 {
+		first = xff[:i]
+	}
+	first = strings.TrimSpace(first)
+	if net.ParseIP(first) != nil {
+		return first
+	}
+	return host
+}
+
+func (e *Engine) isTrusted(ip net.IP) bool {
+	for _, n := range e.trusted {
+		if n.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 // headerSubset extracts the lower-cased headers the classifier reasons about.
