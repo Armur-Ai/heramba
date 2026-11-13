@@ -39,8 +39,13 @@ func runDecoysList() {
 	for _, e := range r.Endpoints() {
 		fmt.Fprintf(tw, "%s\t%s\n", e.Path, e.Note)
 	}
+	// Decoy zones: any path under the prefix is a hit (shown with a trailing *).
+	for _, e := range r.PrefixZones() {
+		fmt.Fprintf(tw, "%s*\t%s\n", e.Path, e.Note)
+	}
 	_ = tw.Flush()
 	fmt.Println("\nA request to any of these is zero-false-positive: no legitimate client touches them.")
+	fmt.Println("A trailing * marks a decoy zone: every path under that prefix is a lure.")
 }
 
 func runCanary(args []string) {
