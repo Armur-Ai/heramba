@@ -40,3 +40,33 @@ func TestInspectPathEmitsZeroFPEvent(t *testing.T) {
 		t.Fatal("non-decoy must not produce an event")
 	}
 }
+
+func TestDecoyPrefixZones(t *testing.T) {
+	r := NewRegistry()
+	// Any path under a decoy zone is a hit, even if not an exact decoy.
+	for _, p := range []string{"/.git/HEAD", "/.git/refs/heads/main", "/actuator/health", "/.aws/config", "/wp-admin/options.php"} {
+		if _, ok := r.IsDecoy(p); !ok {
+			t.Errorf("%s should match a decoy zone", p)
+		}
+	}
+	// Real routes that merely share a leading string must NOT match.
+	for _, p := range []string{"/api/users", "/home", "/actuators", "/wp-admin-ui"} {
+		if _, ok := r.IsDecoy(p); ok {
+			t.Errorf("%s must not be a decoy", p)
+		}
+	}
+	// Longest-prefix note wins when zones overlap.
+	r.AddPrefix("/actuator/env/", "actuator env secret walk")
+	e, ok := r.IsDecoy("/actuator/env/db.password")
+	if !ok || e.Note != "actuator env secret walk" {
+		t.Errorf("longest prefix should win, got %+v ok=%v", e, ok)
+	}
+}
+
+func TestPrefixInspectEmitsEvent(t *testing.T) {
+	r := NewRegistry()
+	ev, ok := r.InspectPath("GET", "/.git/HEAD", "8.8.8.8")
+	if !ok || ev.Source != "8.8.8.8" {
+		t.Fatalf("decoy-zone path should emit an event: %+v ok=%v", ev, ok)
+	}
+}

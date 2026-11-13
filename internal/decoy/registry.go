@@ -1,6 +1,7 @@
 package decoy
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/Armur-Ai/heramba/internal/event"
@@ -19,6 +20,7 @@ type Endpoint struct {
 type Registry struct {
 	mu        sync.RWMutex
 	endpoints map[string]Endpoint
+	prefixes  map[string]Endpoint // decoy zones: any path UNDER this prefix is a hit
 	canaries  *CanaryStore
 }
 
@@ -39,12 +41,33 @@ func DefaultDecoyPaths() []Endpoint {
 	}
 }
 
-// NewRegistry seeds the default decoys plus any extra paths, and a fresh canary
-// store.
+// DefaultDecoyPrefixes are decoy ZONES: path prefixes under which *every* path
+// is a lure, because no legitimate client or app ever serves anything beneath
+// them. Exact-path decoys miss a scanner that walks a family (/.git/HEAD,
+// /.git/refs/heads/main, …); a prefix zone catches the whole family at zero
+// false-positive cost. Each prefix ends in "/" so it matches a path segment
+// boundary, never a same-prefixed real route.
+func DefaultDecoyPrefixes() []Endpoint {
+	return []Endpoint{
+		{"/.git/", "exposed VCS repository walk"},
+		{"/.svn/", "exposed SVN metadata walk"},
+		{"/.hg/", "exposed Mercurial metadata walk"},
+		{"/.aws/", "cloud credential directory probe"},
+		{"/.ssh/", "SSH key directory probe"},
+		{"/actuator/", "Spring Boot actuator enumeration"},
+		{"/wp-admin/", "WordPress admin enumeration"},
+	}
+}
+
+// NewRegistry seeds the default decoys + decoy zones plus any extra exact paths,
+// and a fresh canary store.
 func NewRegistry(extra ...string) *Registry {
-	r := &Registry{endpoints: map[string]Endpoint{}, canaries: NewCanaryStore()}
+	r := &Registry{endpoints: map[string]Endpoint{}, prefixes: map[string]Endpoint{}, canaries: NewCanaryStore()}
 	for _, e := range DefaultDecoyPaths() {
 		r.endpoints[e.Path] = e
+	}
+	for _, e := range DefaultDecoyPrefixes() {
+		r.prefixes[e.Path] = e
 	}
 	for _, p := range extra {
 		if p != "" {
@@ -54,7 +77,7 @@ func NewRegistry(extra ...string) *Registry {
 	return r
 }
 
-// Add registers an additional decoy path.
+// Add registers an additional exact decoy path.
 func (r *Registry) Add(path, note string) {
 	if path == "" {
 		return
@@ -64,12 +87,44 @@ func (r *Registry) Add(path, note string) {
 	r.mu.Unlock()
 }
 
-// IsDecoy reports whether an exact request path is a decoy.
+// AddPrefix registers a decoy zone: any path under prefix becomes a decoy hit.
+// A prefix should end in "/" so it matches a segment boundary.
+func (r *Registry) AddPrefix(prefix, note string) {
+	if prefix == "" {
+		return
+	}
+	r.mu.Lock()
+	r.prefixes[prefix] = Endpoint{Path: prefix, Note: note}
+	r.mu.Unlock()
+}
+
+// IsDecoy reports whether a request path is a decoy — by exact match first, then
+// by decoy zone (the longest matching prefix wins, for the most specific note).
 func (r *Registry) IsDecoy(path string) (Endpoint, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	e, ok := r.endpoints[path]
-	return e, ok
+	if e, ok := r.endpoints[path]; ok {
+		return e, true
+	}
+	var best Endpoint
+	found := false
+	for pfx, e := range r.prefixes {
+		if strings.HasPrefix(path, pfx) && len(pfx) > len(best.Path) {
+			best, found = e, true
+		}
+	}
+	return best, found
+}
+
+// PrefixZones returns a snapshot of the registered decoy zones (prefixes).
+func (r *Registry) PrefixZones() []Endpoint {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	out := make([]Endpoint, 0, len(r.prefixes))
+	for _, e := range r.prefixes {
+		out = append(out, e)
+	}
+	return out
 }
 
 // Canaries exposes the canary store (minting/checking tokens).
