@@ -159,14 +159,20 @@ explicit gap ("not installed — here's what it would catch"), never a silent pa
 tools you want, skip the ones you don't — the centrepiece adapts.
 
 ```bash
-heramba shield ./suspect-dir          # run every available defensive scanner over a path
-heramba shield ./model.pt --json      # machine-readable, one aggregated verdict
+heramba shield --target ./suspect-dir              # run every available scanner over a path
+heramba shield --target ./model.pt --json          # machine-readable, one aggregated verdict
+heramba shield --target ./build --fail-on findings  # CI gate: exit non-zero on a hit
+#   --fail-on none|findings|error|gap  (gap = fail if a defensive tool isn't installed)
 ```
 
 ## Decoys & canaries
 
 No legitimate client ever reaches the decoy surface — that's why the signal is
-clean. Nothing to tune, no false-positive rate.
+clean. Nothing to tune, no false-positive rate. Alongside exact-path lures,
+Heramba defines **decoy zones** — prefixes like `/.git/`, `/.aws/`, `/actuator/`
+under which *every* path is a lure, so a scanner walking a family (`/.git/HEAD`,
+`/.git/refs/…`) trips the trap on the first request, not just on a single known
+file.
 
 <img src="docs/assets/lifecycle.svg" alt="Decoy and canary lifecycle" width="100%">
 
