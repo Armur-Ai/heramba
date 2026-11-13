@@ -116,6 +116,7 @@ func (c *Classifier) Classify(o Observation) Verdict {
 		missingBrowserSignal(ua, o.Headers),
 		acceptSignal(o.Headers),
 		uaHeaderMismatchSignal(ua, o.Headers),
+		browserUANoAcceptLanguageSignal(ua, o.Headers),
 		cadenceSignal(cadence, c.opts.CadenceRPS),
 		enumerationSignal(distinct, c.opts.EnumDistinct),
 	}
@@ -214,6 +215,25 @@ func uaHeaderMismatchSignal(ua string, h map[string]string) Signal {
 	_, hasSecFetch := h["sec-fetch-mode"]
 	if !hasCHUA && !hasSecFetch {
 		s.Fired, s.Detail = true, "UA claims Chromium but sends no Sec-CH-UA / Sec-Fetch headers (spoofed UA fingerprint)"
+	}
+	return s
+}
+
+// browserUANoAcceptLanguageSignal fires when the User-Agent claims a real
+// browser but the request carries no Accept-Language header. Every mainstream
+// browser sends Accept-Language on every request; a tool that spoofs a browser
+// UA string (Firefox, Safari, an old Chrome, …) very often forgets it. This
+// complements ua_header_mismatch, which only inspects Chromium's Sec-CH-UA /
+// Sec-Fetch fingerprint — this one catches spoofed *non-Chromium* browser UAs.
+func browserUANoAcceptLanguageSignal(ua string, h map[string]string) Signal {
+	s := Signal{Name: "browser_ua_no_accept_language", Weight: 0.2}
+	looksBrowser := strings.Contains(ua, "mozilla") || strings.Contains(ua, "applewebkit") ||
+		strings.Contains(ua, "gecko/") || strings.Contains(ua, "firefox") || strings.Contains(ua, "safari")
+	if !looksBrowser {
+		return s // only meaningful when the UA claims to be a browser
+	}
+	if _, ok := h["accept-language"]; !ok {
+		s.Fired, s.Detail = true, "UA claims a browser but sends no Accept-Language (real browsers always do)"
 	}
 	return s
 }

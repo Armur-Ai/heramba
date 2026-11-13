@@ -141,3 +141,37 @@ func TestUAHeaderMismatchSignal(t *testing.T) {
 		}
 	}
 }
+
+func TestBrowserUANoAcceptLanguageSignal(t *testing.T) {
+	c := New()
+	// Spoofed Firefox UA with no Accept-Language -> fires.
+	v := c.Classify(Observation{
+		Source: "9.9.9.9", Path: "/", UserAgent: "Mozilla/5.0 (X11; Linux) Gecko/20100101 Firefox/120.0",
+		Headers: map[string]string{"accept": "*/*"},
+	})
+	fired := false
+	for _, s := range v.Signals {
+		if s.Name == "browser_ua_no_accept_language" && s.Fired {
+			fired = true
+		}
+	}
+	if !fired {
+		t.Fatalf("signal should fire for a browser UA with no Accept-Language: %+v", v.Signals)
+	}
+
+	// Real browser (has Accept-Language) -> must not fire.
+	v2 := c.Classify(Observation{Source: "9.9.9.8", Path: "/", UserAgent: "Mozilla/5.0", Headers: browserHeaders()})
+	for _, s := range v2.Signals {
+		if s.Name == "browser_ua_no_accept_language" && s.Fired {
+			t.Fatal("must not fire when Accept-Language is present")
+		}
+	}
+
+	// Non-browser UA (curl) -> not meaningful, must not fire (other signals handle it).
+	v3 := c.Classify(Observation{Source: "9.9.9.7", Path: "/", UserAgent: "curl/8.0", Headers: map[string]string{}})
+	for _, s := range v3.Signals {
+		if s.Name == "browser_ua_no_accept_language" && s.Fired {
+			t.Fatal("must not fire for a non-browser UA")
+		}
+	}
+}
