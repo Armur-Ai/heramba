@@ -111,6 +111,58 @@ Detections flow up into an evidence model that keeps **what was observed**
 
 Full write-up: [the four planes](docs/architecture/planes.md).
 
+## The Armur defensive suite — Heramba in the middle
+
+Just as **[Pentest-Swarm](https://github.com/Armur-Ai/Pentest-Swarm-AI)** is the centrepiece
+of Armur's *offensive* tooling, **Heramba is the centrepiece of the defense.** The edge runtime
+above is only half the story: Heramba also orchestrates a family of **independent, standalone
+scanners** — the things an attacker drops *behind* your perimeter — through its `shield`
+subcommand. Each tool ships and runs on its own; Heramba composes them into one defensive sweep.
+
+```mermaid
+flowchart TB
+    classDef center fill:#10233f,stroke:#4da3ff,stroke-width:2px,color:#eaf3ff;
+    classDef tool fill:#141414,stroke:#555,color:#e8e8e8;
+    classDef edge fill:#0c1a2b,stroke:#2b6cb0,color:#cfe6ff;
+
+    T["inbound traffic"]:::edge
+    HER["<b>Heramba</b> ★ — the defense orchestrator<br/>edge runtime: classify · deceive · deny signal · egress-jail<br/>+ <code>heramba shield</code>: run the scanners below"]:::center
+    APP["your app<br/>(upstream)"]:::edge
+
+    T --> HER --> APP
+
+    subgraph SHIELD["heramba shield — argv scanner adapters (each tool also runs standalone)"]
+      direction LR
+      AGA["<b>agat</b><br/>malware / binary<br/>immune system"]:::tool
+      BYA["<b>byakugan</b><br/>ML model-file<br/>backdoor scanner"]:::tool
+      SHA["<b>sharingan</b><br/>rogue embedded-LLM<br/>footprint detector"]:::tool
+      SKS["<b>skillscan</b><br/>Claude skill<br/>safety (planned)"]:::tool
+    end
+
+    HER -- "scan &lt;path&gt; --json" --> SHIELD
+    AGA -. "verdict" .-> HER
+    BYA -. "verdict" .-> HER
+    SHA -. "verdict" .-> HER
+    SKS -. "verdict" .-> HER
+```
+
+| Tool | Catches | Status |
+|---|---|---|
+| **[agat](https://github.com/Armur-Ai/agat)** | polymorphic / metamorphic / AI-rewritten malware by *what it is*, offline | wired — `heramba shield` runs it when present |
+| **[byakugan](https://github.com/Armur-Ai/byakugan)** | code-execution backdoors inside ML model artifacts (`.pt`/`.pkl`/`.h5`/…) | adapter ready; engine in design preview |
+| **[sharingan](https://github.com/Armur-Ai/sharingan)** | hidden weights, smuggled runtimes, self-contained agent loops on a host/image | adapter ready; engine in design preview |
+| **skillscan** | unsafe Claude skills before they run | planned |
+
+The invocation seam is **fail-honest**: when a tool's binary is present Heramba runs
+`<tool> scan <path> --json` and folds its verdict into one report; when it's absent you get an
+explicit gap ("not installed — here's what it would catch"), never a silent pass. Install the
+tools you want, skip the ones you don't — the centrepiece adapts.
+
+```bash
+heramba shield ./suspect-dir          # run every available defensive scanner over a path
+heramba shield ./model.pt --json      # machine-readable, one aggregated verdict
+```
+
 ## Decoys & canaries
 
 No legitimate client ever reaches the decoy surface — that's why the signal is
