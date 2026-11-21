@@ -17,7 +17,9 @@ func runDecoys(args []string) {
 	}
 	switch args[0] {
 	case "list":
-		runDecoysList()
+		runDecoysList(args[1:])
+	case "presets":
+		runDecoysPresets()
 	case "canary":
 		runCanary(args[1:])
 	default:
@@ -28,12 +30,33 @@ func runDecoys(args []string) {
 
 func decoysUsage() {
 	fmt.Fprintln(os.Stderr, `usage:
-  heramba decoys list              list the default decoy endpoints
-  heramba decoys canary <label>    mint a canary token to plant`)
+  heramba decoys list [--preset <stack>]   list the decoy endpoints (optionally for a framework)
+  heramba decoys presets                   list available framework presets
+  heramba decoys canary <label>            mint a canary token to plant`)
 }
 
-func runDecoysList() {
+func runDecoysPresets() {
+	fmt.Println("Framework decoy presets (serve --preset <name> or decoys.preset in config):")
+	for _, name := range decoy.PresetNames() {
+		p, _ := decoy.GetPreset(name)
+		fmt.Printf("  %-10s %d lures, %d zones\n", name, len(p.Paths), len(p.Prefixes))
+	}
+}
+
+func runDecoysList(args []string) {
+	fs := flag.NewFlagSet("list", flag.ExitOnError)
+	preset := fs.String("preset", "", "also show the lures a framework preset adds")
+	_ = fs.Parse(args)
+
 	r := decoy.NewRegistry()
+	if *preset != "" {
+		p, ok := decoy.GetPreset(*preset)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "heramba: unknown preset %q (have: %v)\n", *preset, decoy.PresetNames())
+			os.Exit(1)
+		}
+		r.ApplyPreset(p)
+	}
 	tw := tabwriter.NewWriter(os.Stdout, 0, 2, 2, ' ', 0)
 	fmt.Fprintln(tw, "PATH\tWHY IT'S A LURE")
 	for _, e := range r.Endpoints() {

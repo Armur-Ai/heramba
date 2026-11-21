@@ -15,6 +15,7 @@ import (
 	"github.com/Armur-Ai/heramba/internal/alert"
 	"github.com/Armur-Ai/heramba/internal/config"
 	"github.com/Armur-Ai/heramba/internal/deception"
+	"github.com/Armur-Ai/heramba/internal/decoy"
 	"github.com/Armur-Ai/heramba/internal/edge"
 	"github.com/Armur-Ai/heramba/internal/event"
 	"github.com/Armur-Ai/heramba/internal/evidence"
@@ -28,6 +29,7 @@ func runServe(args []string) {
 	mode := fs.String("mode", "", "override mode: observe|protect")
 	listen := fs.String("listen", "", "override listen address, e.g. :8080")
 	upstream := fs.String("upstream", "", "override upstream, e.g. http://127.0.0.1:3000")
+	preset := fs.String("preset", "", "framework decoy preset: node|next|rails|django|laravel|wordpress|spring")
 	deceptionOn := fs.Bool("deception", false, "when there is no upstream, auto-mount the synthetic deception app for non-decoy paths")
 	deceptionSeed := fs.Int64("deception-seed", 1, "seed for the deterministic synthetic world")
 	_ = fs.Parse(args)
@@ -51,6 +53,15 @@ func runServe(args []string) {
 	}
 	if *upstream != "" {
 		cfg.Upstream = *upstream
+	}
+	if *preset != "" {
+		cfg.Decoys.Preset = *preset
+	}
+	if cfg.Decoys.Preset != "" {
+		if _, ok := decoy.GetPreset(cfg.Decoys.Preset); !ok {
+			fmt.Fprintf(os.Stderr, "heramba: unknown preset %q (have: %v)\n", cfg.Decoys.Preset, decoy.PresetNames())
+			os.Exit(1)
+		}
 	}
 	if err := cfg.Validate(); err != nil {
 		fmt.Fprintf(os.Stderr, "heramba: %v\n", err)

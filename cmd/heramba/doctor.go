@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/Armur-Ai/heramba/internal/config"
+	"github.com/Armur-Ai/heramba/internal/decoy"
 )
 
 // runDoctor reports readiness: config presence/validity and posture, as an
@@ -44,6 +45,14 @@ func runDoctor(args []string) {
 		check(true, "upstream", "none — honeypot-only (decoys + 404)")
 	} else {
 		check(true, "upstream", cfg.Upstream)
+	}
+
+	if cfg.Decoys.Preset != "" {
+		if p, ok := decoy.GetPreset(cfg.Decoys.Preset); ok {
+			check(true, "preset", fmt.Sprintf("%s (%d framework lures + %d zones on top of defaults)", p.Name, len(p.Paths), len(p.Prefixes)))
+		} else {
+			check(false, "preset", fmt.Sprintf("unknown preset %q (have: %v)", cfg.Decoys.Preset, decoy.PresetNames()))
+		}
 	}
 
 	if cfg.Mode == config.ModeProtect && cfg.Egress.Enabled && len(cfg.Egress.AllowedHosts) == 0 {

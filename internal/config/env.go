@@ -41,6 +41,9 @@ func (c Config) ApplyEnv() Config {
 	if v := envVar("ALERT_MIN_SEVERITY", false); v != "" {
 		c.Alert.MinSeverity = v
 	}
+	if v := envVar("PRESET", false); v != "" {
+		c.Decoys.Preset = v
+	}
 	return c
 }
 

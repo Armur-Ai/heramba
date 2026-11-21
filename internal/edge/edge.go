@@ -80,6 +80,9 @@ func New(cfg config.Config, sink alert.Sink) (*Engine, error) {
 		AgenticAt:    cfg.Classifier.AgenticAt,
 	})
 	e := &Engine{cfg: cfg, reg: decoy.NewRegistry(cfg.Decoys.Paths...), cls: cls, sink: sink}
+	if p, ok := decoy.GetPreset(cfg.Decoys.Preset); ok {
+		e.reg.ApplyPreset(p) // framework-tailored lures on top of the defaults
+	}
 	for _, tok := range cfg.Decoys.Canaries {
 		e.reg.Canaries().Watch(tok, "configured canary")
 	}
