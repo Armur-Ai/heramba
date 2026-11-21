@@ -1,0 +1,34 @@
+# Heramba in front of your app — the single-afternoon deploy.
+#
+# Observe mode is safe in production: it forwards every request to your app
+# untouched and only *logs* detections. Point HERAMBA_UPSTREAM at your service
+# and run:
+#
+#     docker compose -f deploy/docker-compose.yml up
+#
+# Then probe a decoy and watch it fire:
+#     curl -s -o /dev/null http://localhost:8080/.env
+#
+# Flip HERAMBA_MODE to "protect" once you trust it to go inline.
+services:
+  heramba:
+    image: ghcr.io/armur-ai/heramba:latest
+    # To build from this checkout instead of pulling, comment `image` above and
+    # uncomment:
+    # build:
+    #   context: ..
+    ports:
+      - "8080:8080"
+    environment:
+      HERAMBA_UPSTREAM: "http://app:80"   # <-- your service
+      HERAMBA_MODE: "observe"             # observe (safe) | protect (inline)
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  # Example upstream — replace with your own service.
+  app:
+    image: traefik/whoami
+    expose:
+      - "80"
+    restart: unless-stopped

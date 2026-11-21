@@ -11,6 +11,8 @@ RUN CGO_ENABLED=0 go build \
 
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /heramba /heramba
-# Provide your own /.heramba.yml via a bind mount or a derived image.
+# No config file needed: configure via env, e.g.
+#   docker run -p 8080:8080 -e HERAMBA_UPSTREAM=http://app:3000 -e HERAMBA_MODE=observe ...
+# (or bind-mount your own /.heramba.yml). See deploy/ for compose + k8s.
 EXPOSE 8080
 ENTRYPOINT ["/heramba", "serve"]

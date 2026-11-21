@@ -1,0 +1,53 @@
+# Deploying Heramba
+
+Heramba is a single static binary / container you put **in front of** your app.
+It starts in **observe mode** — safe in production, it forwards every request
+untouched and only logs detections — so you can deploy it the same afternoon and
+flip to **protect** (inline) once you trust it.
+
+All three shapes are configured entirely with `HERAMBA_*` env vars, so no config
+file is required.
+
+| Shape | File | Use it when |
+|---|---|---|
+| **One-liner** | — | quickest smoke test / single host |
+| **Docker Compose** | [`docker-compose.yml`](docker-compose.yml) | a host or VM running your app in Docker |
+| **Kubernetes sidecar** | [`k8s/sidecar.yaml`](k8s/sidecar.yaml) | your app runs in k8s; Heramba shares the pod |
+
+### One-liner
+
+```bash
+docker run -p 8080:8080 \
+  -e HERAMBA_UPSTREAM=http://host.docker.internal:3000 \
+  -e HERAMBA_MODE=observe \
+  ghcr.io/armur-ai/heramba:latest
+```
+
+### Docker Compose
+
+Edit `HERAMBA_UPSTREAM` to point at your service, then:
+
+```bash
+docker compose -f deploy/docker-compose.yml up
+curl -s -o /dev/null http://localhost:8080/.env   # trip a decoy
+```
+
+### Kubernetes sidecar
+
+Set your app image + port in `k8s/sidecar.yaml`, then `kubectl apply -f` it.
+Ingress hits the Service → Heramba (`:8080`) → your app on `localhost`.
+
+### Configuration
+
+Precedence is **flags > env > file (`.heramba.yml`) > defaults**. The common knobs:
+
+| Env var | Meaning |
+|---|---|
+| `HERAMBA_UPSTREAM` | your app's address (empty = honeypot-only) |
+| `HERAMBA_MODE` | `observe` (safe, default) or `protect` (inline) |
+| `HERAMBA_LISTEN` | bind address (default `:8080`) |
+| `HERAMBA_ALERT_FORMAT` | `text` or `jsonl` |
+| `HERAMBA_ALERT_FILE` | sink path (empty = stdout) |
+
+`MODE` and `UPSTREAM` are also read without the `HERAMBA_` prefix for the
+one-liner. Run `heramba doctor` to see exactly what will run.
