@@ -42,6 +42,7 @@ func runWatch(args []string) {
 	_ = fs.Parse(args)
 
 	cfg, _ := config.Load(*cfgPath) // best-effort; fall back to defaults
+	cfg = cfg.ApplyEnv()            // honor HERAMBA_* (mode + sink file) like serve
 	mode := *modeF
 	if mode == "" {
 		mode = string(cfg.Mode)

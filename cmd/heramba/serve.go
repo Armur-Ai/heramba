@@ -38,6 +38,10 @@ func runServe(args []string) {
 		fmt.Fprintf(os.Stderr, "heramba: %v\n", err)
 		os.Exit(1)
 	}
+	// Env overlay sits between the file and explicit flags: flags > env > file >
+	// defaults. This is what lets `docker run -e HERAMBA_UPSTREAM= -e HERAMBA_MODE=`
+	// configure the edge with no config file at all.
+	cfg = cfg.ApplyEnv()
 	if *mode != "" {
 		cfg.Mode = config.Mode(*mode)
 	}

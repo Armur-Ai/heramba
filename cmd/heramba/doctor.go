@@ -27,6 +27,10 @@ func runDoctor(args []string) {
 		check(false, "config", err.Error())
 	}
 
+	// Reflect the same env overlay serve applies, so doctor reports what will
+	// actually run (e.g. under `docker run -e HERAMBA_UPSTREAM=…`).
+	cfg = cfg.ApplyEnv()
+
 	switch cfg.Mode {
 	case config.ModeObserve:
 		check(true, "mode", "observe (safe: detection only, nothing inline)")
