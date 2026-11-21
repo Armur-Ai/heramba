@@ -63,6 +63,7 @@ go install github.com/Armur-Ai/heramba/cmd/heramba@latest   # or: make build
 heramba config init          # writes a commented .heramba.yml (observe mode)
 heramba doctor               # advisory readiness check
 heramba serve                # run the edge in front of your app
+heramba watch                # live attack dashboard (TUI) over the event stream
 ```
 
 Point your ingress at Heramba's `listen` address; it forwards real traffic to
@@ -186,6 +187,27 @@ Reverse proxy in front of your app, sidecar in the same pod, or honeypot-only
 Detections stream to an alert sink as text or JSONL, with a per-session
 shutdown summary. Details: [metrics & alerting](docs/metrics.md).
 
+### Live dashboard — `heramba watch`
+
+A real-time "you're being attacked right now" view. It consumes the same JSONL
+event stream the edge emits, so it attaches to any deployment with no coupling —
+tail a live sink, read a pipe, or replay a recorded attack:
+
+<img src="demo/assets/watch.gif" alt="heramba watch — live attack dashboard" width="100%">
+
+```bash
+# point the alert sink at a JSONL file in .heramba.yml:
+#   alert: { format: jsonl, file: events.jsonl }
+heramba serve &
+heramba watch                                   # follows alert.file from config
+heramba watch events.jsonl                      # or name the sink explicitly
+heramba watch --replay --speed 1 demo/attack.jsonl   # replay a recorded attack (demo)
+```
+
+The dashboard clusters sources into campaigns, flags a **swarm** the moment one
+campaign fans out across multiple identities, and maps every decoy/canary the
+attacker walks into. Keys: `q` quit · `space` pause · `c` clear.
+
 ## What's shipped vs planned
 
 **Data plane — shipped (real, tested, live in `serve`):**
@@ -196,7 +218,8 @@ shutdown summary. Details: [metrics & alerting](docs/metrics.md).
 - ✅ Deterministic, **configurable** agentic-traffic classifier (explainable signals)
 - ✅ Signal denial: response-header normalization + timing jitter
 - ✅ Deny-by-default egress/callback firewall + per-source rate limiting (protect mode)
-- ✅ Alert sinks (text / JSONL) + detection counting/summary; CLI (`serve`/`decoys`/`config`/`doctor`/`experiment`)
+- ✅ Alert sinks (text / JSONL / webhook) + detection counting/summary; CLI (`serve`/`watch`/`decoys`/`config`/`doctor`/`experiment`)
+- ✅ **Live attack dashboard** `heramba watch` — real-time TUI over the event stream (sources, campaigns/swarm, decoy map); follows a live sink or replays a capture
 
 **Intelligence plane — shipped, tested; evidence→campaign→swarm live-wired into `serve`:**
 - ✅ Normalized evidence model (`Observation`/`Fact`/`Hypothesis`) with provenance, validation, append-only persistence
