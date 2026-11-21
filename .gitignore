@@ -12,3 +12,10 @@ docs/demos/*.gif
 .DS_Store
 .idea/
 *.swp
+
+# Private implementation plan — competitive, not for the public repo
+# (public architecture stays in docs/architecture/)
+IMPLEMENTATION_PLAN.md
+/private/
+NEXT_SESSION.md
+future_ideas.md
