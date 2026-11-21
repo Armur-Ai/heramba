@@ -55,6 +55,12 @@ type ClassifierConfig struct {
 type AlertConfig struct {
 	Format string `yaml:"format"` // "text" | "jsonl"
 	File   string `yaml:"file"`   // path, or "" for stdout
+	// Webhook and Slack are optional push integrations, fanned out alongside the
+	// text/jsonl sink. Both honor MinSeverity so a busy edge does not flood a
+	// channel; the local text/jsonl sink always records everything.
+	Webhook     string `yaml:"webhook"`      // POST raw event JSON to this URL
+	Slack       string `yaml:"slack"`        // Slack incoming-webhook URL (Block Kit)
+	MinSeverity string `yaml:"min_severity"` // floor for webhook/slack: info|low|medium|high|critical (default high)
 }
 
 // DecoyConfig controls decoy/canary behavior.

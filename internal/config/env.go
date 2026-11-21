@@ -32,6 +32,15 @@ func (c Config) ApplyEnv() Config {
 	if v := envVar("ALERT_FILE", false); v != "" {
 		c.Alert.File = v
 	}
+	if v := envVar("WEBHOOK", false); v != "" {
+		c.Alert.Webhook = v
+	}
+	if v := envVar("SLACK", false); v != "" {
+		c.Alert.Slack = v
+	}
+	if v := envVar("ALERT_MIN_SEVERITY", false); v != "" {
+		c.Alert.MinSeverity = v
+	}
 	return c
 }
 

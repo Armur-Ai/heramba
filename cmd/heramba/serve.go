@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -166,11 +167,29 @@ func runServe(args []string) {
 	}
 }
 
-// buildSink wires the configured alert output.
+// buildSink wires the configured alert output: a local text/jsonl record
+// (always everything), optionally fanned out to a webhook and/or Slack above a
+// severity floor.
 func buildSink(cfg config.Config) alert.Sink {
+	sinks := alert.MultiSink{baseSink(cfg)}
+	floor := parseSeverity(cfg.Alert.MinSeverity, event.SeverityHigh)
+	if u := cfg.Alert.Webhook; u != "" {
+		sinks = append(sinks, alert.NewWebhook(u, 5*time.Second, floor))
+	}
+	if u := cfg.Alert.Slack; u != "" {
+		sinks = append(sinks, alert.NewSlack(u, 5*time.Second, floor))
+	}
+	if len(sinks) == 1 {
+		return sinks[0]
+	}
+	return sinks
+}
+
+// baseSink is the local text/jsonl record (file or stdout).
+func baseSink(cfg config.Config) alert.Sink {
 	w := os.Stdout
 	if cfg.Alert.File != "" {
-		f, err := os.OpenFile(cfg.Alert.File, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+		f, err := os.OpenFile(cfg.Alert.File, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644) //nolint:gosec
 		if err == nil {
 			if cfg.Alert.Format == "jsonl" {
 				return alert.NewJSONL(f)
@@ -183,4 +202,22 @@ func buildSink(cfg config.Config) alert.Sink {
 		return alert.NewJSONL(w)
 	}
 	return alert.NewText(w)
+}
+
+// parseSeverity maps a config string to a severity floor, or def when unset.
+func parseSeverity(s string, def event.Severity) event.Severity {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "info":
+		return event.SeverityInfo
+	case "low":
+		return event.SeverityLow
+	case "medium":
+		return event.SeverityMedium
+	case "high":
+		return event.SeverityHigh
+	case "critical":
+		return event.SeverityCritical
+	default:
+		return def
+	}
 }

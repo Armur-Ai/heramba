@@ -42,7 +42,7 @@ func TestApplyEnvPrefixWinsOverBare(t *testing.T) {
 
 func TestApplyEnvNoVarsIsNoOp(t *testing.T) {
 	// Ensure a clean environment for the keys we read.
-	for _, k := range []string{"HERAMBA_MODE", "HERAMBA_UPSTREAM", "HERAMBA_LISTEN", "HERAMBA_ALERT_FORMAT", "HERAMBA_ALERT_FILE", "MODE", "UPSTREAM"} {
+	for _, k := range []string{"HERAMBA_MODE", "HERAMBA_UPSTREAM", "HERAMBA_LISTEN", "HERAMBA_ALERT_FORMAT", "HERAMBA_ALERT_FILE", "HERAMBA_WEBHOOK", "HERAMBA_SLACK", "HERAMBA_ALERT_MIN_SEVERITY", "MODE", "UPSTREAM"} {
 		t.Setenv(k, "")
 	}
 	base := Default()
