@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/banner.svg" alt="Heramba — active-deception defense for the app and API layer" width="100%">
+<img src="docs/assets/hero.jpg" alt="Heramba — active-deception defense for the app and API layer: trap autonomous attackers in deception before they find anything real" width="100%">
 
 <p>
   <img alt="status" src="https://img.shields.io/badge/status-pre--release-f5b35a">
