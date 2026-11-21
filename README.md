@@ -119,32 +119,7 @@ above is only half the story: Heramba also orchestrates a family of **independen
 scanners** — the things an attacker drops *behind* your perimeter — through its `shield`
 subcommand. Each tool ships and runs on its own; Heramba composes them into one defensive sweep.
 
-```mermaid
-flowchart TB
-    classDef center fill:#10233f,stroke:#4da3ff,stroke-width:2px,color:#eaf3ff;
-    classDef tool fill:#141414,stroke:#555,color:#e8e8e8;
-    classDef edge fill:#0c1a2b,stroke:#2b6cb0,color:#cfe6ff;
-
-    T["inbound traffic"]:::edge
-    HER["<b>Heramba</b> ★ — the defense orchestrator<br/>edge runtime: classify · deceive · deny signal · egress-jail<br/>+ <code>heramba shield</code>: run the scanners below"]:::center
-    APP["your app<br/>(upstream)"]:::edge
-
-    T --> HER --> APP
-
-    subgraph SHIELD["heramba shield — argv scanner adapters (each tool also runs standalone)"]
-      direction LR
-      AGA["<b>agat</b><br/>malware / binary<br/>immune system"]:::tool
-      BYA["<b>byakugan</b><br/>ML model-file<br/>backdoor scanner"]:::tool
-      SHA["<b>sharingan</b><br/>rogue embedded-LLM<br/>footprint detector"]:::tool
-      SKS["<b>skillscan</b><br/>Claude skill<br/>safety (planned)"]:::tool
-    end
-
-    HER -- "scan &lt;path&gt; --json" --> SHIELD
-    AGA -. "verdict" .-> HER
-    BYA -. "verdict" .-> HER
-    SHA -. "verdict" .-> HER
-    SKS -. "verdict" .-> HER
-```
+<img src="docs/assets/adaptive-defence-architecture.png" alt="Heramba adaptive-defence architecture — the edge runtime (classify, deceive, deny signal, proxy to upstream) guards live traffic with observe-by-default and protect opt-in, backed by the intelligence, adaptive-defence, and research planes plus a deny-by-default egress firewall; heramba shield runs the standalone scanners (agat, byakugan, sharingan, skillscan) over files and folds their verdicts into one report" width="100%">
 
 | Tool | Catches | Status |
 |---|---|---|
