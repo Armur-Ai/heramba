@@ -152,7 +152,15 @@ file.
 
 <img src="docs/assets/lifecycle.svg" alt="Decoy and canary lifecycle" width="100%">
 
+**Stack presets** tailor the lures to your framework — a Rails attacker probes
+`/config/master.key`, a Laravel one probes `/storage/logs/laravel.log` — so the
+decoys look native and catch an agent enumerating "believable" paths:
+
 ```bash
+heramba decoys presets              # node | next | rails | django | laravel | wordpress | spring
+heramba decoys list --preset rails  # preview the lures a preset adds
+heramba serve --preset rails        # (or decoys.preset / HERAMBA_PRESET)
+
 heramba decoys list                 # the active lure surface
 heramba decoys canary db-password   # mint a plantable canary token
 ```

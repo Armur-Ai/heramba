@@ -45,6 +45,7 @@ Precedence is **flags > env > file (`.heramba.yml`) > defaults**. The common kno
 |---|---|
 | `HERAMBA_UPSTREAM` | your app's address (empty = honeypot-only) |
 | `HERAMBA_MODE` | `observe` (safe, default) or `protect` (inline) |
+| `HERAMBA_PRESET` | framework lures: `node`/`next`/`rails`/`django`/`laravel`/`wordpress`/`spring` |
 | `HERAMBA_LISTEN` | bind address (default `:8080`) |
 | `HERAMBA_ALERT_FORMAT` | `text` or `jsonl` |
 | `HERAMBA_ALERT_FILE` | sink path (empty = stdout) |
