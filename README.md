@@ -34,6 +34,14 @@ instead of matching payloads (WAF) or watching hosts (EDR).
 | 🚧 **Egress firewall + rate limit** | deny-by-default outbound (cut SSRF/OOB/exfil) and throttle abusive sources |
 | 🛡️ **Observe-first** | detection-only by default; inline **protect** is explicit opt-in |
 
+<div align="center">
+
+**`heramba watch` — the live "you're being attacked right now" dashboard**
+
+<img src="demo/assets/watch.gif" alt="heramba watch — live attack dashboard: sources clustering into a swarm, decoy and canary hits streaming, egress callbacks blocked" width="100%">
+
+</div>
+
 ## Why
 
 <img src="docs/assets/positioning.svg" alt="Defense for the age of autonomous offense: WAF and EDR vs Heramba" width="100%">
@@ -197,11 +205,10 @@ shutdown summary. Details: [metrics & alerting](docs/metrics.md).
 
 ### Live dashboard — `heramba watch`
 
-A real-time "you're being attacked right now" view. It consumes the same JSONL
-event stream the edge emits, so it attaches to any deployment with no coupling —
-tail a live sink, read a pipe, or replay a recorded attack:
-
-<img src="demo/assets/watch.gif" alt="heramba watch — live attack dashboard" width="100%">
+A real-time "you're being attacked right now" view (shown at the top of this
+README). It consumes the same JSONL event stream the edge emits, so it attaches
+to any deployment with no coupling — tail a live sink, read a pipe, or replay a
+recorded attack:
 
 ```bash
 # point the alert sink at a JSONL file in .heramba.yml:
