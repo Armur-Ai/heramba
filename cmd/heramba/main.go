@@ -23,6 +23,8 @@ func main() {
 	switch os.Args[1] {
 	case "serve":
 		runServe(os.Args[2:])
+	case "watch":
+		runWatch(os.Args[2:])
 	case "decoys":
 		runDecoys(os.Args[2:])
 	case "config":
@@ -56,6 +58,7 @@ usage:
 
 commands:
   serve        run the edge runtime (observe mode by default)
+  watch        live attack dashboard (TUI) over the event stream
   decoys       generate and list decoys / canary tokens
   config       create or inspect configuration
   doctor       check the environment and configuration

@@ -147,6 +147,23 @@ func TailFile(ctx context.Context, path string, interval time.Duration) (<-chan 
 	return out, nil
 }
 
+// Feed sends every event on a channel and closes it, with no pacing — the
+// source used when reading a file whole without following or replaying.
+func Feed(ctx context.Context, events []event.Event) <-chan event.Event {
+	out := make(chan event.Event, 128)
+	go func() {
+		defer close(out)
+		for _, e := range events {
+			select {
+			case out <- e:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return out
+}
+
 // sleep waits d or until ctx is done; it reports false if ctx ended.
 func sleep(ctx context.Context, d time.Duration) bool {
 	t := time.NewTimer(d)
