@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -42,6 +43,19 @@ type Config struct {
 	// allowed burst (defaults to max(RateLimitRPS, 1)).
 	RateLimitRPS   float64 `yaml:"rate_limit_rps"`
 	RateLimitBurst float64 `yaml:"rate_limit_burst"`
+	// DrainSeconds is the graceful-drain window on shutdown: the admin readiness
+	// probe flips to not-ready and the edge waits this many seconds before it
+	// stops serving, so a load balancer deregisters it before in-flight traffic
+	// is cut. 0 (default) = shut down immediately.
+	DrainSeconds int `yaml:"drain_timeout"`
+}
+
+// DrainTimeout returns the graceful-drain window as a duration (never negative).
+func (c Config) DrainTimeout() time.Duration {
+	if c.DrainSeconds <= 0 {
+		return 0
+	}
+	return time.Duration(c.DrainSeconds) * time.Second
 }
 
 // ClassifierConfig overrides the agentic-traffic classifier thresholds. Zero

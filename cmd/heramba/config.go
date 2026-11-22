@@ -132,6 +132,11 @@ classifier:
 rate_limit_rps: 0
 rate_limit_burst: 0        # defaults to max(rate_limit_rps, 1)
 
+# Graceful-drain window (seconds) on shutdown: readiness flips to not-ready and
+# the edge waits this long before stopping, so a load balancer deregisters it
+# first. 0 = shut down immediately.
+drain_timeout: 0
+
 egress:                    # callback firewall (protect mode)
   enabled: false
   allowed_hosts: []        # hosts the protected app is permitted to call

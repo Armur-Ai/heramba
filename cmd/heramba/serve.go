@@ -177,6 +177,12 @@ func runServe(args []string) {
 	ready.Store(true)
 	<-ctx.Done()
 	fmt.Println("\nheramba: shutting down…")
+	// Graceful drain: flip readiness to not-ready and wait the drain window so a
+	// load balancer deregisters this instance before we stop serving.
+	if d := cfg.DrainTimeout(); d > 0 {
+		fmt.Printf("heramba: draining for %s (readiness now false)…\n", d)
+	}
+	drain(&ready, cfg.DrainTimeout(), time.Sleep)
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
@@ -224,6 +230,18 @@ func runServe(args []string) {
 				ex.Action.Type, kind, id, ex.Action.Impact, ex.Decision.Verdict)
 		}
 		fmt.Println("  (shadow mode: validate + audit only. Enable the engine in enforce mode to act, with approval gates.)")
+	}
+}
+
+// drain performs the graceful-drain step: it flips the readiness flag to false
+// (so load balancers stop routing new traffic) and then waits the drain window.
+// sleep is injected so the behavior is unit-testable without real time.
+func drain(ready *atomic.Bool, window time.Duration, sleep func(time.Duration)) {
+	if ready != nil {
+		ready.Store(false)
+	}
+	if window > 0 {
+		sleep(window)
 	}
 }
 

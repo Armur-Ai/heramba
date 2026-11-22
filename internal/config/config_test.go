@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestDefaultIsObserve(t *testing.T) {
@@ -49,5 +50,17 @@ func TestLoadRejectsBadMode(t *testing.T) {
 	_ = os.WriteFile(p, []byte("mode: destroy\n"), 0o644)
 	if _, err := Load(p); err == nil {
 		t.Fatal("invalid mode must error")
+	}
+}
+
+func TestDrainTimeout(t *testing.T) {
+	if (Config{DrainSeconds: 0}).DrainTimeout() != 0 {
+		t.Error("zero drain should be 0")
+	}
+	if (Config{DrainSeconds: -5}).DrainTimeout() != 0 {
+		t.Error("negative drain should clamp to 0")
+	}
+	if got := (Config{DrainSeconds: 8}).DrainTimeout(); got != 8*time.Second {
+		t.Errorf("drain = %s, want 8s", got)
 	}
 }
