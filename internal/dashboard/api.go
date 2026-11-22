@@ -2,6 +2,8 @@ package dashboard
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -160,10 +162,10 @@ func decodeBody(r *http.Request, v any) error {
 	if r.Body == nil {
 		return nil
 	}
-	dec := json.NewDecoder(http.MaxBytesReader(nil, r.Body, 64<<10))
+	dec := json.NewDecoder(io.LimitReader(r.Body, 64<<10))
 	err := dec.Decode(v)
-	if err != nil && err.Error() == "EOF" {
-		return nil
+	if errors.Is(err, io.EOF) {
+		return nil // empty body is tolerated
 	}
 	return err
 }
