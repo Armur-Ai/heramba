@@ -97,6 +97,41 @@ func (s Surface) Envoy() string {
 	return b.String()
 }
 
+// K8sIngress renders the surface as a Kubernetes Ingress whose nginx-ingress
+// server-snippet annotation returns 404 for every decoy path/zone — so the same
+// deception surface is presented at the ingress, in front of the app, with no
+// app change. Exact paths use `location =`, zones use a prefix `location`.
+func (s Surface) K8sIngress() string {
+	var b strings.Builder
+	b.WriteString("# Heramba decoy surface as an nginx-ingress Ingress (all decoys return 404).\n")
+	b.WriteString("# Point the backend at your Service; keep or merge the server-snippet annotation.\n")
+	b.WriteString("apiVersion: networking.k8s.io/v1\n")
+	b.WriteString("kind: Ingress\n")
+	b.WriteString("metadata:\n")
+	b.WriteString("  name: heramba-decoys\n")
+	b.WriteString("  annotations:\n")
+	b.WriteString("    nginx.ingress.kubernetes.io/server-snippet: |\n")
+	for _, e := range s.Paths {
+		fmt.Fprintf(&b, "      location = %s { return 404; }\n", e.Path)
+	}
+	for _, e := range s.Prefixes {
+		fmt.Fprintf(&b, "      location %s { return 404; }\n", e.Path)
+	}
+	b.WriteString("spec:\n")
+	b.WriteString("  ingressClassName: nginx\n")
+	b.WriteString("  rules:\n")
+	b.WriteString("    - http:\n")
+	b.WriteString("        paths:\n")
+	b.WriteString("          - path: /\n")
+	b.WriteString("            pathType: Prefix\n")
+	b.WriteString("            backend:\n")
+	b.WriteString("              service:\n")
+	b.WriteString("                name: your-app\n")
+	b.WriteString("                port:\n")
+	b.WriteString("                  number: 80\n")
+	return b.String()
+}
+
 // Traefik renders the surface as a Traefik dynamic configuration (file
 // provider): a single router whose rule ORs together a Path matcher per exact
 // lure and a PathPrefix matcher per zone, pointing at a service the operator

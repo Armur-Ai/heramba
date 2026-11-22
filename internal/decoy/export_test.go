@@ -134,3 +134,33 @@ func TestEnvoyRenderIsValidYAML(t *testing.T) {
 		t.Errorf("envoy export should have both path and prefix matches (path=%v prefix=%v)", sawPath, sawPrefix)
 	}
 }
+
+func TestK8sIngressRenderIsValidYAML(t *testing.T) {
+	r := NewRegistry()
+	p, _ := GetPreset("laravel")
+	r.ApplyPreset(p)
+	out := r.Export().K8sIngress()
+
+	var doc struct {
+		Kind     string `yaml:"kind"`
+		Metadata struct {
+			Annotations map[string]string `yaml:"annotations"`
+		} `yaml:"metadata"`
+	}
+	if err := yaml.Unmarshal([]byte(out), &doc); err != nil {
+		t.Fatalf("k8s-ingress export must be valid YAML: %v\n%s", err, out)
+	}
+	if doc.Kind != "Ingress" {
+		t.Errorf("kind = %q, want Ingress", doc.Kind)
+	}
+	snip := doc.Metadata.Annotations["nginx.ingress.kubernetes.io/server-snippet"]
+	if !strings.Contains(snip, "location = /.env { return 404; }") {
+		t.Errorf("server-snippet missing exact-path decoy:\n%s", snip)
+	}
+	if !strings.Contains(snip, "location /.git/ { return 404; }") {
+		t.Errorf("server-snippet missing zone decoy:\n%s", snip)
+	}
+	if !strings.Contains(snip, "/storage/logs/laravel.log") {
+		t.Errorf("server-snippet missing preset lure:\n%s", snip)
+	}
+}
