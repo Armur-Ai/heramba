@@ -201,7 +201,30 @@ func (s *server) routes() http.Handler {
 		_, _ = w.Write([]byte("ok\n"))
 	})
 
-	return mux
+	return securityHeaders(mux)
+}
+
+// securityHeaders wraps the mux to stamp conservative security headers on every
+// response. X-Content-Type-Options stops MIME sniffing of the embedded assets
+// and API payloads; the dashboard is fully self-hosted (no external origins),
+// so a strict same-origin-only CSP and a frame deny cost nothing and harden the
+// shell against clickjacking and injected resources.
+func securityHeaders(next http.Handler) http.Handler {
+	// script-src is strict 'self' (no inline scripts in the shell); style-src
+	// allows 'unsafe-inline' because the SPA sets inline style attributes while
+	// rendering (bar widths, severity colours); img-src permits the data: URI
+	// favicon. No external origins are allowed — the build is air-gapped.
+	const csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+		"img-src 'self' data:; connect-src 'self'; object-src 'none'; " +
+		"base-uri 'none'; frame-ancestors 'none'"
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Referrer-Policy", "no-referrer")
+		h.Set("Content-Security-Policy", csp)
+		next.ServeHTTP(w, r)
+	})
 }
 
 // handleIndex serves the embedded SPA shell at "/".

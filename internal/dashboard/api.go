@@ -17,9 +17,13 @@ const defaultEventCount = 100
 // maxEventCount caps the per-request event count to bound work and payload size.
 const maxEventCount = 2000
 
-// writeJSON encodes v as JSON with the right content type.
+// writeJSON encodes v as JSON with the right content type. API responses are
+// live and per-request, so they are explicitly uncacheable (no stale metrics or
+// event feeds served from a proxy/browser cache).
 func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	h := w.Header()
+	h.Set("Content-Type", "application/json; charset=utf-8")
+	h.Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
 }
