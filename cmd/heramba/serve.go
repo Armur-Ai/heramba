@@ -9,9 +9,11 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
+	"github.com/Armur-Ai/heramba/internal/admin"
 	"github.com/Armur-Ai/heramba/internal/alert"
 	"github.com/Armur-Ai/heramba/internal/config"
 	"github.com/Armur-Ai/heramba/internal/deception"
@@ -29,6 +31,7 @@ func runServe(args []string) {
 	mode := fs.String("mode", "", "override mode: observe|protect")
 	listen := fs.String("listen", "", "override listen address, e.g. :8080")
 	upstream := fs.String("upstream", "", "override upstream, e.g. http://127.0.0.1:3000")
+	adminListen := fs.String("admin-listen", "", "health/metrics address, e.g. :9090 (empty=disabled)")
 	preset := fs.String("preset", "", "framework decoy preset: node|next|rails|django|laravel|wordpress|spring")
 	deceptionOn := fs.Bool("deception", false, "when there is no upstream, auto-mount the synthetic deception app for non-decoy paths")
 	deceptionSeed := fs.Int64("deception-seed", 1, "seed for the deterministic synthetic world")
@@ -56,6 +59,9 @@ func runServe(args []string) {
 	}
 	if *preset != "" {
 		cfg.Decoys.Preset = *preset
+	}
+	if *adminListen != "" {
+		cfg.AdminListen = *adminListen
 	}
 	if cfg.Decoys.Preset != "" {
 		if _, ok := decoy.GetPreset(cfg.Decoys.Preset); !ok {
@@ -109,10 +115,28 @@ func runServe(args []string) {
 		}
 	}
 
+	startTime := time.Now()
 	srv := &http.Server{
 		Addr:              cfg.Listen,
 		Handler:           engine.Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	// Optional admin server (health + metrics) on a separate port.
+	var adminSrv *http.Server
+	var ready atomic.Bool
+	if cfg.AdminListen != "" {
+		adminSrv = &http.Server{
+			Addr: cfg.AdminListen,
+			Handler: admin.Handler(&ready, func() admin.Metrics {
+				byKind := map[string]int{}
+				for _, t := range counting.Snapshot() {
+					byKind[string(t.Kind)] = t.Count
+				}
+				return admin.Metrics{Total: counting.Total(), ByKind: byKind, Uptime: time.Since(startTime)}
+			}),
+			ReadHeaderTimeout: 10 * time.Second,
+		}
 	}
 
 	upstreamNote := cfg.Upstream
@@ -134,11 +158,23 @@ func runServe(args []string) {
 			stop()
 		}
 	}()
+	if adminSrv != nil {
+		fmt.Printf("  admin: health + metrics on %s (/healthz /readyz /metrics)\n", cfg.AdminListen)
+		go func() {
+			if err := adminSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				fmt.Fprintf(os.Stderr, "heramba: admin serve error: %v\n", err)
+			}
+		}()
+	}
+	ready.Store(true)
 	<-ctx.Done()
 	fmt.Println("\nheramba: shutting down…")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
+	if adminSrv != nil {
+		_ = adminSrv.Shutdown(shutdownCtx)
+	}
 
 	if counting.Total() == 0 {
 		fmt.Println("heramba: no detections this session.")

@@ -26,6 +26,9 @@ func (c Config) ApplyEnv() Config {
 	if v := envVar("LISTEN", false); v != "" {
 		c.Listen = v
 	}
+	if v := envVar("ADMIN_LISTEN", false); v != "" {
+		c.AdminListen = v
+	}
 	if v := envVar("ALERT_FORMAT", false); v != "" {
 		c.Alert.Format = v
 	}

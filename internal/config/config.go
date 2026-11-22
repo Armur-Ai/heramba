@@ -23,9 +23,10 @@ const (
 
 // Config is the engine configuration (file: .heramba.yml).
 type Config struct {
-	Mode     Mode   `yaml:"mode"`
-	Listen   string `yaml:"listen"`   // address the edge binds, e.g. ":8080"
-	Upstream string `yaml:"upstream"` // reverse-proxy target, e.g. "http://127.0.0.1:3000"
+	Mode        Mode   `yaml:"mode"`
+	Listen      string `yaml:"listen"`       // address the edge binds, e.g. ":8080"
+	AdminListen string `yaml:"admin_listen"` // health/metrics address, e.g. ":9090" ("" = disabled)
+	Upstream    string `yaml:"upstream"`     // reverse-proxy target, e.g. "http://127.0.0.1:3000"
 	// TrustedProxies are CIDRs whose X-Forwarded-For header the edge will trust
 	// for the real client IP. Empty (default) = never trust XFF, use the direct
 	// peer address. Set this only to the CIDRs of your own load balancer.
