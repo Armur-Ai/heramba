@@ -130,6 +130,23 @@ var (
 	panelStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(colMuted).Padding(0, 1)
 )
 
+// sevAbbr is a fixed 4-column severity tag, so the sources table stays aligned
+// (the full "critical" would be truncated to an unreadable "CRI…").
+func sevAbbr(s event.Severity) string {
+	switch s {
+	case event.SeverityCritical:
+		return "CRIT"
+	case event.SeverityHigh:
+		return "HIGH"
+	case event.SeverityMedium:
+		return "MED"
+	case event.SeverityLow:
+		return "LOW"
+	default:
+		return "INFO"
+	}
+}
+
 func sevColor(s event.Severity) lipgloss.Color {
 	switch s {
 	case event.SeverityCritical:
@@ -180,8 +197,11 @@ func (m Model) View() string {
 		bodyH = 6
 	}
 
-	feed := panelStyle.Width(feedW).Height(bodyH).Render(m.feed(feedW, bodyH-1))
-	side := panelStyle.Width(sideW).Height(bodyH).Render(m.sidebar(sideW))
+	// Panels carry 1 column of horizontal padding on each side, so the usable
+	// text width is the panel width minus 2. Lay content out to that exact inner
+	// width so rows never wrap inside the border.
+	feed := panelStyle.Width(feedW).Height(bodyH).Render(m.feed(feedW-2, bodyH-1))
+	side := panelStyle.Width(sideW).Height(bodyH).Render(m.sidebar(sideW - 2))
 	b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, feed, side))
 	b.WriteString("\n")
 	b.WriteString(m.footer())
@@ -195,15 +215,22 @@ func (m Model) header() string {
 	} else {
 		modeStyle = modeStyle.Background(colCyan)
 	}
-	up := m.now.Sub(m.started).Round(time.Second)
-	right := styMuted.Render(fmt.Sprintf("uptime %s", fmtDur(up)))
-	if m.paused {
-		right = stySwarm.Render("⏸ PAUSED") + "  " + right
-	}
-	if m.closed {
-		right = styMuted.Render("stream ended") + "  " + right
-	}
 	left := styTitle.Render("🛡 HERAMBA · watch") + " " + modeStyle.Render(strings.ToUpper(m.mode))
+
+	// Right cluster: live rate sparkline, status, uptime.
+	up := m.now.Sub(m.started).Round(time.Second)
+	var rightParts []string
+	if spark := m.rateBadge(); spark != "" {
+		rightParts = append(rightParts, spark)
+	}
+	if m.paused {
+		rightParts = append(rightParts, stySwarm.Render("⏸ PAUSED"))
+	} else if m.closed {
+		rightParts = append(rightParts, styMuted.Render("stream ended"))
+	}
+	rightParts = append(rightParts, styMuted.Render("uptime "+fmtDur(up)))
+	right := strings.Join(rightParts, styMuted.Render("  ·  "))
+
 	gap := m.width - lipgloss.Width(left) - lipgloss.Width(right)
 	if gap < 1 {
 		gap = 1
@@ -211,45 +238,77 @@ func (m Model) header() string {
 	return left + strings.Repeat(" ", gap) + right
 }
 
-func (m Model) summary() string {
-	sev := "QUIET"
-	sevStyle := styMuted
-	if m.state.Total > 0 {
-		sev = strings.ToUpper(m.state.HighestSeverity.String())
-		sevStyle = lipgloss.NewStyle().Bold(true).Foreground(sevColor(m.state.HighestSeverity))
+// rateBadge is the live events/sec sparkline plus the current rate, shown in
+// the header's right cluster when the terminal is wide enough to carry it.
+func (m Model) rateBadge() string {
+	if m.width < 80 {
+		return ""
 	}
-	parts := []string{
-		sevStyle.Render("⚠ " + sev),
+	spark := lipgloss.NewStyle().Foreground(colCyan).Render(sparkline(m.state.RateSeries(), 16))
+	return spark + " " + styMuted.Render(fmt.Sprintf("%.0f/s", m.state.RateNow()))
+}
+
+func (m Model) summary() string {
+	// Line 1: the threat gauge — a colored meter + level + score, the first
+	// thing the eye lands on.
+	level := m.state.ThreatLevel()
+	score := m.state.ThreatScore()
+	gaugeW := m.width/3 - 6
+	if gaugeW < 10 {
+		gaugeW = 10
+	}
+	if gaugeW > 32 {
+		gaugeW = 32
+	}
+	levelStyle := lipgloss.NewStyle().Bold(true).Foreground(level.Color())
+	gauge := strings.Join([]string{
+		styMuted.Render("THREAT"),
+		coloredMeter(score, gaugeW, level.Color()),
+		levelStyle.Render(fmt.Sprintf("%s %2.0f%%", level.String(), score*100)),
+	}, " ")
+
+	counts := []string{
 		fmt.Sprintf("%s events", num(m.state.Total)),
 		fmt.Sprintf("%s sources", num(m.state.SourceCount())),
 	}
 	if sw := m.state.SwarmCount(); sw > 0 {
-		parts = append(parts, stySwarm.Render(fmt.Sprintf("⚡ %d SWARM", sw)))
+		counts = append(counts, stySwarm.Render(fmt.Sprintf("⚡ %d SWARM", sw)))
 	}
-	line1 := strings.Join(parts, styMuted.Render("  │  "))
+	line1 := gauge + styMuted.Render("   │   ") + strings.Join(counts, styMuted.Render("  ·  "))
 
+	// Line 2: the headline kind tallies.
 	line2 := strings.Join([]string{
 		tally("decoy", m.state.DecoyHits(), colRed),
 		tally("canary", m.state.CanaryHits(), colRed),
 		tally("agentic", m.state.AgenticFlags(), colViolet),
 		tally("egress", m.state.EgressBlocks(), colAmber),
+		tally("rate-limited", m.state.ByKind[event.KindRateLimited], colCyan),
 	}, "   ")
-	return line1 + "\n" + styMuted.Render(line2)
+	return line1 + "\n" + line2
 }
 
 func (m Model) feed(w, rows int) string {
-	out := []string{styHead.Render("LIVE FEED")}
+	out := []string{styHead.Render("LIVE FEED") + styMuted.Render(fmt.Sprintf("  (%d)", m.state.Total))}
 	evs := m.state.Recent(rows)
 	if len(evs) == 0 {
 		out = append(out, styMuted.Render("waiting for traffic…"))
+		return strings.Join(out, "\n")
+	}
+	// Fixed-width columns, each laid out on plain text then styled, so rows
+	// stay aligned and no ANSI code is ever cut. Columns: time, dot, kind,
+	// source, then target fills the remainder.
+	const tsW, kindW, srcW = 8, 16, 16
+	gutter := 1 + 1 + 1 + 1 // single spaces between the five columns
+	tgtW := w - tsW - 1 - kindW - srcW - gutter
+	if tgtW < 6 {
+		tgtW = 6
 	}
 	for _, e := range evs {
-		ts := styMuted.Render(e.Time.Local().Format("15:04:05"))
-		kind := lipgloss.NewStyle().Foreground(sevColor(e.Severity)).Render(padRight(string(e.Kind), 16))
-		src := lipgloss.NewStyle().Foreground(colFg).Render(padRight(e.Source, 15))
-		tgt := styMuted.Render(e.Target)
-		line := fmt.Sprintf("%s %s %s %s %s", ts, kindDot(e.Kind), kind, src, tgt)
-		out = append(out, truncate(line, w))
+		ts := cell(e.Time.Local().Format("15:04:05"), tsW, styMuted)
+		kind := cell(string(e.Kind), kindW, lipgloss.NewStyle().Foreground(sevColor(e.Severity)))
+		src := cell(e.Source, srcW, lipgloss.NewStyle().Foreground(colFg))
+		tgt := cell(e.Target, tgtW, styMuted)
+		out = append(out, strings.Join([]string{ts, kindDot(e.Kind), kind, src, tgt}, " "))
 	}
 	return strings.Join(out, "\n")
 }
@@ -257,23 +316,28 @@ func (m Model) feed(w, rows int) string {
 func (m Model) sidebar(w int) string {
 	var secs []string
 
+	// TOP SOURCES — "addr SEV ×count", count right-aligned.
 	srcLines := []string{styHead.Render("TOP SOURCES")}
 	for _, s := range m.state.TopSources(5) {
-		sev := lipgloss.NewStyle().Foreground(sevColor(s.MaxSeverity)).Render(padRight(strings.ToUpper(s.MaxSeverity.String()), 4))
-		srcLines = append(srcLines, truncate(fmt.Sprintf("%s %s ×%d", padRight(s.Addr, 15), sev, s.Count), w))
+		sev := cell(sevAbbr(s.MaxSeverity), 4, lipgloss.NewStyle().Foreground(sevColor(s.MaxSeverity)))
+		cnt := styMuted.Render(padLeft(fmt.Sprintf("×%d", s.Count), 5))
+		addr := cell(s.Addr, w-4-5-2, lipgloss.NewStyle().Foreground(colFg))
+		srcLines = append(srcLines, addr+" "+sev+" "+cnt)
 	}
 	if len(srcLines) == 1 {
 		srcLines = append(srcLines, styMuted.Render("—"))
 	}
 	secs = append(secs, strings.Join(srcLines, "\n"))
 
+	// CAMPAIGNS — swarms highlighted.
 	campLines := []string{styHead.Render("CAMPAIGNS")}
 	for _, c := range m.state.Campaigns(4) {
 		name := strings.TrimPrefix(c.ID, "src:")
 		if c.Swarm() {
-			campLines = append(campLines, truncate(stySwarm.Render("⚡ "+name)+styMuted.Render(fmt.Sprintf(" swarm·%d src", len(c.Sources))), w))
+			tag := fmt.Sprintf(" ⚡%d src", len(c.Sources))
+			campLines = append(campLines, cell("⚡ "+name, w-dw(tag), stySwarm)+stySwarm.Render(tag))
 		} else {
-			campLines = append(campLines, truncate(styMuted.Render("• "+name), w))
+			campLines = append(campLines, cell("• "+name, w, styMuted))
 		}
 	}
 	if len(campLines) == 1 {
@@ -281,9 +345,20 @@ func (m Model) sidebar(w int) string {
 	}
 	secs = append(secs, strings.Join(campLines, "\n"))
 
+	// DECOY MAP — target with a hit bar.
 	decoyLines := []string{styHead.Render("DECOY MAP")}
+	peak := 1
 	for _, d := range m.state.TopDecoys(5) {
-		decoyLines = append(decoyLines, truncate(fmt.Sprintf("%s %s", padRight(d.Target, w-6), styMuted.Render(fmt.Sprintf("×%d", d.Hits))), w))
+		if d.Hits > peak {
+			peak = d.Hits
+		}
+	}
+	for _, d := range m.state.TopDecoys(5) {
+		cnt := styMuted.Render(padLeft(fmt.Sprintf("×%d", d.Hits), 5))
+		barW := 6
+		bar := coloredMeter(float64(d.Hits)/float64(peak), barW, colRed)
+		tgt := cell(d.Target, w-barW-5-2, lipgloss.NewStyle().Foreground(colFg))
+		decoyLines = append(decoyLines, tgt+" "+bar+" "+cnt)
 	}
 	if len(decoyLines) == 1 {
 		decoyLines = append(decoyLines, styMuted.Render("—"))
@@ -315,23 +390,4 @@ func fmtDur(d time.Duration) string {
 	mm := int(d.Minutes()) % 60
 	ss := int(d.Seconds()) % 60
 	return fmt.Sprintf("%02d:%02d:%02d", h, mm, ss)
-}
-
-func padRight(s string, n int) string {
-	if lipgloss.Width(s) >= n {
-		return s
-	}
-	return s + strings.Repeat(" ", n-lipgloss.Width(s))
-}
-
-func truncate(s string, w int) string {
-	if w <= 1 || lipgloss.Width(s) <= w {
-		return s
-	}
-	// Trim by runes until it fits (styled strings carry ANSI; approximate).
-	r := []rune(s)
-	for len(r) > 0 && lipgloss.Width(string(r)) > w-1 {
-		r = r[:len(r)-1]
-	}
-	return string(r) + "…"
 }
