@@ -241,3 +241,24 @@ func TestDigitalOceanAppValid(t *testing.T) {
 		t.Errorf("do app service should reference the heramba image, got %v", svc["image"])
 	}
 }
+
+// TestDockerStackValid checks the Docker Swarm stack file parses and references
+// the Heramba image with a deploy section.
+func TestDockerStackValid(t *testing.T) {
+	docs := parseYAMLDocs(t, "docker-stack.yml", readFile(t, "docker-stack.yml"))
+	d := docs[0]
+	svcs, ok := d["services"].(map[string]any)
+	if !ok {
+		t.Fatalf("docker-stack must have services, got %v", d["services"])
+	}
+	h, ok := svcs["heramba"].(map[string]any)
+	if !ok {
+		t.Fatalf("docker-stack must define the heramba service")
+	}
+	if img, _ := h["image"].(string); !strings.Contains(img, "heramba") {
+		t.Errorf("heramba service image = %v, want heramba", h["image"])
+	}
+	if _, ok := h["deploy"]; !ok {
+		t.Errorf("swarm service should have a deploy section")
+	}
+}

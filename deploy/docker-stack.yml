@@ -1,0 +1,23 @@
+# Docker Swarm stack. Deploy with:
+#   docker stack deploy -c deploy/docker-stack.yml heramba
+# Observe mode is the safe default; point HERAMBA_UPSTREAM at your service.
+version: "3.8"
+services:
+  heramba:
+    image: ghcr.io/armur-ai/heramba:latest
+    command: ["serve"]
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    environment:
+      HERAMBA_MODE: "observe"
+      HERAMBA_UPSTREAM: "http://app:3000"
+      HERAMBA_ADMIN_LISTEN: ":9090"
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M

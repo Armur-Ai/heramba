@@ -20,6 +20,7 @@ file is required.
 | **AWS ECS** | [`ecs-taskdef.json`](ecs-taskdef.json) | Fargate task definition |
 | **GCP Cloud Run** | [`cloudrun-service.yaml`](cloudrun-service.yaml) | Knative service spec |
 | **DigitalOcean** | [`.do/app.yaml`](.do/app.yaml) | App Platform spec |
+| **Docker Swarm** | [`docker-stack.yml`](docker-stack.yml) | `docker stack deploy` |
 
 ### One-liner
 
