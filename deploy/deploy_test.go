@@ -296,3 +296,14 @@ func TestSystemdUnitPresent(t *testing.T) {
 		}
 	}
 }
+
+// TestNomadJobPresent marker-checks the Nomad job (HCL; documented example, not
+// parsed since the repo vendors no HCL parser).
+func TestNomadJobPresent(t *testing.T) {
+	content := readFile(t, "heramba.nomad")
+	for _, want := range []string{`job "heramba"`, `driver = "docker"`, "ghcr.io/armur-ai/heramba", "HERAMBA_MODE", "HERAMBA_UPSTREAM"} {
+		if !strings.Contains(content, want) {
+			t.Errorf("heramba.nomad missing %q", want)
+		}
+	}
+}

@@ -23,6 +23,7 @@ file is required.
 | **Docker Swarm** | [`docker-stack.yml`](docker-stack.yml) | `docker stack deploy` |
 | **Ansible** | [`ansible-deploy.yml`](ansible-deploy.yml) | `ansible-playbook` (community.docker) |
 | **systemd** | [`heramba.service`](heramba.service) | bare-metal/VM service unit |
+| **Nomad** | [`heramba.nomad`](heramba.nomad) | `nomad job run` |
 
 ### One-liner
 
