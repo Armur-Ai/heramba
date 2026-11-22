@@ -43,6 +43,8 @@ func main() {
 		runResearch(os.Args[2:])
 	case "honeypot":
 		runHoneypot(os.Args[2:])
+	case "trap":
+		runTrap(os.Args[2:])
 	case "shield":
 		runShield(os.Args[2:])
 	case "version", "-v", "--version":
@@ -73,6 +75,7 @@ commands:
   config       create, inspect, or lint configuration
   doctor       check the environment and configuration
   honeypot     serve the stateful deception app behind the edge (no upstream)
+  trap         active-defense endpoint: trip-URLs → tarpit + labyrinth + poison
   shield       orchestrate the defensive tool suite (agat, byakugan, sharingan, skillscan) over a target
   experiment   run the reproducible four-baseline defense evaluation
   research     reproducible Phase 2 experiments and protocol manifest
