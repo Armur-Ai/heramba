@@ -107,6 +107,10 @@ alert:
   newrelic:
     url: ""                # empty = US Log API (https://log-api.newrelic.com/log/v1)
     api_key: ""            # New Relic license/ingest key (Api-Key header)
+  honeycomb:
+    url: ""                # empty = US API (https://api.honeycomb.io)
+    dataset: ""            # Honeycomb dataset name
+    api_key: ""            # X-Honeycomb-Team key
   sumo: ""                 # Sumo Logic HTTP Source URL (the URL embeds the token)
   # Generic templated webhook: render any payload shape from a Go text/template
   # (executed with the detection event as data) and POST it to any service.

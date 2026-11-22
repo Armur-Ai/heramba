@@ -108,6 +108,12 @@ func (c Config) ApplyEnv() Config {
 	if v := envVar("NEWRELIC_API_KEY", false); v != "" {
 		c.Alert.NewRelic.APIKey = v
 	}
+	if v := envVar("HONEYCOMB_API_KEY", false); v != "" {
+		c.Alert.Honeycomb.APIKey = v
+	}
+	if v := envVar("HONEYCOMB_DATASET", false); v != "" {
+		c.Alert.Honeycomb.Dataset = v
+	}
 	if v := envVar("SUMO_URL", false); v != "" {
 		c.Alert.Sumo = v
 	}
