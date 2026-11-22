@@ -1,0 +1,26 @@
+# Ansible playbook to run the Heramba edge as a Docker container.
+# Requires the community.docker collection. Run with:
+#   ansible-playbook -i inventory deploy/ansible-deploy.yml
+# Observe mode is the safe default; override vars for your environment.
+---
+- name: Deploy Heramba edge
+  hosts: edge
+  become: true
+  vars:
+    heramba_image: ghcr.io/armur-ai/heramba:latest
+    heramba_mode: observe
+    heramba_upstream: "http://127.0.0.1:3000"
+  tasks:
+    - name: Run Heramba container
+      community.docker.docker_container:
+        name: heramba
+        image: "{{ heramba_image }}"
+        command: serve
+        restart_policy: unless-stopped
+        published_ports:
+          - "8080:8080"
+          - "9090:9090"
+        env:
+          HERAMBA_MODE: "{{ heramba_mode }}"
+          HERAMBA_UPSTREAM: "{{ heramba_upstream }}"
+          HERAMBA_ADMIN_LISTEN: ":9090"

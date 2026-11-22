@@ -262,3 +262,25 @@ func TestDockerStackValid(t *testing.T) {
 		t.Errorf("swarm service should have a deploy section")
 	}
 }
+
+// TestAnsiblePlaybookValid parses the Ansible playbook (a top-level YAML
+// sequence of plays) and checks it has a play targeting hosts with tasks.
+func TestAnsiblePlaybookValid(t *testing.T) {
+	var plays []map[string]any
+	if err := yaml.Unmarshal([]byte(readFile(t, "ansible-deploy.yml")), &plays); err != nil {
+		t.Fatalf("ansible playbook must be valid YAML: %v", err)
+	}
+	if len(plays) == 0 {
+		t.Fatal("playbook has no plays")
+	}
+	p := plays[0]
+	if p["hosts"] == nil {
+		t.Errorf("play must target hosts, got %+v", p)
+	}
+	if _, ok := p["tasks"].([]any); !ok {
+		t.Errorf("play must have tasks, got %v", p["tasks"])
+	}
+	if !strings.Contains(readFile(t, "ansible-deploy.yml"), "HERAMBA_MODE") {
+		t.Error("playbook should set HERAMBA_MODE")
+	}
+}
