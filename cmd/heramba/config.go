@@ -78,6 +78,7 @@ alert:
   slack: ""                # Slack incoming-webhook URL (Block Kit)
   teams: ""                # Microsoft Teams incoming-webhook URL (MessageCard)
   discord: ""              # Discord webhook URL (embed)
+  google_chat: ""          # Google Chat incoming-webhook URL (text)
 
   # --- SIEM integrations (enabled when the endpoint is set) ---
   splunk:
