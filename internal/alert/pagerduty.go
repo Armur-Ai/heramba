@@ -1,11 +1,8 @@
 package alert
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/Armur-Ai/heramba/internal/event"
@@ -17,18 +14,15 @@ const pagerDutyURL = "https://events.pagerduty.com/v2/enqueue"
 // the default floor is intentionally high — wire it for the events that should
 // wake someone (canary hits, blocked exfil), not routine observe-mode noise.
 type PagerDutySink struct {
+	*httpSender
 	routingKey string
 	url        string
-	client     *http.Client
 	minSev     event.Severity
 }
 
 // NewPagerDuty creates a PagerDuty sink with the given integration routing key.
 func NewPagerDuty(routingKey string, timeout time.Duration, minSeverity event.Severity) *PagerDutySink {
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
-	return &PagerDutySink{routingKey: routingKey, url: pagerDutyURL, client: &http.Client{Timeout: timeout}, minSev: minSeverity}
+	return &PagerDutySink{httpSender: newHTTPSender(timeout), routingKey: routingKey, url: pagerDutyURL, minSev: minSeverity}
 }
 
 // Emit triggers a PagerDuty incident for the event.
@@ -54,22 +48,7 @@ func (s *PagerDutySink) Emit(e event.Event) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.url, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("pagerduty: non-2xx status %d", resp.StatusCode)
-	}
-	return nil
+	return s.deliver("pagerduty", httpPost{url: s.url, body: body, contentType: "application/json"})
 }
 
 // pdSeverity maps to PagerDuty's allowed severities.

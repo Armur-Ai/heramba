@@ -1,11 +1,8 @@
 package alert
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -21,18 +18,15 @@ import (
 // lets a telemetry failure break traffic) and honors a minimum-severity floor
 // so a busy observe-mode edge does not flood the channel.
 type SlackSink struct {
+	*httpSender
 	url    string
-	client *http.Client
 	minSev event.Severity
 }
 
 // NewSlack creates a Slack sink posting to a Slack incoming-webhook URL. Only
 // events at or above minSeverity are sent.
 func NewSlack(url string, timeout time.Duration, minSeverity event.Severity) *SlackSink {
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
-	return &SlackSink{url: url, client: &http.Client{Timeout: timeout}, minSev: minSeverity}
+	return &SlackSink{httpSender: newHTTPSender(timeout), url: url, minSev: minSeverity}
 }
 
 // Emit renders the event as Block Kit and posts it when it meets the floor.
@@ -44,22 +38,7 @@ func (s *SlackSink) Emit(e event.Event) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.url, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("slack: non-2xx status %d", resp.StatusCode)
-	}
-	return nil
+	return s.deliver("slack", httpPost{url: s.url, body: body, contentType: "application/json"})
 }
 
 // --- Block Kit payload (typed, so the shape is unit-testable) ---------------

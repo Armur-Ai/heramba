@@ -1,11 +1,8 @@
 package alert
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/Armur-Ai/heramba/internal/event"
@@ -17,18 +14,15 @@ import (
 // credential. BetterStack reads the event time from the "dt" field. Fail-soft
 // and severity-floored like the other push sinks.
 type BetterStackSink struct {
+	*httpSender
 	url    string
 	token  string
-	client *http.Client
 	minSev event.Severity
 }
 
 // NewBetterStack creates a BetterStack sink posting to the source's ingest URL.
 func NewBetterStack(url, token string, timeout time.Duration, minSeverity event.Severity) *BetterStackSink {
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
-	return &BetterStackSink{url: url, token: token, client: &http.Client{Timeout: timeout}, minSev: minSeverity}
+	return &BetterStackSink{httpSender: newHTTPSender(timeout), url: url, token: token, minSev: minSeverity}
 }
 
 // Emit posts the event as a single JSON log object.
@@ -51,21 +45,10 @@ func (s *BetterStackSink) Emit(e event.Event) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.url, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+s.token)
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("betterstack: non-2xx status %d", resp.StatusCode)
-	}
-	return nil
+	return s.deliver("betterstack", httpPost{
+		url:         s.url,
+		body:        body,
+		contentType: "application/json",
+		headers:     map[string]string{"Authorization": "Bearer " + s.token},
+	})
 }

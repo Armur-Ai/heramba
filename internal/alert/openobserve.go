@@ -1,11 +1,7 @@
 package alert
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
-	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -17,10 +13,10 @@ import (
 // basic auth (email + password/token). Fail-soft and severity-floored like the
 // other push sinks.
 type OpenObserveSink struct {
+	*httpSender
 	endpoint string
 	user     string
 	pass     string
-	client   *http.Client
 	minSev   event.Severity
 }
 
@@ -33,11 +29,8 @@ func NewOpenObserve(base, org, stream, user, pass string, timeout time.Duration,
 	if stream == "" {
 		stream = "heramba"
 	}
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
 	endpoint := strings.TrimRight(base, "/") + "/api/" + org + "/" + stream + "/_json"
-	return &OpenObserveSink{endpoint: endpoint, user: user, pass: pass, client: &http.Client{Timeout: timeout}, minSev: minSeverity}
+	return &OpenObserveSink{httpSender: newHTTPSender(timeout), endpoint: endpoint, user: user, pass: pass, minSev: minSeverity}
 }
 
 // Emit posts the event as a single-record JSON array.
@@ -59,23 +52,11 @@ func (s *OpenObserveSink) Emit(e event.Event) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.endpoint, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
+	p := httpPost{url: s.endpoint, body: body, contentType: "application/json"}
 	if s.user != "" || s.pass != "" {
-		req.SetBasicAuth(s.user, s.pass)
+		p.useBasic = true
+		p.basicUser = s.user
+		p.basicPass = s.pass
 	}
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("openobserve: non-2xx status %d", resp.StatusCode)
-	}
-	return nil
+	return s.deliver("openobserve", p)
 }

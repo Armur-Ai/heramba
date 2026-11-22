@@ -1,11 +1,7 @@
 package alert
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
-	"fmt"
-	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -22,9 +18,9 @@ const defaultHoneycombURL = "https://api.honeycomb.io"
 // X-Honeycomb-Team header and timestamped via X-Honeycomb-Event-Time. Fail-soft
 // and severity-floored like the other push sinks.
 type HoneycombSink struct {
+	*httpSender
 	endpoint string
 	apiKey   string
-	client   *http.Client
 	minSev   event.Severity
 }
 
@@ -34,11 +30,8 @@ func NewHoneycomb(base, dataset, apiKey string, timeout time.Duration, minSeveri
 	if base == "" {
 		base = defaultHoneycombURL
 	}
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
 	endpoint := strings.TrimRight(base, "/") + "/1/events/" + url.PathEscape(dataset)
-	return &HoneycombSink{endpoint: endpoint, apiKey: apiKey, client: &http.Client{Timeout: timeout}, minSev: minSeverity}
+	return &HoneycombSink{httpSender: newHTTPSender(timeout), endpoint: endpoint, apiKey: apiKey, minSev: minSeverity}
 }
 
 // Emit posts the event as a single Honeycomb event (flat key/values).
@@ -62,22 +55,13 @@ func (s *HoneycombSink) Emit(e event.Event) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.endpoint, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Honeycomb-Team", s.apiKey)
-	req.Header.Set("X-Honeycomb-Event-Time", e.Time.UTC().Format(time.RFC3339Nano))
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("honeycomb: non-2xx status %d", resp.StatusCode)
-	}
-	return nil
+	return s.deliver("honeycomb", httpPost{
+		url:         s.endpoint,
+		body:        body,
+		contentType: "application/json",
+		headers: map[string]string{
+			"X-Honeycomb-Team":       s.apiKey,
+			"X-Honeycomb-Event-Time": e.Time.UTC().Format(time.RFC3339Nano),
+		},
+	})
 }

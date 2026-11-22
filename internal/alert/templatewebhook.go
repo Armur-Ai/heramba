@@ -2,9 +2,7 @@ package alert
 
 import (
 	"bytes"
-	"context"
 	"fmt"
-	"net/http"
 	"text/template"
 	"time"
 
@@ -17,10 +15,10 @@ import (
 // the event.Event as its data (e.g. `{"kind":"{{.Kind}}","src":"{{.Source}}"}`).
 // Fail-soft and severity-floored like the other push sinks.
 type TemplateWebhookSink struct {
+	*httpSender
 	url         string
 	tmpl        *template.Template
 	contentType string
-	client      *http.Client
 	minSev      event.Severity
 }
 
@@ -38,12 +36,10 @@ func NewTemplateWebhook(url, tmplStr, contentType string, timeout time.Duration,
 	if contentType == "" {
 		contentType = "application/json"
 	}
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
 	return &TemplateWebhookSink{
-		url: url, tmpl: t, contentType: contentType,
-		client: &http.Client{Timeout: timeout}, minSev: minSeverity,
+		httpSender: newHTTPSender(timeout),
+		url:        url, tmpl: t, contentType: contentType,
+		minSev: minSeverity,
 	}, nil
 }
 
@@ -66,20 +62,5 @@ func (s *TemplateWebhookSink) Emit(e event.Event) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.url, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", s.contentType)
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("template_webhook: non-2xx status %d", resp.StatusCode)
-	}
-	return nil
+	return s.deliver("template_webhook", httpPost{url: s.url, body: body, contentType: s.contentType})
 }
