@@ -84,7 +84,9 @@ func runServe(args []string) {
 	// The alert wiring sits behind a SwapSink so SIGHUP can replace it live
 	// without rebuilding the counting sink (which feeds metrics + the summary).
 	alertSink := alert.NewSwap(buildSink(cfg))
-	counting := alert.Count(alert.MultiSink{alertSink, ingestor, advisor})
+	// Ring buffer of recent events for the admin events API + web dashboard.
+	ring := alert.NewRing(200)
+	counting := alert.Count(alert.MultiSink{alertSink, ingestor, advisor, ring})
 	engine, err := edge.New(cfg, counting)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "heramba: %v\n", err)
@@ -131,7 +133,7 @@ func runServe(args []string) {
 	if cfg.AdminListen != "" {
 		adminSrv = &http.Server{
 			Addr: cfg.AdminListen,
-			Handler: admin.Handler(&ready, func() admin.Metrics {
+			Handler: admin.HandlerWithEvents(&ready, func() admin.Metrics {
 				byKind := map[string]int{}
 				for _, t := range counting.Snapshot() {
 					byKind[string(t.Kind)] = t.Count
@@ -151,7 +153,7 @@ func runServe(args []string) {
 						Count:     hs.Count,
 					},
 				}
-			}),
+			}, ring.Recent),
 			ReadHeaderTimeout: 10 * time.Second,
 		}
 	}
@@ -193,7 +195,7 @@ func runServe(args []string) {
 		}
 	}()
 	if adminSrv != nil {
-		fmt.Printf("  admin: status page + health + metrics on %s (/ /healthz /readyz /metrics /version)\n", cfg.AdminListen)
+		fmt.Printf("  admin: status + dashboard + health + metrics on %s (/ /dashboard /api/events /healthz /readyz /metrics /version)\n", cfg.AdminListen)
 		go func() {
 			if err := adminSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				fmt.Fprintf(os.Stderr, "heramba: admin serve error: %v\n", err)

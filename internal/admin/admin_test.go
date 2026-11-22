@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Armur-Ai/heramba/internal/event"
 	"github.com/Armur-Ai/heramba/internal/version"
 )
 
@@ -204,5 +205,73 @@ func TestScoreHistogramOmittedWhenEmpty(t *testing.T) {
 	_, body := do(t, Handler(nil, func() Metrics { return Metrics{} }), "/metrics")
 	if strings.Contains(body, "heramba_agentic_score") {
 		t.Errorf("empty histogram should be omitted:\n%s", body)
+	}
+}
+
+func TestAPIEventsReturnsJSON(t *testing.T) {
+	evs := []event.Event{
+		event.Deception(event.KindDecoyHit, "10.0.0.1", "/.env", "probe"),
+		event.New(event.KindProbe, event.SeverityMedium, "10.0.0.2", "/scan", "sweep"),
+	}
+	h := HandlerWithEvents(nil, nil, func(n int) []event.Event {
+		if n < len(evs) {
+			return evs[:n]
+		}
+		return evs
+	})
+	code, body := do(t, h, "/api/events")
+	if code != 200 {
+		t.Fatalf("code %d", code)
+	}
+	var got []event.Event
+	if err := json.Unmarshal([]byte(body), &got); err != nil {
+		t.Fatalf("events must be JSON array: %v (%s)", err, body)
+	}
+	if len(got) != 2 || got[0].Target != "/.env" {
+		t.Errorf("unexpected events payload: %+v", got)
+	}
+}
+
+func TestAPIEventsRespectsN(t *testing.T) {
+	var asked int
+	h := HandlerWithEvents(nil, nil, func(n int) []event.Event {
+		asked = n
+		return []event.Event{}
+	})
+	code, _ := do(t, h, "/api/events?n=5")
+	if code != 200 {
+		t.Fatalf("code %d", code)
+	}
+	if asked != 5 {
+		t.Errorf("events func asked for n=%d, want 5", asked)
+	}
+}
+
+func TestAPIEventsNilSourceIsEmptyArray(t *testing.T) {
+	// Default Handler wires no events source: must still return [] not null.
+	code, body := do(t, Handler(nil, nil), "/api/events")
+	if code != 200 {
+		t.Fatalf("code %d", code)
+	}
+	if strings.TrimSpace(body) != "[]" {
+		t.Errorf("nil events should encode as [], got %q", body)
+	}
+}
+
+func TestDashboardServesSelfContainedHTML(t *testing.T) {
+	code, body := do(t, Handler(nil, nil), "/dashboard")
+	if code != 200 {
+		t.Fatalf("code %d", code)
+	}
+	for _, want := range []string{"<!doctype html>", "Heramba", "/api/events", "/metrics", "setInterval"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("dashboard missing %q", want)
+		}
+	}
+	// Self-contained: no external asset references.
+	for _, bad := range []string{"http://", "https://", "src=", "<link"} {
+		if strings.Contains(body, bad) {
+			t.Errorf("dashboard should be self-contained, found %q", bad)
+		}
 	}
 }

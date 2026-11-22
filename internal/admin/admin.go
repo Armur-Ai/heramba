@@ -10,9 +10,11 @@ import (
 	"html"
 	"net/http"
 	"sort"
+	"strconv"
 	"sync/atomic"
 	"time"
 
+	"github.com/Armur-Ai/heramba/internal/event"
 	"github.com/Armur-Ai/heramba/internal/version"
 )
 
@@ -42,9 +44,18 @@ type ScoreHistogram struct {
 // MetricsFunc returns the current metrics snapshot.
 type MetricsFunc func() Metrics
 
-// Handler builds the admin mux. ready gates /readyz (flip it true once the edge
-// is actually serving); metrics may be nil (then /metrics reports only up/uptime).
+// EventsFunc returns up to n of the most recent detection events, newest first.
+type EventsFunc func(n int) []event.Event
+
+// Handler builds the admin mux with no events source (no /api/events data or
+// dashboard rows). ready gates /readyz; metrics may be nil.
 func Handler(ready *atomic.Bool, metrics MetricsFunc) http.Handler {
+	return HandlerWithEvents(ready, metrics, nil)
+}
+
+// HandlerWithEvents builds the admin mux, additionally serving /api/events and
+// the /dashboard live view from events (both tolerate a nil events func).
+func HandlerWithEvents(ready *atomic.Bool, metrics MetricsFunc, events EventsFunc) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -70,6 +81,27 @@ func Handler(ready *atomic.Bool, metrics MetricsFunc) http.Handler {
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		writeStatusPage(w, metrics)
+	})
+	mux.HandleFunc("/api/events", func(w http.ResponseWriter, r *http.Request) {
+		n := 50
+		if q := r.URL.Query().Get("n"); q != "" {
+			if v, err := strconv.Atoi(q); err == nil && v > 0 {
+				n = v
+			}
+		}
+		var evs []event.Event
+		if events != nil {
+			evs = events(n)
+		}
+		if evs == nil {
+			evs = []event.Event{} // encode as [] not null
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_ = json.NewEncoder(w).Encode(evs)
+	})
+	mux.HandleFunc("/dashboard", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write([]byte(dashboardHTML))
 	})
 	mux.HandleFunc("/version", func(w http.ResponseWriter, _ *http.Request) {
 		var uptime time.Duration
