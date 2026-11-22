@@ -71,6 +71,10 @@ type AlertConfig struct {
 	Datadog DatadogConfig `yaml:"datadog"`
 	Elastic ElasticConfig `yaml:"elastic"`
 	Syslog  SyslogConfig  `yaml:"syslog"`
+	// Rotate is an optional bounded on-disk JSONL audit trail (local, no
+	// network). Unlike the push sinks it records everything, ignoring
+	// MinSeverity — it is a durable record, not a notification channel.
+	Rotate RotateConfig `yaml:"rotate"`
 	// Paging integrations — default to a high floor (they wake a human).
 	PagerDutyKey string `yaml:"pagerduty_key"` // PagerDuty Events API v2 routing key
 	OpsgenieKey  string `yaml:"opsgenie_key"`  // Opsgenie API key
@@ -99,6 +103,13 @@ type ElasticConfig struct {
 type SyslogConfig struct {
 	Network string `yaml:"network"` // udp | tcp (default udp)
 	Address string `yaml:"address"` // host:port
+}
+
+// RotateConfig configures the rotating-file JSONL audit sink.
+type RotateConfig struct {
+	File       string `yaml:"file"`        // path to the active log (empty = disabled)
+	MaxBytes   int64  `yaml:"max_bytes"`   // rotate at this size (0 = 10 MiB)
+	MaxBackups int    `yaml:"max_backups"` // rotated files to keep (0 = truncate in place)
 }
 
 // DecoyConfig controls decoy/canary behavior.

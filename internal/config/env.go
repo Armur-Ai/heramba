@@ -47,6 +47,9 @@ func (c Config) ApplyEnv() Config {
 	if v := envVar("DISCORD", false); v != "" {
 		c.Alert.Discord = v
 	}
+	if v := envVar("ROTATE_FILE", false); v != "" {
+		c.Alert.Rotate.File = v
+	}
 	if v := envVar("ALERT_MIN_SEVERITY", false); v != "" {
 		c.Alert.MinSeverity = v
 	}
