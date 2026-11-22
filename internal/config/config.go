@@ -89,6 +89,9 @@ type AlertConfig struct {
 	Syslog  SyslogConfig  `yaml:"syslog"`
 	Loki    LokiConfig    `yaml:"loki"`
 	Sumo    string        `yaml:"sumo"` // Sumo Logic HTTP Source URL (the URL is the secret)
+	// TemplateWebhook POSTs a body rendered from an operator-supplied Go
+	// text/template, so any service with a fixed payload shape can be targeted.
+	TemplateWebhook TemplateWebhookConfig `yaml:"template_webhook"`
 	// Rotate is an optional bounded on-disk JSONL audit trail (local, no
 	// network). Unlike the push sinks it records everything, ignoring
 	// MinSeverity — it is a durable record, not a notification channel.
@@ -118,6 +121,13 @@ type ElasticConfig struct {
 	URL    string `yaml:"url"`     // Elasticsearch base URL
 	Index  string `yaml:"index"`   // empty = heramba-detections
 	APIKey string `yaml:"api_key"` // optional ApiKey auth
+}
+
+// TemplateWebhookConfig configures the generic templated webhook sink.
+type TemplateWebhookConfig struct {
+	URL         string `yaml:"url"`          // POST target (empty = disabled)
+	Template    string `yaml:"template"`     // Go text/template rendered with the event
+	ContentType string `yaml:"content_type"` // empty = application/json
 }
 
 // LokiConfig configures a Grafana Loki push sink.

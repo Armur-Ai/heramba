@@ -284,6 +284,13 @@ func buildSink(cfg config.Config) alert.Sink {
 	if u := cfg.Alert.Sumo; u != "" {
 		sinks = append(sinks, alert.NewSumoLogic(u, 5*time.Second, floor))
 	}
+	if c := cfg.Alert.TemplateWebhook; c.URL != "" {
+		if tw, err := alert.NewTemplateWebhook(c.URL, c.Template, c.ContentType, 5*time.Second, floor); err == nil {
+			sinks = append(sinks, tw)
+		} else {
+			fmt.Fprintf(os.Stderr, "heramba: template webhook disabled (%v)\n", err)
+		}
+	}
 	if c := cfg.Alert.Rotate; c.File != "" {
 		if rs, err := alert.NewRotatingFile(c.File, c.MaxBytes, c.MaxBackups); err == nil {
 			sinks = append(sinks, rs) // records everything (no floor): durable audit trail
