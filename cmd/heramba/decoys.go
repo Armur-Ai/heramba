@@ -36,7 +36,7 @@ func decoysUsage() {
 	fmt.Fprintln(os.Stderr, `usage:
   heramba decoys list [--preset <stack>]   list the decoy endpoints (optionally for a framework)
   heramba decoys presets                   list available framework presets
-  heramba decoys export [--preset s] [--format json|nginx|caddy|traefik]   export the decoy surface
+  heramba decoys export [--preset s] [--format json|nginx|caddy|traefik|haproxy|envoy]   export the decoy surface
   heramba decoys canary <label>            mint a canary token to plant
   heramba decoys seeds [--preset <stack>]  list believable canary seeds to plant per framework`)
 }
@@ -128,7 +128,7 @@ func runCanary(args []string) {
 func runDecoysExport(args []string) {
 	fs := flag.NewFlagSet("export", flag.ExitOnError)
 	preset := fs.String("preset", "", "include a framework preset's lures")
-	format := fs.String("format", "json", "output format: json|nginx|caddy|traefik")
+	format := fs.String("format", "json", "output format: json|nginx|caddy|traefik|haproxy|envoy")
 	_ = fs.Parse(args)
 
 	r := decoy.NewRegistry()
@@ -148,6 +148,10 @@ func runDecoysExport(args []string) {
 		fmt.Print(surface.Caddy())
 	case "traefik":
 		fmt.Print(surface.Traefik())
+	case "haproxy":
+		fmt.Print(surface.HAProxy())
+	case "envoy":
+		fmt.Print(surface.Envoy())
 	default:
 		b, err := surface.JSON()
 		if err != nil {

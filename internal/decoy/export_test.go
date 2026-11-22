@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestExportIncludesDefaultsAndPreset(t *testing.T) {
@@ -78,5 +80,57 @@ func TestTraefikRender(t *testing.T) {
 	// A preset path must be present too.
 	if !strings.Contains(out, "Path(`/storage/logs/laravel.log`)") {
 		t.Errorf("traefik export missing preset lure:\n%s", out)
+	}
+}
+
+func TestHAProxyRender(t *testing.T) {
+	r := NewRegistry()
+	out := r.Export().HAProxy()
+	if !strings.Contains(out, "acl heramba_decoy path ") || !strings.Contains(out, "/.env") {
+		t.Errorf("haproxy export missing exact-path acl:\n%s", out)
+	}
+	if !strings.Contains(out, "acl heramba_decoy path_beg ") || !strings.Contains(out, "/.git/") {
+		t.Errorf("haproxy export missing zone acl:\n%s", out)
+	}
+	if !strings.Contains(out, "http-request deny deny_status 404 if heramba_decoy") {
+		t.Errorf("haproxy export missing deny rule:\n%s", out)
+	}
+}
+
+func TestEnvoyRenderIsValidYAML(t *testing.T) {
+	r := NewRegistry()
+	p, _ := GetPreset("django")
+	r.ApplyPreset(p)
+	out := r.Export().Envoy()
+
+	// The routes block must parse as YAML and carry path + prefix matches.
+	var parsed struct {
+		Routes []struct {
+			Match          map[string]string `yaml:"match"`
+			DirectResponse struct {
+				Status int `yaml:"status"`
+			} `yaml:"direct_response"`
+		} `yaml:"routes"`
+	}
+	if err := yaml.Unmarshal([]byte(out), &parsed); err != nil {
+		t.Fatalf("envoy export must be valid YAML: %v\n%s", err, out)
+	}
+	if len(parsed.Routes) == 0 {
+		t.Fatal("envoy export has no routes")
+	}
+	var sawPath, sawPrefix bool
+	for _, rt := range parsed.Routes {
+		if rt.DirectResponse.Status != 404 {
+			t.Errorf("route should direct_response 404, got %d", rt.DirectResponse.Status)
+		}
+		if _, ok := rt.Match["path"]; ok {
+			sawPath = true
+		}
+		if _, ok := rt.Match["prefix"]; ok {
+			sawPrefix = true
+		}
+	}
+	if !sawPath || !sawPrefix {
+		t.Errorf("envoy export should have both path and prefix matches (path=%v prefix=%v)", sawPath, sawPrefix)
 	}
 }

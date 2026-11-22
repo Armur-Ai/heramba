@@ -55,6 +55,48 @@ func (s Surface) Caddy() string {
 	return b.String()
 }
 
+// HAProxy renders the surface as HAProxy ACLs plus a single 404 deny rule, to
+// drop into a frontend/backend. Exact lures use `path`, zones use `path_beg`;
+// both ACL lines share the name heramba_decoy, so HAProxy ORs them together.
+func (s Surface) HAProxy() string {
+	var b strings.Builder
+	b.WriteString("# Heramba decoy surface — HAProxy. Add to a frontend/backend (all return 404).\n")
+	if len(s.Paths) > 0 {
+		b.WriteString("acl heramba_decoy path")
+		for _, e := range s.Paths {
+			fmt.Fprintf(&b, " %s", e.Path)
+		}
+		b.WriteString("\n")
+	}
+	if len(s.Prefixes) > 0 {
+		b.WriteString("acl heramba_decoy path_beg")
+		for _, e := range s.Prefixes {
+			fmt.Fprintf(&b, " %s", e.Path)
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString("http-request deny deny_status 404 if heramba_decoy\n")
+	return b.String()
+}
+
+// Envoy renders the surface as Envoy HTTP route entries that direct_response
+// 404 — exact lures via a `path` match, zones via a `prefix` match. Paste the
+// routes into a virtual_host's `routes` list. Uses genuine Envoy route syntax.
+func (s Surface) Envoy() string {
+	var b strings.Builder
+	b.WriteString("# Heramba decoy surface — Envoy routes (add under a virtual_host's routes:).\n")
+	b.WriteString("routes:\n")
+	for _, e := range s.Paths {
+		fmt.Fprintf(&b, "  - match: { path: %q }   # %s\n", e.Path, e.Note)
+		b.WriteString("    direct_response: { status: 404 }\n")
+	}
+	for _, e := range s.Prefixes {
+		fmt.Fprintf(&b, "  - match: { prefix: %q }   # zone: %s\n", e.Path, e.Note)
+		b.WriteString("    direct_response: { status: 404 }\n")
+	}
+	return b.String()
+}
+
 // Traefik renders the surface as a Traefik dynamic configuration (file
 // provider): a single router whose rule ORs together a Path matcher per exact
 // lure and a PathPrefix matcher per zone, pointing at a service the operator
