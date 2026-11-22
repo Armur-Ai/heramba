@@ -239,6 +239,65 @@
     return s;
   }
 
+  // stackedArea renders several series stacked on a shared x-axis — the
+  // severity-over-time view. opts: { series:[{color,label,values:[n]}],
+  // width, height, max }. All value arrays must share a length.
+  function stackedArea(host, opts) {
+    opts = opts || {};
+    var series = (opts.series || []).filter(function (s) { return (s.values || []).length; });
+    var w = opts.width || 600;
+    var h = opts.height || 160;
+    var padT = 8, padB = 14, padL = 2, padR = 2;
+    var s = svgRoot(host, w, h);
+    if (!series.length) return s;
+
+    var n = series[0].values.length;
+    // column totals determine the shared vertical scale.
+    var totals = [];
+    for (var i = 0; i < n; i++) {
+      var sum = 0;
+      series.forEach(function (ser) { sum += Math.max(0, ser.values[i] || 0); });
+      totals.push(sum);
+    }
+    var max = opts.max != null ? opts.max : Math.max.apply(null, totals.concat([1]));
+    if (max <= 0) max = 1;
+    var innerW = w - padL - padR;
+    var innerH = h - padT - padB;
+    var step = n > 1 ? innerW / (n - 1) : 0;
+    var baseY = padT + innerH;
+
+    // gridlines
+    for (var g = 0; g <= 2; g++) {
+      var gy = padT + (innerH / 2) * g;
+      s.appendChild(el("line", { x1: padL, y1: gy, x2: w - padR, y2: gy, class: "hc-grid" }));
+    }
+
+    // accumulate stack heights from the bottom up.
+    var baseline = [];
+    for (var b = 0; b < n; b++) baseline.push(0);
+    series.forEach(function (ser) {
+      var top = [], bot = [];
+      for (var i = 0; i < n; i++) {
+        var x = padL + i * step;
+        var v = Math.max(0, ser.values[i] || 0);
+        var y0 = baseY - (baseline[i] / max) * innerH;
+        baseline[i] += v;
+        var y1 = baseY - (baseline[i] / max) * innerH;
+        bot.push([x, y0]);
+        top.push([x, y1]);
+      }
+      // polygon: along the top, back along the previous baseline.
+      var d = "M" + top[0][0] + " " + top[0][1];
+      for (var k = 1; k < top.length; k++) d += " L" + top[k][0] + " " + top[k][1];
+      for (var j = bot.length - 1; j >= 0; j--) d += " L" + bot[j][0] + " " + bot[j][1];
+      d += " Z";
+      var p = el("path", { d: d, fill: ser.color, "fill-opacity": "0.78", stroke: "none" });
+      if (ser.label != null) p.appendChild(titleEl(ser.label));
+      s.appendChild(p);
+    });
+    return s;
+  }
+
   function titleEl(text) {
     var t = el("title");
     t.textContent = text;
@@ -251,5 +310,6 @@
     bars: bars,
     gauge: gauge,
     histogram: histogram,
+    stackedArea: stackedArea,
   };
 })(window);

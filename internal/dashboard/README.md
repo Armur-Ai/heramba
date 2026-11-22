@@ -32,6 +32,7 @@ h := dashboard.DemoHandler()               // seeds a backlog + live ticker
 | `WithMetrics(MetricsFunc)` | `func() Metrics` — metrics snapshot. |
 | `WithController(Controller)` | Write side for the control panel. Defaults to a safe in-memory `MemoryController`. |
 | `Authorize(token string)` | Require `Authorization: Bearer <token>` on all `POST /api/control/*`. Empty token (default) leaves writes open — intended for localhost binds. |
+| `WithBroker(*Broker)` | Pub/sub broker the live stream (`GET /api/stream`) fans out. Supply one that your event source also publishes to for instant UI updates; otherwise a private broker is created so the endpoint still works (heartbeats only). |
 
 ### Controller
 
@@ -73,9 +74,38 @@ Read (GET):
 | `/api/metrics` | Metrics snapshot (`uptime_seconds`, `by_kind`, `by_severity`, `score`). |
 | `/api/timeline?window=` | Bucketed counts over the trailing window (60 buckets). |
 | `/api/sources` | Per-source aggregates, worst first. |
+| `/api/sources/{id}` | Per-source drill: that source's events (newest first, capped) + rolled-up kinds/targets/severity/first-last. `?source=` also accepted. |
+| `/api/breaches` | Confirmed breaches — `canary_triggered` events (count, distinct sources, per-target, recent). |
 | `/api/campaigns` | Coordinated multi-IP swarms (>=2 sources; `coordinated` at >=3). |
-| `/api/decoys` | Per-target decoy hit-map rows. |
+| `/api/decoys` | Per-target decoy hit-map rows (also drives the Top Targets panel). |
+| `/api/stream` | **Server-Sent Events** live feed: `data: {json}\n\n` frames (`{"type":"event",…}` / `{"type":"metrics",…}`) plus heartbeat comments. Primed with a metrics frame; subscription torn down on disconnect. |
+| `/api/export/events.csv` | Recent events as a downloadable CSV attachment (`?n=` honoured/capped). |
+| `/api/export/events.json` | Recent events as a downloadable, pretty-printed JSON attachment. |
 | `/healthz` | `ok`. |
+
+All API responses carry `Cache-Control: no-store`; every response carries
+`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, a strict same-origin
+CSP and `Referrer-Policy: no-referrer`. Registered paths return `405` for the
+wrong method.
+
+### Live stream broker
+
+`GET /api/stream` is fed by a `Broker` — a dependency-free channel fan-out:
+
+```go
+b := dashboard.NewBroker()
+h := dashboard.Handler(dashboard.WithEvents(src.Recent), dashboard.WithBroker(b))
+
+// publish from your event source (non-blocking; drops frames for a slow client):
+b.Publish(dashboard.EventFrame(ev))               // a detection event
+b.Publish(dashboard.StreamFrame{Type: "metrics"}) // a metrics refresh
+b.Close()                                          // on shutdown
+```
+
+`Publish` fans out inline on the caller's goroutine (the broker owns none and
+cannot leak them); `Subscribers()` reports the current connection count. The
+demo feed publishes every generated event, so `DemoHandler` exercises the full
+SSE path.
 
 Write (POST, guarded by `Authorize` when set — 401 otherwise):
 
@@ -95,6 +125,11 @@ When exposing it beyond loopback, always set a bearer token via `Authorize` so
 ## Tests
 
 `go test ./internal/dashboard/...` covers every endpoint (status + content-type),
-`[]` encoding on empty events, JSON shapes, timeline bucketing math, control-auth
-(reject/accept), the demo feed, the offline-asset guarantees (no external script
-origins), and an end-to-end pass over a demo-backed handler.
+`[]` encoding on empty events, JSON shapes, timeline bucketing math, the
+per-source drill and confirmed-breaches aggregates, CSV/JSON export headers and
+bodies, the SSE broker (fan-out, idempotent unsubscribe, drop-on-slow, close)
+and the `/api/stream` endpoint over `httptest` (content type, priming frame,
+event delivery, subscriber teardown on cancel), the hardening guarantees
+(security headers, `no-store`, `405`, `n` caps), control-auth (reject/accept),
+the demo feed, the offline-asset guarantees (no external script origins), and an
+end-to-end pass over a demo-backed handler.

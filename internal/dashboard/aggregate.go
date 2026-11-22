@@ -173,6 +173,111 @@ func topSources(evs []event.Event) []SourceAgg {
 	return out
 }
 
+// --- Per-source drill -----------------------------------------------------
+
+// sourceDrillLimit caps how many individual events a source drill returns.
+const sourceDrillLimit = 200
+
+// SourceDetail is the drill-down for a single source: its rolled-up stats plus
+// the matching events, newest first. Events is never nil.
+type SourceDetail struct {
+	Source      string         `json:"source"`
+	Count       int            `json:"count"`
+	Kinds       map[string]int `json:"kinds"`
+	Targets     map[string]int `json:"targets"`
+	MaxSeverity string         `json:"max_severity"`
+	MaxConf     float64        `json:"max_confidence"`
+	FirstSeen   time.Time      `json:"first_seen"`
+	LastSeen    time.Time      `json:"last_seen"`
+	Events      []event.Event  `json:"events"`
+}
+
+// sourceDrill filters events down to one source and rolls up its activity. The
+// returned Events are newest first and capped at sourceDrillLimit; an unknown
+// source yields a zero-count detail (not nil), so the UI can render an empty
+// state rather than erroring.
+func sourceDrill(evs []event.Event, source string) SourceDetail {
+	d := SourceDetail{
+		Source:  source,
+		Kinds:   map[string]int{},
+		Targets: map[string]int{},
+		Events:  []event.Event{},
+	}
+	var maxSevRank event.Severity
+	for _, e := range evs {
+		if e.Source != source {
+			continue
+		}
+		d.Count++
+		d.Kinds[string(e.Kind)]++
+		if e.Target != "" {
+			d.Targets[e.Target]++
+		}
+		if e.Severity >= maxSevRank {
+			maxSevRank = e.Severity
+			d.MaxSeverity = sevLabel(e)
+		}
+		if e.Confidence > d.MaxConf {
+			d.MaxConf = e.Confidence
+		}
+		if d.FirstSeen.IsZero() || e.Time.Before(d.FirstSeen) {
+			d.FirstSeen = e.Time
+		}
+		if e.Time.After(d.LastSeen) {
+			d.LastSeen = e.Time
+		}
+		if len(d.Events) < sourceDrillLimit {
+			d.Events = append(d.Events, e)
+		}
+	}
+	// recentEvents already returns newest-first; preserve that ordering.
+	return d
+}
+
+// --- Confirmed breaches (canary triggers) ---------------------------------
+
+// breachLimit caps how many recent breach events are echoed back.
+const breachLimit = 50
+
+// Breaches summarises confirmed breaches — triggered canary tokens. A canary
+// trigger is the highest-fidelity signal the edge emits: nobody legitimately
+// replays a planted token, so each one is a confirmed intrusion. Recent is
+// newest first and never nil.
+type Breaches struct {
+	Count    int            `json:"count"`
+	Sources  int            `json:"sources"`
+	Targets  map[string]int `json:"targets"`
+	LastSeen time.Time      `json:"last_seen"`
+	Recent   []event.Event  `json:"recent"`
+}
+
+// confirmedBreaches counts canary-trigger events and surfaces the most recent
+// ones. Input is assumed newest-first (as recentEvents returns).
+func confirmedBreaches(evs []event.Event) Breaches {
+	b := Breaches{Targets: map[string]int{}, Recent: []event.Event{}}
+	srcSet := map[string]struct{}{}
+	for _, e := range evs {
+		if e.Kind != event.KindCanaryTriggered {
+			continue
+		}
+		b.Count++
+		if e.Target != "" {
+			b.Targets[e.Target]++
+		}
+		if e.Source != "" {
+			srcSet[e.Source] = struct{}{}
+		}
+		if e.Time.After(b.LastSeen) {
+			b.LastSeen = e.Time
+		}
+		if len(b.Recent) < breachLimit {
+			b.Recent = append(b.Recent, e)
+		}
+	}
+	b.Sources = len(srcSet)
+	return b
+}
+
 // --- Campaigns / swarms ---------------------------------------------------
 
 // Campaign is a coordinated cluster of activity — the same target (or an

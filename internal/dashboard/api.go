@@ -17,9 +17,13 @@ const defaultEventCount = 100
 // maxEventCount caps the per-request event count to bound work and payload size.
 const maxEventCount = 2000
 
-// writeJSON encodes v as JSON with the right content type.
+// writeJSON encodes v as JSON with the right content type. API responses are
+// live and per-request, so they are explicitly uncacheable (no stale metrics or
+// event feeds served from a proxy/browser cache).
 func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	h := w.Header()
+	h.Set("Content-Type", "application/json; charset=utf-8")
+	h.Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
 }
@@ -76,8 +80,9 @@ type metricsJSON struct {
 	Score         ScoreHistogram `json:"score"`
 }
 
-// handleMetrics serves GET /api/metrics as a JSON snapshot.
-func (s *server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
+// metricsPayload builds the wire-shape metrics snapshot (never-nil maps), shared
+// by GET /api/metrics and the live stream.
+func (s *server) metricsPayload() metricsJSON {
 	m := s.snapshot()
 	if m.ByKind == nil {
 		m.ByKind = map[string]int{}
@@ -85,7 +90,7 @@ func (s *server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 	if m.BySeverity == nil {
 		m.BySeverity = map[string]int{}
 	}
-	out := metricsJSON{
+	return metricsJSON{
 		Mode:          m.Mode,
 		Total:         m.Total,
 		ByKind:        m.ByKind,
@@ -94,7 +99,11 @@ func (s *server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 		UptimeSeconds: int(s.uptime().Seconds()),
 		Score:         m.Score,
 	}
-	writeJSON(w, http.StatusOK, out)
+}
+
+// handleMetrics serves GET /api/metrics as a JSON snapshot.
+func (s *server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, s.metricsPayload())
 }
 
 // handleTimeline serves GET /api/timeline?window= as bucketed event counts.
@@ -108,6 +117,28 @@ func (s *server) handleTimeline(w http.ResponseWriter, r *http.Request) {
 func (s *server) handleSources(w http.ResponseWriter, _ *http.Request) {
 	evs := s.recentEvents(maxEventCount)
 	writeJSON(w, http.StatusOK, topSources(evs))
+}
+
+// handleSourceDrill serves GET /api/sources/{id}: the events and rolled-up
+// stats for a single source. {id} is a raw source identifier (IP); it is also
+// accepted via ?source= for clients that prefer a query.
+func (s *server) handleSourceDrill(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		id = r.URL.Query().Get("source")
+	}
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "source required"})
+		return
+	}
+	evs := s.recentEvents(maxEventCount)
+	writeJSON(w, http.StatusOK, sourceDrill(evs, id))
+}
+
+// handleBreaches serves GET /api/breaches: confirmed breaches (canary triggers).
+func (s *server) handleBreaches(w http.ResponseWriter, _ *http.Request) {
+	evs := s.recentEvents(maxEventCount)
+	writeJSON(w, http.StatusOK, confirmedBreaches(evs))
 }
 
 // handleCampaigns serves GET /api/campaigns: coordinated multi-IP swarms.

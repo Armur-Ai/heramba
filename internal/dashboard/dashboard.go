@@ -92,6 +92,7 @@ type config struct {
 	metrics    MetricsFunc
 	controller Controller
 	token      string
+	broker     *Broker
 }
 
 // Option configures a dashboard Handler.
@@ -110,12 +111,20 @@ func WithController(ctl Controller) Option { return func(c *config) { c.controll
 // An empty token leaves writes unauthenticated (intended for localhost binds).
 func Authorize(token string) Option { return func(c *config) { c.token = token } }
 
+// WithBroker sets the pub/sub broker the live stream (GET /api/stream) fans out.
+// Supply one when an event source also publishes to it (so the UI updates the
+// instant an event arrives); otherwise the handler creates a private broker so
+// the stream endpoint still works (heartbeats only). The caller owns the broker
+// it supplies and may Close it on shutdown.
+func WithBroker(b *Broker) Option { return func(c *config) { c.broker = b } }
+
 // server holds the resolved dependencies behind the mux.
 type server struct {
 	events     EventsFunc
 	metrics    MetricsFunc
 	controller Controller
 	token      string
+	broker     *Broker
 	startedAt  time.Time
 }
 
@@ -131,11 +140,15 @@ func Handler(opts ...Option) http.Handler {
 	if cfg.controller == nil {
 		cfg.controller = NewMemoryController()
 	}
+	if cfg.broker == nil {
+		cfg.broker = NewBroker()
+	}
 	s := &server{
 		events:     cfg.events,
 		metrics:    cfg.metrics,
 		controller: cfg.controller,
 		token:      cfg.token,
+		broker:     cfg.broker,
 		startedAt:  time.Now(),
 	}
 	return s.routes()
@@ -158,13 +171,22 @@ func (s *server) routes() http.Handler {
 	// SPA shell at the root only.
 	mux.HandleFunc("GET /{$}", s.handleIndex(sub))
 
+	// Live stream (Server-Sent Events).
+	mux.HandleFunc("GET /api/stream", s.handleStream)
+
 	// Read APIs.
 	mux.HandleFunc("GET /api/events", s.handleEvents)
 	mux.HandleFunc("GET /api/metrics", s.handleMetrics)
 	mux.HandleFunc("GET /api/timeline", s.handleTimeline)
 	mux.HandleFunc("GET /api/sources", s.handleSources)
+	mux.HandleFunc("GET /api/sources/{id}", s.handleSourceDrill)
+	mux.HandleFunc("GET /api/breaches", s.handleBreaches)
 	mux.HandleFunc("GET /api/campaigns", s.handleCampaigns)
 	mux.HandleFunc("GET /api/decoys", s.handleDecoys)
+
+	// Exports (downloadable attachments).
+	mux.HandleFunc("GET /api/export/events.csv", s.handleExportCSV)
+	mux.HandleFunc("GET /api/export/events.json", s.handleExportJSON)
 
 	// Write controls.
 	mux.HandleFunc("POST /api/control/mode", s.handleControlMode)
@@ -179,7 +201,30 @@ func (s *server) routes() http.Handler {
 		_, _ = w.Write([]byte("ok\n"))
 	})
 
-	return mux
+	return securityHeaders(mux)
+}
+
+// securityHeaders wraps the mux to stamp conservative security headers on every
+// response. X-Content-Type-Options stops MIME sniffing of the embedded assets
+// and API payloads; the dashboard is fully self-hosted (no external origins),
+// so a strict same-origin-only CSP and a frame deny cost nothing and harden the
+// shell against clickjacking and injected resources.
+func securityHeaders(next http.Handler) http.Handler {
+	// script-src is strict 'self' (no inline scripts in the shell); style-src
+	// allows 'unsafe-inline' because the SPA sets inline style attributes while
+	// rendering (bar widths, severity colours); img-src permits the data: URI
+	// favicon. No external origins are allowed — the build is air-gapped.
+	const csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+		"img-src 'self' data:; connect-src 'self'; object-src 'none'; " +
+		"base-uri 'none'; frame-ancestors 'none'"
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Referrer-Policy", "no-referrer")
+		h.Set("Content-Security-Policy", csp)
+		next.ServeHTTP(w, r)
+	})
 }
 
 // handleIndex serves the embedded SPA shell at "/".

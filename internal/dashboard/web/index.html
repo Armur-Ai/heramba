@@ -22,7 +22,11 @@
       <div class="pill" id="mode-pill"><span class="dot" id="mode-dot"></span><span id="mode-label">—</span></div>
       <div class="pill pill-quiet"><span class="muted">uptime</span> <span id="uptime" class="mono">—</span></div>
       <div class="pill pill-quiet"><span class="muted">sources</span> <span id="stat-sources" class="mono tnum">0</span></div>
-      <div class="live"><span class="live-dot" id="live-dot"></span><span id="live-label">LIVE</span></div>
+      <div class="live" title="connection status"><span class="live-dot" id="live-dot"></span><span id="live-label">LIVE</span></div>
+      <div class="topbar-actions">
+        <button class="iconbtn" id="btn-theme" type="button" aria-label="Toggle theme" title="Toggle theme">◐</button>
+        <button class="iconbtn" id="btn-settings" type="button" aria-label="Open settings" aria-haspopup="dialog" title="Settings">⚙</button>
+      </div>
     </div>
   </header>
 
@@ -34,6 +38,7 @@
       <a class="nav-item" href="#sources"><span class="nav-ico">⌖</span><span>Sources</span></a>
       <a class="nav-item" href="#swarms"><span class="nav-ico">⚇</span><span>Swarms</span></a>
       <a class="nav-item" href="#decoys"><span class="nav-ico">⬡</span><span>Decoys</span></a>
+      <a class="nav-item" href="#targets"><span class="nav-ico">◎</span><span>Targets</span></a>
       <a class="nav-item" href="#controls"><span class="nav-ico">⚙</span><span>Controls</span></a>
       <div class="nav-spacer"></div>
       <div class="nav-foot">
@@ -53,6 +58,7 @@
         <div class="kpi"><div class="kpi-label">Critical + High</div><div class="kpi-val tnum" id="kpi-crit">0</div><div class="kpi-foot muted">severity-weighted</div></div>
         <div class="kpi"><div class="kpi-label">Active Sources</div><div class="kpi-val tnum" id="kpi-sources">0</div><div class="kpi-foot muted">distinct identities</div></div>
         <div class="kpi"><div class="kpi-label">Coordinated Swarms</div><div class="kpi-val tnum" id="kpi-swarms">0</div><div class="kpi-foot muted">multi-IP campaigns</div></div>
+        <div class="kpi" id="kpi-breach-card"><div class="kpi-label">Confirmed Breaches</div><div class="kpi-val tnum" id="kpi-breaches">0</div><div class="kpi-foot muted" id="kpi-breaches-foot">canary triggers</div></div>
       </section>
 
       <!-- Threat gauge -->
@@ -98,15 +104,36 @@
         <div id="histogram" class="chart chart-hist"></div>
       </section>
 
+      <!-- Severity over time (stacked) -->
+      <section class="card card-sevtime">
+        <div class="card-head"><h2>Severity Over Time</h2><span class="muted tiny">stacked, trailing window</span></div>
+        <div id="sevtime" class="chart chart-timeline" role="img" aria-label="Stacked severity over time"></div>
+        <div class="sev-legend" id="sevtime-legend"></div>
+      </section>
+
+      <!-- Top targets -->
+      <section class="card card-targets" id="targets">
+        <div class="card-head"><h2>Top Targets</h2><span class="muted tiny">most-hit decoys</span></div>
+        <div id="targets-list" class="targets"></div>
+        <div class="empty rich" id="targets-empty" hidden><span class="empty-glyph" aria-hidden="true">⬡</span>No targets hit yet.</div>
+      </section>
+
       <!-- Live feed -->
       <section class="card card-feed" id="feed">
-        <div class="card-head"><h2>Live Detections</h2><span class="muted tiny" id="feed-count"></span></div>
+        <div class="card-head">
+          <h2>Live Detections</h2>
+          <div class="head-actions">
+            <span class="muted tiny" id="feed-count"></span>
+            <a class="ghost-btn" id="export-csv" href="api/export/events.csv" download aria-label="Export events as CSV">⬇ CSV</a>
+            <a class="ghost-btn" id="export-json" href="api/export/events.json" download aria-label="Export events as JSON">⬇ JSON</a>
+          </div>
+        </div>
         <div class="feed-wrap">
           <table class="feed">
             <thead><tr><th>time</th><th>sev</th><th>kind</th><th>source</th><th>target</th><th class="col-detail">detail</th></tr></thead>
             <tbody id="feed-rows"></tbody>
           </table>
-          <div class="empty" id="feed-empty" hidden>No detections yet. The edge is quiet.</div>
+          <div class="empty rich" id="feed-empty" hidden><span class="empty-glyph" aria-hidden="true">≋</span>No detections yet. The edge is quiet.</div>
         </div>
       </section>
 
@@ -176,6 +203,70 @@
     </main>
   </div>
 </div>
+
+<!-- Settings drawer -->
+<div class="drawer-overlay" id="settings-overlay"></div>
+<aside class="drawer" id="settings-drawer" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-hidden="true">
+  <div class="drawer-head">
+    <h3 id="settings-title">Settings</h3>
+    <button class="iconbtn" id="settings-close" type="button" aria-label="Close settings">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-label">Refresh interval</div>
+        <div class="setting-sub">how often panels re-poll</div>
+      </div>
+      <select id="refresh-select" class="select" style="width:auto" aria-label="Refresh interval">
+        <option value="1000">1s</option>
+        <option value="2000" selected>2s</option>
+        <option value="5000">5s</option>
+        <option value="10000">10s</option>
+      </select>
+    </div>
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-label">Pause auto-refresh</div>
+        <div class="setting-sub">freeze the view (stream + polling)</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="pause-refresh" aria-label="Pause auto-refresh"><span class="slider"></span></label>
+    </div>
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-label">Compact density</div>
+        <div class="setting-sub">tighter spacing, more on screen</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="compact-toggle" aria-label="Compact density"><span class="slider"></span></label>
+    </div>
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-label">Live streaming (SSE)</div>
+        <div class="setting-sub">instant push; falls back to polling</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="sse-toggle" checked aria-label="Live streaming"><span class="slider"></span></label>
+    </div>
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-label">Theme</div>
+        <div class="setting-sub">near-black noir, or a lighter dim</div>
+      </div>
+      <div class="seg" id="theme-seg" role="group" aria-label="Theme">
+        <button type="button" data-theme="noir" class="on">Noir</button>
+        <button type="button" data-theme="dim">Dim</button>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Source drill drawer -->
+<div class="drawer-overlay" id="drill-overlay"></div>
+<aside class="drawer" id="drill-drawer" role="dialog" aria-modal="true" aria-labelledby="drill-title" aria-hidden="true">
+  <div class="drawer-head">
+    <h3 id="drill-title">Source <span class="drawer-sub" id="drill-source">—</span></h3>
+    <button class="iconbtn" id="drill-close" type="button" aria-label="Close source detail">✕</button>
+  </div>
+  <div class="drawer-body" id="drill-body"></div>
+</aside>
 
 <script src="vendor/charts.js"></script>
 <script src="app.js"></script>

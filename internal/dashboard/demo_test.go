@@ -85,6 +85,19 @@ func TestDemoFeedScoreHistogram(t *testing.T) {
 	}
 }
 
+func TestDemoFeedMetricsPayloadNeverNilMaps(t *testing.T) {
+	d := NewDemoFeedAt(5, time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC))
+	p := d.metricsPayload() // empty feed
+	if p.ByKind == nil || p.BySeverity == nil {
+		t.Fatal("metricsPayload maps must never be nil")
+	}
+	d.Seed(50)
+	p = d.metricsPayload()
+	if p.Total < 50 {
+		t.Errorf("payload total = %d, want >= 50", p.Total)
+	}
+}
+
 func TestDemoFeedTickAdvances(t *testing.T) {
 	now := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
 	d := NewDemoFeedAt(9, now)

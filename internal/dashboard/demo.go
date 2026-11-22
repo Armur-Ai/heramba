@@ -234,18 +234,45 @@ func (d *DemoFeed) Metrics() Metrics {
 
 // DemoHandler builds a dashboard handler backed by a live demo feed. It seeds a
 // backlog and starts a background goroutine that appends fresh events, so the
-// page streams immediately. Intended for `heramba dashboard --demo`.
+// page streams immediately. Each generated event is also published to a broker
+// that drives GET /api/stream, so the live stream reflects the synthetic attack
+// traffic the instant it is produced. Intended for `heramba dashboard --demo`.
 func DemoHandler(opts ...Option) http.Handler {
 	feed := NewDemoFeed()
 	feed.Seed(400)
-	base := []Option{WithEvents(feed.Recent), WithMetrics(feed.Metrics)}
+	broker := NewBroker()
+	base := []Option{WithEvents(feed.Recent), WithMetrics(feed.Metrics), WithBroker(broker)}
 	h := Handler(append(base, opts...)...)
 	go func() {
 		t := time.NewTicker(900 * time.Millisecond)
 		defer t.Stop()
 		for range t.C {
-			feed.Tick(900 * time.Millisecond)
+			for _, e := range feed.Tick(900 * time.Millisecond) {
+				broker.Publish(EventFrame(e))
+			}
+			broker.Publish(StreamFrame{Type: "metrics", Metrics: ptr(feed.metricsPayload())})
 		}
 	}()
 	return h
+}
+
+// metricsPayload adapts the demo feed's snapshot to the stream wire shape,
+// mirroring server.metricsPayload's never-nil-map guarantee (uptime is left
+// zero — the live handler owns the real uptime).
+func (d *DemoFeed) metricsPayload() metricsJSON {
+	m := d.Metrics()
+	if m.ByKind == nil {
+		m.ByKind = map[string]int{}
+	}
+	if m.BySeverity == nil {
+		m.BySeverity = map[string]int{}
+	}
+	return metricsJSON{
+		Mode:       m.Mode,
+		Total:      m.Total,
+		ByKind:     m.ByKind,
+		BySeverity: m.BySeverity,
+		Sources:    m.Sources,
+		Score:      m.Score,
+	}
 }
