@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -68,5 +69,89 @@ func TestExampleConfigCoversEverySink(t *testing.T) {
 		if !bytes.Contains([]byte(exampleConfigYAML), []byte(want)) {
 			t.Errorf("config example missing documented option %q", want)
 		}
+	}
+}
+
+func findingsHave(fs []lintFinding, level lintLevel, substr string) bool {
+	for _, f := range fs {
+		if f.Level == level && strings.Contains(f.Msg, substr) {
+			return true
+		}
+	}
+	return false
+}
+
+func TestLintCleanConfigHasNoErrors(t *testing.T) {
+	cfg := config.Default()
+	cfg.AdminListen = ":9090"
+	cfg.Alert.Slack = "https://hooks.example/abc" // a push sink, so no "no sinks" warn
+	fs := lintConfig(cfg, nil)
+	if lintHasError(fs) {
+		t.Fatalf("clean config should have no error findings: %+v", fs)
+	}
+}
+
+func TestLintUnknownPresetIsError(t *testing.T) {
+	cfg := config.Default()
+	cfg.Decoys.Preset = "cobol"
+	fs := lintConfig(cfg, nil)
+	if !findingsHave(fs, lintError, "unknown decoys.preset") {
+		t.Errorf("expected unknown-preset error, got %+v", fs)
+	}
+	if !lintHasError(fs) {
+		t.Error("lintHasError should be true")
+	}
+}
+
+func TestLintPortCollisionIsError(t *testing.T) {
+	cfg := config.Default()
+	cfg.Listen = ":9090"
+	cfg.AdminListen = ":9090"
+	fs := lintConfig(cfg, nil)
+	if !findingsHave(fs, lintError, "must differ from listen") {
+		t.Errorf("expected port-collision error, got %+v", fs)
+	}
+}
+
+func TestLintNoSinksWarns(t *testing.T) {
+	cfg := config.Default() // no push sinks
+	fs := lintConfig(cfg, nil)
+	if !findingsHave(fs, lintWarn, "no webhook/chat/SIEM") {
+		t.Errorf("expected no-sinks warning, got %+v", fs)
+	}
+	if lintHasError(fs) {
+		t.Errorf("no-sinks alone must not be an error: %+v", fs)
+	}
+}
+
+func TestLintEgressDenyAllWarns(t *testing.T) {
+	cfg := config.Default()
+	cfg.Alert.Slack = "https://x"
+	cfg.Egress.Enabled = true
+	cfg.Egress.AllowedHosts = nil
+	fs := lintConfig(cfg, nil)
+	if !findingsHave(fs, lintWarn, "denies ALL app callbacks") {
+		t.Errorf("expected egress deny-all warning, got %+v", fs)
+	}
+}
+
+func TestLintRateLimitInObserveWarns(t *testing.T) {
+	cfg := config.Default()
+	cfg.Alert.Slack = "https://x"
+	cfg.RateLimitRPS = 10
+	fs := lintConfig(cfg, nil)
+	if !findingsHave(fs, lintWarn, "only engages in protect") {
+		t.Errorf("expected rate-limit-observe warning, got %+v", fs)
+	}
+}
+
+func TestLintProtectWithoutUpstreamIsError(t *testing.T) {
+	cfg := config.Default()
+	cfg.Mode = config.ModeProtect
+	cfg.Upstream = "" // invalid: protect needs upstream
+	cfg.Alert.Slack = "https://x"
+	fs := lintConfig(cfg, nil)
+	if !lintHasError(fs) {
+		t.Errorf("protect without upstream must be an error: %+v", fs)
 	}
 }

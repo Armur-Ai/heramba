@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/Armur-Ai/heramba/internal/config"
+	"github.com/Armur-Ai/heramba/internal/decoy"
 )
 
 const defaultConfigYAML = `# Heramba configuration (.heramba.yml)
@@ -141,9 +142,11 @@ counter:
   enabled: false
 `
 
+const configUsage = "usage: heramba config init [path] | show [path] | example | lint [path]"
+
 func runConfig(args []string) {
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "usage: heramba config init [path] | heramba config show [path] | heramba config example")
+		fmt.Fprintln(os.Stderr, configUsage)
 		os.Exit(2)
 	}
 	switch args[0] {
@@ -153,9 +156,130 @@ func runConfig(args []string) {
 		runConfigShow(args[1:])
 	case "example":
 		fmt.Print(exampleConfigYAML)
+	case "lint":
+		runConfigLint(args[1:])
 	default:
-		fmt.Fprintln(os.Stderr, "usage: heramba config init [path] | heramba config show [path] | heramba config example")
+		fmt.Fprintln(os.Stderr, configUsage)
 		os.Exit(2)
+	}
+}
+
+// lintLevel ranks a lint finding.
+type lintLevel int
+
+const (
+	lintInfo lintLevel = iota
+	lintWarn
+	lintError
+)
+
+func (l lintLevel) String() string {
+	switch l {
+	case lintError:
+		return "error"
+	case lintWarn:
+		return "warn"
+	default:
+		return "info"
+	}
+}
+
+// lintFinding is one advisory note about a configuration.
+type lintFinding struct {
+	Level lintLevel
+	Msg   string
+}
+
+// lintConfig runs Validate plus advisory checks that Validate does not cover
+// (unknown preset, admin/listen port collision, no alert sinks, deny-all egress,
+// rate-limit in observe mode). loadErr is the error config.Load returned (if
+// any), so a file that fails to validate still produces findings. It is pure, so
+// it is directly unit-testable.
+func lintConfig(cfg config.Config, loadErr error) []lintFinding {
+	var out []lintFinding
+	if err := cfg.Validate(); err != nil {
+		out = append(out, lintFinding{lintError, err.Error()})
+	} else if loadErr != nil {
+		out = append(out, lintFinding{lintError, loadErr.Error()})
+	}
+
+	if cfg.Decoys.Preset != "" {
+		if _, ok := decoy.GetPreset(cfg.Decoys.Preset); !ok {
+			out = append(out, lintFinding{lintError,
+				fmt.Sprintf("unknown decoys.preset %q (have: %v)", cfg.Decoys.Preset, decoy.PresetNames())})
+		}
+	}
+
+	if cfg.AdminListen != "" && cfg.AdminListen == cfg.Listen {
+		out = append(out, lintFinding{lintError,
+			fmt.Sprintf("admin_listen (%s) must differ from listen (%s) — they would collide", cfg.AdminListen, cfg.Listen)})
+	}
+
+	if !hasPushSink(cfg.Alert) {
+		out = append(out, lintFinding{lintWarn,
+			"no webhook/chat/SIEM/email/rotate sink configured — detections only reach the local text/jsonl record"})
+	}
+
+	if cfg.Egress.Enabled && len(cfg.Egress.AllowedHosts) == 0 {
+		out = append(out, lintFinding{lintWarn,
+			"egress.enabled with an empty allowed_hosts denies ALL app callbacks — set allowed_hosts"})
+	}
+
+	if cfg.Mode == config.ModeObserve && cfg.RateLimitRPS > 0 {
+		out = append(out, lintFinding{lintWarn,
+			"rate_limit_rps is set but mode is observe — rate limiting only engages in protect mode"})
+	}
+
+	if len(out) == 0 {
+		out = append(out, lintFinding{lintInfo, "no issues found"})
+	}
+	return out
+}
+
+// hasPushSink reports whether any non-local alert sink is configured.
+func hasPushSink(a config.AlertConfig) bool {
+	switch {
+	case a.Webhook != "", a.Slack != "", a.Teams != "", a.Discord != "":
+		return true
+	case a.Splunk.URL != "", a.Datadog.APIKey != "", a.Elastic.URL != "", a.Syslog.Address != "":
+		return true
+	case a.PagerDutyKey != "", a.OpsgenieKey != "":
+		return true
+	case a.Rotate.File != "":
+		return true
+	case a.Email.Host != "" && a.Email.From != "" && len(a.Email.To) > 0:
+		return true
+	}
+	return false
+}
+
+// lintHasError reports whether any finding is an error.
+func lintHasError(findings []lintFinding) bool {
+	for _, f := range findings {
+		if f.Level == lintError {
+			return true
+		}
+	}
+	return false
+}
+
+func runConfigLint(args []string) {
+	path := ".heramba.yml"
+	if len(args) > 0 {
+		path = args[0]
+	}
+	cfg, err := config.Load(path)
+	if os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "heramba: no config at %s\n", path)
+		os.Exit(1)
+	}
+	findings := lintConfig(cfg, err)
+	fmt.Printf("linting %s:\n", path)
+	for _, f := range findings {
+		fmt.Printf("  [%-5s] %s\n", f.Level, f.Msg)
+	}
+	if lintHasError(findings) {
+		os.Exit(1)
 	}
 }
 

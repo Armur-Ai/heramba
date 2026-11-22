@@ -69,7 +69,7 @@ commands:
   report       render a shareable incident report (markdown/html) from a capture
   quickstart   detect your stack and generate a tailored .heramba.yml
   decoys       generate and list decoys / canary tokens
-  config       create or inspect configuration
+  config       create, inspect, or lint configuration
   doctor       check the environment and configuration
   honeypot     serve the stateful deception app behind the edge (no upstream)
   shield       orchestrate the defensive tool suite (agat, byakugan, sharingan, skillscan) over a target
