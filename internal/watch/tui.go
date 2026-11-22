@@ -39,16 +39,17 @@ func tick() tea.Cmd {
 // live event stream into State and renders it as a real-time "you're being
 // attacked right now" view.
 type Model struct {
-	state   *State
-	ch      <-chan event.Event
-	mode    string // observe / protect — informational, set from the flag
-	started time.Time
-	now     time.Time
-	paused  bool
-	closed  bool
-	view    viewMode // which body is shown (overview / sources / campaigns / timeline)
-	width   int
-	height  int
+	state    *State
+	ch       <-chan event.Event
+	mode     string // observe / protect — informational, set from the flag
+	started  time.Time
+	now      time.Time
+	paused   bool
+	closed   bool
+	showHelp bool     // '?' overlay
+	view     viewMode // which body is shown (overview / sources / campaigns / timeline)
+	width    int
+	height   int
 }
 
 // NewModel builds a dashboard over the given event channel. mode is shown in
@@ -80,8 +81,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q", "ctrl+c", "esc":
+		case "q", "ctrl+c":
 			return m, tea.Quit
+		case "esc":
+			if m.showHelp {
+				m.showHelp = false
+				return m, nil
+			}
+			return m, tea.Quit
+		case "?":
+			m.showHelp = !m.showHelp
+			return m, nil
 		case " ", "p":
 			m.paused = !m.paused
 			return m, nil
@@ -211,6 +221,9 @@ func (m Model) View() string {
 // body renders the active view, each in a full-width bordered panel (the
 // overview is the split feed + sidebar).
 func (m Model) body(bodyH int) string {
+	if m.showHelp {
+		return m.helpView(bodyH)
+	}
 	switch m.view {
 	case viewSources:
 		return panelStyle.Width(m.width - 2).Height(bodyH).Render(m.sourcesView(m.width-4, bodyH-1))
@@ -221,6 +234,33 @@ func (m Model) body(bodyH int) string {
 	default:
 		return m.overview(bodyH)
 	}
+}
+
+// helpView renders a centered keybinding reference over the body region.
+func (m Model) helpView(bodyH int) string {
+	type row struct{ key, desc string }
+	rows := []row{
+		{"1 – 4", "jump to Overview / Sources / Campaigns / Timeline"},
+		{"tab / shift+tab", "cycle views forward / back"},
+		{"← → / h l", "cycle views"},
+		{"space / p", "pause & resume the live stream"},
+		{"c", "clear all accumulated state"},
+		{"?", "toggle this help"},
+		{"q / ctrl+c", "quit"},
+		{"esc", "close help, or quit"},
+	}
+	var lines []string
+	lines = append(lines, styHead.Render("KEYBOARD"))
+	lines = append(lines, "")
+	for _, r := range rows {
+		lines = append(lines, styKey.Render(padLeft(r.key, 16))+"  "+lipgloss.NewStyle().Foreground(colFg).Render(r.desc))
+	}
+	lines = append(lines, "")
+	lines = append(lines, styMuted.Render("Heramba watch — a live view of deception detections. Decoy and"))
+	lines = append(lines, styMuted.Render("canary hits are zero-false-positive by construction: nobody"))
+	lines = append(lines, styMuted.Render("legitimately touches a decoy, so a hit is a real intruder."))
+	panel := panelStyle.BorderForeground(colCyan).Padding(1, 3).Render(strings.Join(lines, "\n"))
+	return lipgloss.Place(m.width-2, bodyH, lipgloss.Center, lipgloss.Center, panel)
 }
 
 // overview is the default split: live feed on the left, source/campaign/decoy
@@ -407,6 +447,7 @@ func (m Model) footer() string {
 		styKey.Render("tab") + "/" + styKey.Render("1-4") + " views",
 		styKey.Render("space") + " pause",
 		styKey.Render("c") + " clear",
+		styKey.Render("?") + " help",
 		styKey.Render("q") + " quit",
 	}
 	return styMuted.Render(strings.Join(keys, "   ·   "))
