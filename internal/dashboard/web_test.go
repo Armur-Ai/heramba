@@ -63,6 +63,31 @@ func TestSPAHasNoExternalScriptOrStyleOrigins(t *testing.T) {
 	}
 }
 
+// anchorHrefRe extracts the href of every <a> tag.
+var anchorHrefRe = regexp.MustCompile(`(?i)<a[^>]*\bhref=["']([^"']+)["']`)
+
+func TestSPAHasNoExternalAnchorOrigins(t *testing.T) {
+	h := Handler()
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+	body := rr.Body.String()
+	for _, m := range anchorHrefRe.FindAllStringSubmatch(body, -1) {
+		// in-page anchors (#...) and relative paths are fine; reject origins.
+		if isExternal(m[1]) {
+			t.Errorf("external anchor href found: %q (air-gapped build)", m[1])
+		}
+	}
+}
+
+func TestVendorExposesStackedArea(t *testing.T) {
+	h := Handler()
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/vendor/charts.js", nil))
+	if !strings.Contains(rr.Body.String(), "stackedArea") {
+		t.Error("vendored chart library missing stackedArea (severity-over-time view)")
+	}
+}
+
 func TestVendorAssetIsServedAndSubstantial(t *testing.T) {
 	h := Handler()
 	rr := httptest.NewRecorder()
