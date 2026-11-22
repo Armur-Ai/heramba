@@ -46,8 +46,9 @@ type Model struct {
 	now      time.Time
 	paused   bool
 	closed   bool
-	showHelp bool     // '?' overlay
-	view     viewMode // which body is shown (overview / sources / campaigns / timeline)
+	showHelp bool           // '?' overlay
+	sevFloor event.Severity // feed severity filter floor ('f' cycles)
+	view     viewMode       // which body is shown (overview / sources / campaigns / timeline)
 	width    int
 	height   int
 }
@@ -97,6 +98,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "c":
 			m.state = NewState(m.state.maxRecent)
+			return m, nil
+		case "f":
+			// Cycle the feed severity floor: off → low → medium → high → crit → off.
+			if m.sevFloor >= event.SeverityCritical {
+				m.sevFloor = event.SeverityInfo
+			} else {
+				m.sevFloor++
+			}
 			return m, nil
 		case "tab", "right", "l":
 			m.view = m.view.next()
@@ -362,10 +371,19 @@ func (m Model) summary() string {
 }
 
 func (m Model) feed(w, rows int) string {
-	out := []string{styHead.Render("LIVE FEED") + styMuted.Render(fmt.Sprintf("  (%d)", m.state.Total))}
-	evs := m.state.Recent(rows)
+	title := styHead.Render("LIVE FEED") + styMuted.Render(fmt.Sprintf("  (%d)", m.state.Total))
+	if m.sevFloor > event.SeverityInfo {
+		title += "  " + lipgloss.NewStyle().Foreground(colAmber).Render(
+			fmt.Sprintf("⧩ %s+", strings.ToUpper(m.sevFloor.String())))
+	}
+	out := []string{title}
+	evs := m.state.RecentFiltered(rows, m.sevFloor)
 	if len(evs) == 0 {
-		out = append(out, styMuted.Render("waiting for traffic…"))
+		if m.sevFloor > event.SeverityInfo {
+			out = append(out, styMuted.Render(fmt.Sprintf("no %s+ events (press f to lower filter)…", m.sevFloor.String())))
+		} else {
+			out = append(out, styMuted.Render("waiting for traffic…"))
+		}
 		return strings.Join(out, "\n")
 	}
 	// Fixed-width columns, each laid out on plain text then styled, so rows
@@ -446,6 +464,7 @@ func (m Model) footer() string {
 	keys := []string{
 		styKey.Render("tab") + "/" + styKey.Render("1-4") + " views",
 		styKey.Render("space") + " pause",
+		styKey.Render("f") + " filter",
 		styKey.Render("c") + " clear",
 		styKey.Render("?") + " help",
 		styKey.Render("q") + " quit",

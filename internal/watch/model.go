@@ -270,6 +270,23 @@ func (s *State) Recent(n int) []event.Event {
 	return out
 }
 
+// RecentFiltered returns up to n most-recent events whose severity is at least
+// floor, newest first. It scans from the newest backwards so the n it returns
+// are the n most recent that pass the filter, not merely the survivors of the n
+// newest overall.
+func (s *State) RecentFiltered(n int, floor event.Severity) []event.Event {
+	if floor <= event.SeverityInfo {
+		return s.Recent(n)
+	}
+	out := make([]event.Event, 0, n)
+	for i := len(s.recent) - 1; i >= 0 && (n <= 0 || len(out) < n); i-- {
+		if s.recent[i].Severity >= floor {
+			out = append(out, s.recent[i])
+		}
+	}
+	return out
+}
+
 // SwarmCount is the number of active coordinated (multi-source) campaigns.
 func (s *State) SwarmCount() int {
 	n := 0
