@@ -98,12 +98,13 @@ type AlertConfig struct {
 	MinSeverity string `yaml:"min_severity"` // floor for push sinks: info|low|medium|high|critical (default high)
 	// SIEM integrations — each fans out alongside the local text/jsonl record,
 	// above MinSeverity. Enabled when its endpoint field is set.
-	Splunk  SplunkConfig  `yaml:"splunk"`
-	Datadog DatadogConfig `yaml:"datadog"`
-	Elastic ElasticConfig `yaml:"elastic"`
-	Syslog  SyslogConfig  `yaml:"syslog"`
-	Loki    LokiConfig    `yaml:"loki"`
-	Sumo    string        `yaml:"sumo"` // Sumo Logic HTTP Source URL (the URL is the secret)
+	Splunk   SplunkConfig   `yaml:"splunk"`
+	Datadog  DatadogConfig  `yaml:"datadog"`
+	Elastic  ElasticConfig  `yaml:"elastic"`
+	Syslog   SyslogConfig   `yaml:"syslog"`
+	Loki     LokiConfig     `yaml:"loki"`
+	NewRelic NewRelicConfig `yaml:"newrelic"`
+	Sumo     string         `yaml:"sumo"` // Sumo Logic HTTP Source URL (the URL is the secret)
 	// TemplateWebhook POSTs a body rendered from an operator-supplied Go
 	// text/template, so any service with a fixed payload shape can be targeted.
 	TemplateWebhook TemplateWebhookConfig `yaml:"template_webhook"`
@@ -143,6 +144,12 @@ type TemplateWebhookConfig struct {
 	URL         string `yaml:"url"`          // POST target (empty = disabled)
 	Template    string `yaml:"template"`     // Go text/template rendered with the event
 	ContentType string `yaml:"content_type"` // empty = application/json
+}
+
+// NewRelicConfig configures a New Relic Logs sink.
+type NewRelicConfig struct {
+	URL    string `yaml:"url"`     // empty = US Log API endpoint
+	APIKey string `yaml:"api_key"` // New Relic license/ingest key
 }
 
 // LokiConfig configures a Grafana Loki push sink.

@@ -105,6 +105,9 @@ func (c Config) ApplyEnv() Config {
 	if v := envVar("LOKI_URL", false); v != "" {
 		c.Alert.Loki.URL = v
 	}
+	if v := envVar("NEWRELIC_API_KEY", false); v != "" {
+		c.Alert.NewRelic.APIKey = v
+	}
 	if v := envVar("SUMO_URL", false); v != "" {
 		c.Alert.Sumo = v
 	}

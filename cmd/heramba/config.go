@@ -104,6 +104,9 @@ alert:
   loki:
     url: ""                # Grafana Loki push endpoint, e.g. http://loki:3100/loki/api/v1/push
     tenant: ""             # optional X-Scope-OrgID for multi-tenant Loki
+  newrelic:
+    url: ""                # empty = US Log API (https://log-api.newrelic.com/log/v1)
+    api_key: ""            # New Relic license/ingest key (Api-Key header)
   sumo: ""                 # Sumo Logic HTTP Source URL (the URL embeds the token)
   # Generic templated webhook: render any payload shape from a Go text/template
   # (executed with the detection event as data) and POST it to any service.

@@ -382,6 +382,9 @@ func buildSink(cfg config.Config) alert.Sink {
 	if c := cfg.Alert.Loki; c.URL != "" {
 		sinks = append(sinks, alert.NewLoki(c.URL, c.Tenant, 5*time.Second, floor))
 	}
+	if c := cfg.Alert.NewRelic; c.APIKey != "" {
+		sinks = append(sinks, alert.NewNewRelic(c.URL, c.APIKey, 5*time.Second, floor))
+	}
 	if u := cfg.Alert.Sumo; u != "" {
 		sinks = append(sinks, alert.NewSumoLogic(u, 5*time.Second, floor))
 	}
