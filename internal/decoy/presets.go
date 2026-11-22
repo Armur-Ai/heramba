@@ -367,6 +367,48 @@ var presets = map[string]Preset{
 			{Plant: "/.env (SECRET_TOKEN)", Value: "EXAMPLE-astro-token-8293a4b5c6d7e8f9"},
 		},
 	},
+	"adonisjs": {
+		Name: "adonisjs",
+		Paths: []Endpoint{
+			{"/.env", "AdonisJS env/secret file probe"},
+			{"/.adonisrc.json", "AdonisJS project manifest probe"},
+			{"/config/database.ts", "AdonisJS database credential probe"},
+			{"/ace", "AdonisJS console entrypoint probe"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/.env (APP_KEY)", Value: "EXAMPLE-adonis-appkey-0a1b2c3d4e5f6071"},
+			{Plant: "/.env (DB_PASSWORD)", Value: "EXAMPLE_adonis_db_pw_7f3a9c21"},
+		},
+	},
+	"meteor": {
+		Name: "meteor",
+		Paths: []Endpoint{
+			{"/settings.json", "Meteor settings/secret probe"},
+			{"/.meteor/release", "Meteor version-fingerprint probe"},
+		},
+		Prefixes: []Endpoint{
+			{"/.meteor/local/", "Meteor local build/db directory walk"},
+			{"/.meteor/", "Meteor metadata walk"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/settings.json (private.apiKey)", Value: "EXAMPLE-meteor-apikey-8293a4b5c6d7"},
+		},
+	},
+	"quarkus": {
+		Name: "quarkus",
+		Paths: []Endpoint{
+			{"/application.properties", "Quarkus config probe"},
+			{"/q/dev/", "Quarkus Dev UI probe"},
+			{"/q/openapi", "Quarkus OpenAPI enumeration probe"},
+			{"/q/health", "Quarkus health-endpoint probe"},
+		},
+		Prefixes: []Endpoint{
+			{"/q/", "Quarkus management-endpoint enumeration"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/application.properties (quarkus.datasource.password)", Value: "EXAMPLE_quarkus_pw_3a9c21e4"},
+		},
+	},
 }
 
 // PresetNames returns the available preset names, sorted.

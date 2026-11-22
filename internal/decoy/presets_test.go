@@ -143,3 +143,16 @@ func TestFrontendBackendPresetsPresent(t *testing.T) {
 		}
 	}
 }
+
+func TestAdonisMeteorQuarkusPresetsPresent(t *testing.T) {
+	for _, want := range []string{"adonisjs", "meteor", "quarkus"} {
+		p, ok := GetPreset(want)
+		if !ok {
+			t.Errorf("missing preset %q", want)
+			continue
+		}
+		if len(p.Paths) == 0 || len(p.Seeds) == 0 {
+			t.Errorf("preset %q should have paths and seeds: %+v", want, p)
+		}
+	}
+}
