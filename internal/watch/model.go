@@ -27,6 +27,8 @@ type State struct {
 	decoys    map[string]*DecoyHit
 	recent    []event.Event // newest at the end
 	maxRecent int
+
+	rate *timeSeries // per-second event-rate buckets for the header sparkline
 }
 
 // Source is everything we have learned about one client identity.
@@ -84,6 +86,7 @@ func NewState(maxRecent int) *State {
 		campaigns:  map[string]*Campaign{},
 		decoys:     map[string]*DecoyHit{},
 		maxRecent:  maxRecent,
+		rate:       newTimeSeries(90, time.Second),
 	}
 }
 
@@ -114,7 +117,28 @@ func (s *State) Add(e event.Event) {
 	if len(s.recent) > s.maxRecent {
 		s.recent = s.recent[len(s.recent)-s.maxRecent:]
 	}
+
+	at := e.Time
+	if at.IsZero() {
+		at = time.Now()
+	}
+	s.rate.add(at, 1)
 }
+
+// Tick advances the event-rate window to `now` without recording an event, so
+// the header sparkline keeps scrolling during quiet periods. The dashboard
+// calls it on its one-second tick.
+func (s *State) Tick(now time.Time) { s.rate.tick(now) }
+
+// RateSeries returns the per-second event-rate buckets (oldest first) for the
+// header sparkline. The caller must not mutate the slice.
+func (s *State) RateSeries() []float64 { return s.rate.series() }
+
+// RateNow is the number of events in the most recent one-second bucket.
+func (s *State) RateNow() float64 { return s.rate.rate() }
+
+// RatePeak is the busiest one-second bucket currently retained.
+func (s *State) RatePeak() float64 { return s.rate.peak() }
 
 func (s *State) addSource(e event.Event) {
 	src := s.sources[e.Source]

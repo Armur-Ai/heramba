@@ -102,6 +102,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tickMsg:
 		m.now = time.Time(msg)
+		m.state.Tick(m.now) // keep the rate sparkline scrolling when quiet
 		return m, tick()
 	}
 	return m, nil
