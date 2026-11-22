@@ -6,6 +6,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -168,5 +169,19 @@ func (c Config) Validate() error {
 	if c.Alert.Format != "" && c.Alert.Format != "text" && c.Alert.Format != "jsonl" {
 		return fmt.Errorf("config: invalid alert.format %q (want text|jsonl)", c.Alert.Format)
 	}
+	if s := c.Alert.MinSeverity; s != "" && !validMinSeverity(s) {
+		return fmt.Errorf("config: invalid alert.min_severity %q (want info|low|medium|high|critical)", s)
+	}
+	if n := c.Alert.Syslog.Network; n != "" && n != "udp" && n != "tcp" {
+		return fmt.Errorf("config: invalid alert.syslog.network %q (want udp|tcp)", n)
+	}
 	return nil
+}
+
+func validMinSeverity(s string) bool {
+	switch strings.ToLower(s) {
+	case "info", "low", "medium", "high", "critical":
+		return true
+	}
+	return false
 }
