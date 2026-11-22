@@ -67,6 +67,9 @@ type AlertConfig struct {
 	Datadog DatadogConfig `yaml:"datadog"`
 	Elastic ElasticConfig `yaml:"elastic"`
 	Syslog  SyslogConfig  `yaml:"syslog"`
+	// Paging integrations — default to a high floor (they wake a human).
+	PagerDutyKey string `yaml:"pagerduty_key"` // PagerDuty Events API v2 routing key
+	OpsgenieKey  string `yaml:"opsgenie_key"`  // Opsgenie API key
 }
 
 // SplunkConfig configures a Splunk HTTP Event Collector sink.

@@ -60,6 +60,12 @@ func (c Config) ApplyEnv() Config {
 	if v := envVar("SYSLOG_ADDRESS", false); v != "" {
 		c.Alert.Syslog.Address = v
 	}
+	if v := envVar("PAGERDUTY_KEY", false); v != "" {
+		c.Alert.PagerDutyKey = v
+	}
+	if v := envVar("OPSGENIE_KEY", false); v != "" {
+		c.Alert.OpsgenieKey = v
+	}
 	return c
 }
 

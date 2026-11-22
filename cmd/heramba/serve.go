@@ -210,6 +210,18 @@ func buildSink(cfg config.Config) alert.Sink {
 			fmt.Fprintf(os.Stderr, "heramba: syslog sink disabled (dial %s %s: %v)\n", network, c.Address, err)
 		}
 	}
+	// Paging defaults to a high floor regardless of the global one — never page
+	// on observe-mode noise unless explicitly asked.
+	pageFloor := floor
+	if pageFloor < event.SeverityHigh {
+		pageFloor = event.SeverityHigh
+	}
+	if k := cfg.Alert.PagerDutyKey; k != "" {
+		sinks = append(sinks, alert.NewPagerDuty(k, 5*time.Second, pageFloor))
+	}
+	if k := cfg.Alert.OpsgenieKey; k != "" {
+		sinks = append(sinks, alert.NewOpsgenie(k, 5*time.Second, pageFloor))
+	}
 	if len(sinks) == 1 {
 		return sinks[0]
 	}
