@@ -16,6 +16,7 @@ import (
 	"github.com/Armur-Ai/heramba/internal/admin"
 	"github.com/Armur-Ai/heramba/internal/alert"
 	"github.com/Armur-Ai/heramba/internal/config"
+	"github.com/Armur-Ai/heramba/internal/dashboard"
 	"github.com/Armur-Ai/heramba/internal/deception"
 	"github.com/Armur-Ai/heramba/internal/decoy"
 	"github.com/Armur-Ai/heramba/internal/edge"
@@ -33,6 +34,8 @@ func runServe(args []string) {
 	listen := fs.String("listen", "", "override listen address, e.g. :8080")
 	upstream := fs.String("upstream", "", "override upstream, e.g. http://127.0.0.1:3000")
 	adminListen := fs.String("admin-listen", "", "health/metrics address, e.g. :9090 (empty=disabled)")
+	dashboardListen := fs.String("dashboard-listen", "", "web dashboard address, e.g. 127.0.0.1:7171 (empty=disabled)")
+	dashboardToken := fs.String("dashboard-token", "", "bearer token required to use the dashboard's live controls (empty=open; bind localhost)")
 	preset := fs.String("preset", "", "framework decoy preset (run 'heramba decoys presets' for the full list)")
 	deceptionOn := fs.Bool("deception", false, "when there is no upstream, auto-mount the synthetic deception app for non-decoy paths")
 	deceptionSeed := fs.Int64("deception-seed", 1, "seed for the deterministic synthetic world")
@@ -101,6 +104,9 @@ func runServe(args []string) {
 		fmt.Fprintf(os.Stderr, "heramba: %v\n", err)
 		os.Exit(1)
 	}
+	// liveControl is the authoritative holder of the running config; the web
+	// dashboard's controls and the SIGHUP handler both go through it.
+	lc := newLiveControl(cfg, engine)
 
 	// Opt-in: auto-mount the synthetic deception app for non-decoy paths when
 	// running honeypot-only (no upstream). Its interactions feed the same
@@ -193,9 +199,26 @@ func runServe(args []string) {
 	signal.Notify(hup, syscall.SIGHUP)
 	go func() {
 		for range hup {
-			reloadServe(*configPath, alertSink, engine)
+			if applied, err := reloadServe(*configPath, alertSink, engine); err == nil {
+				lc.setConfig(applied) // keep the dashboard's view in sync with SIGHUP
+			}
 		}
 	}()
+
+	// Optional web dashboard with LIVE controls (mode/preset hot-swap the engine).
+	var dashSrv *http.Server
+	if *dashboardListen != "" {
+		dashSrv = &http.Server{
+			Addr: *dashboardListen,
+			Handler: dashboard.Handler(
+				dashboard.WithEvents(ring.Recent),
+				dashboard.WithMetrics(buildDashboardMetrics(lc, counting, engine, startTime)),
+				dashboard.WithController(lc),
+				dashboard.Authorize(*dashboardToken),
+			),
+			ReadHeaderTimeout: 10 * time.Second,
+		}
+	}
 
 	go func() {
 		if err := serveEdge(srv, cfg); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -208,6 +231,18 @@ func runServe(args []string) {
 		go func() {
 			if err := adminSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				fmt.Fprintf(os.Stderr, "heramba: admin serve error: %v\n", err)
+			}
+		}()
+	}
+	if dashSrv != nil {
+		ctrl := "open (localhost only)"
+		if *dashboardToken != "" {
+			ctrl = "bearer-token protected"
+		}
+		fmt.Printf("  dashboard: web console on http://%s — LIVE controls (%s)\n", *dashboardListen, ctrl)
+		go func() {
+			if err := dashSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				fmt.Fprintf(os.Stderr, "heramba: dashboard serve error: %v\n", err)
 			}
 		}()
 	}
@@ -225,6 +260,9 @@ func runServe(args []string) {
 	_ = srv.Shutdown(shutdownCtx)
 	if adminSrv != nil {
 		_ = adminSrv.Shutdown(shutdownCtx)
+	}
+	if dashSrv != nil {
+		_ = dashSrv.Shutdown(shutdownCtx)
 	}
 	// Flush any buffered sinks (e.g. the email digest) so a final batch is not
 	// lost on a clean shutdown.
