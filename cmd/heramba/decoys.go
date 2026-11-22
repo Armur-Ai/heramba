@@ -20,6 +20,8 @@ func runDecoys(args []string) {
 		runDecoysList(args[1:])
 	case "presets":
 		runDecoysPresets()
+	case "export":
+		runDecoysExport(args[1:])
 	case "canary":
 		runCanary(args[1:])
 	default:
@@ -32,6 +34,7 @@ func decoysUsage() {
 	fmt.Fprintln(os.Stderr, `usage:
   heramba decoys list [--preset <stack>]   list the decoy endpoints (optionally for a framework)
   heramba decoys presets                   list available framework presets
+  heramba decoys export [--preset s] [--format json|nginx]   export the decoy surface
   heramba decoys canary <label>            mint a canary token to plant`)
 }
 
@@ -86,4 +89,34 @@ func runCanary(args []string) {
 	fmt.Printf("canary token (label %q):\n  %s\n\n", c.Label, c.Token)
 	fmt.Println("Plant it where only an attacker would find and use it (a fake secret, a")
 	fmt.Println("decoy API key, a hidden field). Any later use is a confirmed intrusion.")
+}
+
+// runDecoysExport prints the decoy surface as JSON (default) or an nginx snippet.
+func runDecoysExport(args []string) {
+	fs := flag.NewFlagSet("export", flag.ExitOnError)
+	preset := fs.String("preset", "", "include a framework preset's lures")
+	format := fs.String("format", "json", "output format: json|nginx")
+	_ = fs.Parse(args)
+
+	r := decoy.NewRegistry()
+	if *preset != "" {
+		p, ok := decoy.GetPreset(*preset)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "heramba: unknown preset %q (have: %v)\n", *preset, decoy.PresetNames())
+			os.Exit(1)
+		}
+		r.ApplyPreset(p)
+	}
+	surface := r.Export()
+	switch *format {
+	case "nginx":
+		fmt.Print(surface.Nginx())
+	default:
+		b, err := surface.JSON()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "heramba:", err)
+			os.Exit(1)
+		}
+		fmt.Println(string(b))
+	}
 }
