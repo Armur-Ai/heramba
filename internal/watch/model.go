@@ -14,12 +14,13 @@ import (
 // deception they are walking into (decoy map), and the running tallies. It is
 // pure data with no rendering, so it is cheap to test.
 type State struct {
-	Started         time.Time
+	Started         time.Time // when aggregation began (process time)
+	First           time.Time // earliest event timestamp seen
 	Total           int
 	ByKind          map[event.Kind]int
 	BySeverity      map[event.Severity]int
 	HighestSeverity event.Severity
-	Last            time.Time
+	Last            time.Time // latest event timestamp seen
 
 	sources   map[string]*Source
 	campaigns map[string]*Campaign
@@ -96,6 +97,9 @@ func (s *State) Add(e event.Event) {
 	}
 	if e.Time.After(s.Last) {
 		s.Last = e.Time
+	}
+	if !e.Time.IsZero() && (s.First.IsZero() || e.Time.Before(s.First)) {
+		s.First = e.Time
 	}
 
 	if e.Source != "" {
