@@ -61,7 +61,7 @@ func TestExampleConfigParsesAndValidates(t *testing.T) {
 func TestExampleConfigCoversEverySink(t *testing.T) {
 	for _, want := range []string{
 		"webhook:", "slack:", "teams:", "discord:",
-		"splunk:", "datadog:", "elastic:", "syslog:", "rotate:",
+		"splunk:", "datadog:", "elastic:", "syslog:", "rotate:", "email:",
 		"pagerduty_key:", "opsgenie_key:",
 		"preset:", "admin_listen:", "counter:", "egress:", "classifier:",
 	} {

@@ -93,6 +93,16 @@ alert:
     network: udp           # udp | tcp
     address: ""            # host:port of a CEF-over-syslog collector
 
+  # --- SMTP email digest (batches events above min_severity into one message) ---
+  email:
+    host: ""               # SMTP server host ("" = disabled)
+    port: 25               # SMTP port
+    from: ""               # envelope + header From
+    to: []                 # recipient addresses
+    username: ""           # optional SMTP auth user ("" = no auth)
+    password: ""           # SMTP auth password
+    batch_size: 10         # events per digest (0/1 = send each immediately)
+
   # --- Durable local audit trail (records everything, ignores min_severity) ---
   rotate:
     file: ""               # active JSONL log path ("" = disabled)

@@ -1,6 +1,21 @@
 package config
 
-import "os"
+import (
+	"os"
+	"strings"
+)
+
+// splitList parses a comma-separated env value into a trimmed, non-empty list.
+func splitList(v string) []string {
+	parts := strings.Split(v, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
 
 // ApplyEnv overlays HERAMBA_* environment variables onto the config and returns
 // the result. This is what makes the one-container deploy work with no config
@@ -49,6 +64,15 @@ func (c Config) ApplyEnv() Config {
 	}
 	if v := envVar("ROTATE_FILE", false); v != "" {
 		c.Alert.Rotate.File = v
+	}
+	if v := envVar("EMAIL_HOST", false); v != "" {
+		c.Alert.Email.Host = v
+	}
+	if v := envVar("EMAIL_FROM", false); v != "" {
+		c.Alert.Email.From = v
+	}
+	if v := envVar("EMAIL_TO", false); v != "" {
+		c.Alert.Email.To = splitList(v)
 	}
 	if v := envVar("ALERT_MIN_SEVERITY", false); v != "" {
 		c.Alert.MinSeverity = v

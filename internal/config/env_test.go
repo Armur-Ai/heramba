@@ -1,6 +1,9 @@
 package config
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestApplyEnvOverlaysPrefixed(t *testing.T) {
 	t.Setenv("HERAMBA_MODE", "protect")
@@ -63,7 +66,7 @@ func TestApplyEnvNoVarsIsNoOp(t *testing.T) {
 	base := Default()
 	got := base.ApplyEnv()
 	if got.Mode != base.Mode || got.Upstream != base.Upstream || got.Listen != base.Listen ||
-		got.Alert != base.Alert {
+		!reflect.DeepEqual(got.Alert, base.Alert) {
 		t.Fatalf("empty env should be a no-op: %+v != %+v", got, base)
 	}
 }

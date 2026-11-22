@@ -75,6 +75,9 @@ type AlertConfig struct {
 	// network). Unlike the push sinks it records everything, ignoring
 	// MinSeverity — it is a durable record, not a notification channel.
 	Rotate RotateConfig `yaml:"rotate"`
+	// Email is an optional SMTP digest sink (batches events above MinSeverity
+	// into a single message). Enabled when Host, From and To are all set.
+	Email EmailConfig `yaml:"email"`
 	// Paging integrations — default to a high floor (they wake a human).
 	PagerDutyKey string `yaml:"pagerduty_key"` // PagerDuty Events API v2 routing key
 	OpsgenieKey  string `yaml:"opsgenie_key"`  // Opsgenie API key
@@ -103,6 +106,17 @@ type ElasticConfig struct {
 type SyslogConfig struct {
 	Network string `yaml:"network"` // udp | tcp (default udp)
 	Address string `yaml:"address"` // host:port
+}
+
+// EmailConfig configures the SMTP email digest sink.
+type EmailConfig struct {
+	Host      string   `yaml:"host"`       // SMTP server host (empty = disabled)
+	Port      int      `yaml:"port"`       // SMTP port (0 = 25)
+	From      string   `yaml:"from"`       // envelope + header From
+	To        []string `yaml:"to"`         // recipients
+	Username  string   `yaml:"username"`   // optional SMTP auth user (empty = no auth)
+	Password  string   `yaml:"password"`   // SMTP auth password
+	BatchSize int      `yaml:"batch_size"` // events per digest (0/1 = send each immediately)
 }
 
 // RotateConfig configures the rotating-file JSONL audit sink.

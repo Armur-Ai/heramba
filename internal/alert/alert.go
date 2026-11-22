@@ -62,6 +62,34 @@ func (m MultiSink) Emit(e event.Event) error {
 	return firstErr
 }
 
+// Flusher is an optional interface a sink implements when it buffers events and
+// needs a final delivery on shutdown (e.g. the email digest sink).
+type Flusher interface {
+	Flush() error
+}
+
+// FlushAll flushes s and, if it is a MultiSink, every member that implements
+// Flusher. It returns the first error encountered (all are still attempted).
+// Callers invoke this on graceful shutdown so buffered digests are not lost.
+func FlushAll(s Sink) error {
+	var firstErr error
+	flush := func(x Sink) {
+		if f, ok := x.(Flusher); ok {
+			if err := f.Flush(); err != nil && firstErr == nil {
+				firstErr = err
+			}
+		}
+	}
+	if m, ok := s.(MultiSink); ok {
+		for _, inner := range m {
+			flush(inner)
+		}
+		return firstErr
+	}
+	flush(s)
+	return firstErr
+}
+
 // Discard drops every event (useful in tests / observe-silent setups).
 var Discard Sink = discard{}
 

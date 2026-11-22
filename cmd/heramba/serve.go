@@ -81,7 +81,8 @@ func runServe(args []string) {
 	store := evidence.NewStore()
 	ingestor := intel.NewIngestor(store, "edge")
 	advisor := newShadowAdvisor()
-	counting := alert.Count(alert.MultiSink{buildSink(cfg), ingestor, advisor})
+	alertSink := buildSink(cfg)
+	counting := alert.Count(alert.MultiSink{alertSink, ingestor, advisor})
 	engine, err := edge.New(cfg, counting)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "heramba: %v\n", err)
@@ -181,6 +182,11 @@ func runServe(args []string) {
 	if adminSrv != nil {
 		_ = adminSrv.Shutdown(shutdownCtx)
 	}
+	// Flush any buffered sinks (e.g. the email digest) so a final batch is not
+	// lost on a clean shutdown.
+	if err := alert.FlushAll(alertSink); err != nil {
+		fmt.Fprintf(os.Stderr, "heramba: flushing sinks: %v\n", err)
+	}
 
 	if counting.Total() == 0 {
 		fmt.Println("heramba: no detections this session.")
@@ -252,6 +258,17 @@ func buildSink(cfg config.Config) alert.Sink {
 			sinks = append(sinks, rs) // records everything (no floor): durable audit trail
 		} else {
 			fmt.Fprintf(os.Stderr, "heramba: rotating-file sink disabled (%v)\n", err)
+		}
+	}
+	if c := cfg.Alert.Email; c.Host != "" && c.From != "" && len(c.To) > 0 {
+		if es, err := alert.NewEmail(alert.EmailOptions{
+			Host: c.Host, Port: c.Port, From: c.From, To: c.To,
+			Username: c.Username, Password: c.Password,
+			MinSev: floor, BatchSize: c.BatchSize,
+		}); err == nil {
+			sinks = append(sinks, es)
+		} else {
+			fmt.Fprintf(os.Stderr, "heramba: email sink disabled (%v)\n", err)
 		}
 	}
 	if c := cfg.Alert.Syslog; c.Address != "" {
