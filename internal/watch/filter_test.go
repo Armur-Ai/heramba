@@ -65,6 +65,9 @@ func TestFeedShowsActiveFilter(t *testing.T) {
 	m := NewModel(make(chan event.Event), "observe", 50)
 	sized, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 	m = sized.(Model)
+	// Need at least one event so the feed (not the quiet hero) is rendered.
+	nm0, _ := m.Update(eventMsg(event.Deception(event.KindDecoyHit, "1.1.1.1", "/.env", "d")))
+	m = nm0.(Model)
 	nm, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'f'}})           // floor = low
 	nm2, _ := nm.(Model).Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'f'}}) // floor = medium
 	m = nm2.(Model)

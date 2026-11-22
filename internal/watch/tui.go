@@ -256,6 +256,10 @@ func (m Model) body(bodyH int) string {
 	if m.inspecting {
 		return m.inspectorView(bodyH)
 	}
+	// Before any traffic, show a calm hero instead of empty panels.
+	if m.state.Total == 0 {
+		return m.quietHero(bodyH)
+	}
 	switch m.view {
 	case viewSources:
 		return panelStyle.Width(m.width - 2).Height(bodyH).Render(m.sourcesView(m.width-4, bodyH-1))
@@ -266,6 +270,28 @@ func (m Model) body(bodyH int) string {
 	default:
 		return m.overview(bodyH)
 	}
+}
+
+// quietHero is the before-any-traffic state: a calm, centered panel that
+// explains what the dashboard is watching for, so an empty screen reads as
+// "armed and waiting" rather than "broken / no data".
+func (m Model) quietHero(bodyH int) string {
+	shield := lipgloss.NewStyle().Foreground(colGreen).Bold(true).Render("🛡")
+	title := lipgloss.NewStyle().Foreground(colGreen).Bold(true).Render("ALL QUIET")
+	lines := []string{
+		shield + "  " + title,
+		"",
+		lipgloss.NewStyle().Foreground(colFg).Render("Armed and watching for deception hits."),
+		styMuted.Render("A decoy or canary touch is a real intruder — nobody"),
+		styMuted.Render("legitimately reaches a planted trap, so the first hit"),
+		styMuted.Render("here is signal, not noise."),
+		"",
+		styMuted.Render("waiting for the event stream…  ") +
+			lipgloss.NewStyle().Foreground(colCyan).Render(sparkline([]float64{0, 0, 0, 0, 0, 0}, 8)),
+	}
+	body := lipgloss.NewStyle().Align(lipgloss.Center).Render(strings.Join(lines, "\n"))
+	panel := panelStyle.BorderForeground(colGreen).Padding(1, 4).Render(body)
+	return lipgloss.Place(m.width-2, bodyH, lipgloss.Center, lipgloss.Center, panel)
 }
 
 // selectedEvent returns the feed event under the cursor (respecting the active
@@ -548,7 +574,9 @@ func (m Model) sidebar(w int) string {
 }
 
 func (m Model) footer() string {
-	keys := []string{
+	// Full key list, then progressively shorter ones, so a narrow terminal still
+	// gets a legible (not truncated-mid-glyph) footer.
+	full := []string{
 		styKey.Render("tab") + "/" + styKey.Render("1-4") + " views",
 		styKey.Render("↑↓") + " select",
 		styKey.Render("enter") + " inspect",
@@ -557,7 +585,22 @@ func (m Model) footer() string {
 		styKey.Render("?") + " help",
 		styKey.Render("q") + " quit",
 	}
-	return styMuted.Render(strings.Join(keys, "   ·   "))
+	compact := []string{
+		styKey.Render("tab") + " views",
+		styKey.Render("↑↓/enter") + " inspect",
+		styKey.Render("?") + " help",
+		styKey.Render("q") + " quit",
+	}
+	tiny := []string{styKey.Render("?") + " help", styKey.Render("q") + " quit"}
+
+	sep := styMuted.Render("   ·   ")
+	for _, set := range [][]string{full, compact, tiny} {
+		line := strings.Join(set, sep)
+		if lipgloss.Width(line) <= m.width {
+			return line
+		}
+	}
+	return styMuted.Render("? help · q quit")
 }
 
 // --- small helpers ----------------------------------------------------------
