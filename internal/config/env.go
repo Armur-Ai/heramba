@@ -65,6 +65,9 @@ func (c Config) ApplyEnv() Config {
 	if v := envVar("GOOGLE_CHAT", false); v != "" {
 		c.Alert.GoogleChat = v
 	}
+	if v := envVar("MATTERMOST", false); v != "" {
+		c.Alert.Mattermost = v
+	}
 	if v := envVar("ROTATE_FILE", false); v != "" {
 		c.Alert.Rotate.File = v
 	}

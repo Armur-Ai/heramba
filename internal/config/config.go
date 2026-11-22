@@ -79,6 +79,7 @@ type AlertConfig struct {
 	Teams       string `yaml:"teams"`        // Microsoft Teams incoming-webhook URL (MessageCard)
 	Discord     string `yaml:"discord"`      // Discord webhook URL (embed)
 	GoogleChat  string `yaml:"google_chat"`  // Google Chat incoming-webhook URL (text)
+	Mattermost  string `yaml:"mattermost"`   // Mattermost incoming-webhook URL (attachment)
 	MinSeverity string `yaml:"min_severity"` // floor for push sinks: info|low|medium|high|critical (default high)
 	// SIEM integrations — each fans out alongside the local text/jsonl record,
 	// above MinSeverity. Enabled when its endpoint field is set.

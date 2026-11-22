@@ -79,6 +79,7 @@ alert:
   teams: ""                # Microsoft Teams incoming-webhook URL (MessageCard)
   discord: ""              # Discord webhook URL (embed)
   google_chat: ""          # Google Chat incoming-webhook URL (text)
+  mattermost: ""           # Mattermost incoming-webhook URL (attachment)
 
   # --- SIEM integrations (enabled when the endpoint is set) ---
   splunk:

@@ -266,6 +266,9 @@ func buildSink(cfg config.Config) alert.Sink {
 	if u := cfg.Alert.GoogleChat; u != "" {
 		sinks = append(sinks, alert.NewGoogleChat(u, 5*time.Second, floor))
 	}
+	if u := cfg.Alert.Mattermost; u != "" {
+		sinks = append(sinks, alert.NewMattermost(u, 5*time.Second, floor))
+	}
 	if c := cfg.Alert.Splunk; c.URL != "" {
 		sinks = append(sinks, alert.NewSplunk(c.URL, c.Token, 5*time.Second, floor))
 	}
