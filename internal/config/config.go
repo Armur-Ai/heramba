@@ -106,6 +106,7 @@ type AlertConfig struct {
 	NewRelic    NewRelicConfig    `yaml:"newrelic"`
 	Honeycomb   HoneycombConfig   `yaml:"honeycomb"`
 	OpenObserve OpenObserveConfig `yaml:"openobserve"`
+	Axiom       AxiomConfig       `yaml:"axiom"`
 	Sumo        string            `yaml:"sumo"` // Sumo Logic HTTP Source URL (the URL is the secret)
 	// TemplateWebhook POSTs a body rendered from an operator-supplied Go
 	// text/template, so any service with a fixed payload shape can be targeted.
@@ -168,6 +169,13 @@ type OpenObserveConfig struct {
 	Stream   string `yaml:"stream"`   // empty = heramba
 	Username string `yaml:"username"` // basic-auth user (email)
 	Password string `yaml:"password"` // basic-auth password/token
+}
+
+// AxiomConfig configures an Axiom ingest sink.
+type AxiomConfig struct {
+	URL     string `yaml:"url"`     // empty = Axiom Cloud (https://api.axiom.co)
+	Dataset string `yaml:"dataset"` // Axiom dataset
+	Token   string `yaml:"token"`   // Bearer API token
 }
 
 // LokiConfig configures a Grafana Loki push sink.

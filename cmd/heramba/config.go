@@ -117,6 +117,10 @@ alert:
     stream: ""             # empty = heramba
     username: ""           # basic-auth user (email)
     password: ""           # basic-auth password/token
+  axiom:
+    url: ""                # empty = Axiom Cloud (https://api.axiom.co)
+    dataset: ""            # Axiom dataset name
+    token: ""              # Bearer API token
   sumo: ""                 # Sumo Logic HTTP Source URL (the URL embeds the token)
   # Generic templated webhook: render any payload shape from a Go text/template
   # (executed with the detection event as data) and POST it to any service.

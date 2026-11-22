@@ -117,6 +117,12 @@ func (c Config) ApplyEnv() Config {
 	if v := envVar("OPENOBSERVE_URL", false); v != "" {
 		c.Alert.OpenObserve.URL = v
 	}
+	if v := envVar("AXIOM_TOKEN", false); v != "" {
+		c.Alert.Axiom.Token = v
+	}
+	if v := envVar("AXIOM_DATASET", false); v != "" {
+		c.Alert.Axiom.Dataset = v
+	}
 	if v := envVar("SUMO_URL", false); v != "" {
 		c.Alert.Sumo = v
 	}
