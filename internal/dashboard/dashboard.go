@@ -182,6 +182,10 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /api/campaigns", s.handleCampaigns)
 	mux.HandleFunc("GET /api/decoys", s.handleDecoys)
 
+	// Exports (downloadable attachments).
+	mux.HandleFunc("GET /api/export/events.csv", s.handleExportCSV)
+	mux.HandleFunc("GET /api/export/events.json", s.handleExportJSON)
+
 	// Write controls.
 	mux.HandleFunc("POST /api/control/mode", s.handleControlMode)
 	mux.HandleFunc("POST /api/control/clear", s.handleControlClear)
