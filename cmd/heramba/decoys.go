@@ -34,7 +34,7 @@ func decoysUsage() {
 	fmt.Fprintln(os.Stderr, `usage:
   heramba decoys list [--preset <stack>]   list the decoy endpoints (optionally for a framework)
   heramba decoys presets                   list available framework presets
-  heramba decoys export [--preset s] [--format json|nginx]   export the decoy surface
+  heramba decoys export [--preset s] [--format json|nginx|caddy|traefik]   export the decoy surface
   heramba decoys canary <label>            mint a canary token to plant`)
 }
 
@@ -95,7 +95,7 @@ func runCanary(args []string) {
 func runDecoysExport(args []string) {
 	fs := flag.NewFlagSet("export", flag.ExitOnError)
 	preset := fs.String("preset", "", "include a framework preset's lures")
-	format := fs.String("format", "json", "output format: json|nginx")
+	format := fs.String("format", "json", "output format: json|nginx|caddy|traefik")
 	_ = fs.Parse(args)
 
 	r := decoy.NewRegistry()
@@ -111,6 +111,10 @@ func runDecoysExport(args []string) {
 	switch *format {
 	case "nginx":
 		fmt.Print(surface.Nginx())
+	case "caddy":
+		fmt.Print(surface.Caddy())
+	case "traefik":
+		fmt.Print(surface.Traefik())
 	default:
 		b, err := surface.JSON()
 		if err != nil {
