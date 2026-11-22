@@ -11,8 +11,6 @@ package main
 import (
 	"fmt"
 	"os"
-
-	"github.com/Armur-Ai/heramba/internal/version"
 )
 
 func main() {
@@ -46,7 +44,7 @@ func main() {
 	case "shield":
 		runShield(os.Args[2:])
 	case "version", "-v", "--version":
-		fmt.Println(version.String())
+		runVersion(os.Args[2:])
 	case "help", "-h", "--help":
 		usage(os.Stdout)
 	default:

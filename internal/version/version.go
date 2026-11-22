@@ -19,3 +19,17 @@ var (
 func String() string {
 	return fmt.Sprintf("heramba %s (commit %s, built %s, %s)", Version, Commit, Date, runtime.Version())
 }
+
+// BuildInfo is the machine-readable build metadata, for `heramba version --json`
+// and any tooling that wants to parse it rather than the banner string.
+type BuildInfo struct {
+	Version string `json:"version"`
+	Commit  string `json:"commit"`
+	Date    string `json:"date"`
+	Go      string `json:"go"`
+}
+
+// Info returns the current build metadata.
+func Info() BuildInfo {
+	return BuildInfo{Version: Version, Commit: Commit, Date: Date, Go: runtime.Version()}
+}
