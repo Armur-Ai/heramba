@@ -41,6 +41,9 @@ func (c Config) ApplyEnv() Config {
 	if v := envVar("SLACK", false); v != "" {
 		c.Alert.Slack = v
 	}
+	if v := envVar("TEAMS", false); v != "" {
+		c.Alert.Teams = v
+	}
 	if v := envVar("ALERT_MIN_SEVERITY", false); v != "" {
 		c.Alert.MinSeverity = v
 	}

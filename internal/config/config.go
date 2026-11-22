@@ -62,6 +62,7 @@ type AlertConfig struct {
 	// channel; the local text/jsonl sink always records everything.
 	Webhook     string `yaml:"webhook"`      // POST raw event JSON to this URL
 	Slack       string `yaml:"slack"`        // Slack incoming-webhook URL (Block Kit)
+	Teams       string `yaml:"teams"`        // Microsoft Teams incoming-webhook URL (MessageCard)
 	MinSeverity string `yaml:"min_severity"` // floor for push sinks: info|low|medium|high|critical (default high)
 	// SIEM integrations — each fans out alongside the local text/jsonl record,
 	// above MinSeverity. Enabled when its endpoint field is set.
