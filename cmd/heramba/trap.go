@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/Armur-Ai/heramba/internal/alert"
+	"github.com/Armur-Ai/heramba/internal/dashboard"
 	"github.com/Armur-Ai/heramba/internal/event"
 	"github.com/Armur-Ai/heramba/internal/poison"
 	"github.com/Armur-Ai/heramba/internal/tarpit"
@@ -41,6 +42,8 @@ func runTrap(args []string) {
 	baseDelay := fs.Duration("delay", 250*time.Millisecond, "first-offense tarpit drip interval")
 	maxDelay := fs.Duration("max-delay", 3*time.Second, "cap on the tarpit drip interval")
 	confirmTTL := fs.Duration("confirm-ttl", time.Hour, "how long a source stays confirmed-bad after its last offense")
+	dashListen := fs.String("dashboard-listen", "", "also serve a live web dashboard of the trap, e.g. 127.0.0.1:7171 (empty=off)")
+	dashToken := fs.String("dashboard-token", "", "bearer token for the dashboard (controls are read-only here)")
 	fs.Usage = func() {
 		fmt.Fprint(os.Stderr, "usage: heramba trap [flags]\n\n"+
 			"A standalone active-defense endpoint: trip-wire bait in front, tarpit +\n"+
@@ -52,15 +55,19 @@ func runTrap(args []string) {
 	if *base == "" {
 		*base = "http://" + *listen
 	}
-	var sink alert.Sink
+	// Fan detections into the operator's record AND an in-memory ring+counters so
+	// an optional live dashboard can show the trap working.
+	var record alert.Sink
 	if *format == "jsonl" {
-		sink = alert.NewJSONL(os.Stdout)
+		record = alert.NewJSONL(os.Stdout)
 	} else {
-		sink = alert.NewText(os.Stdout)
+		record = alert.NewText(os.Stdout)
 	}
+	ring := alert.NewRing(500)
+	counting := alert.Count(alert.MultiSink{record, ring})
 
 	th, err := newTrapHandler(trapConfig{
-		Seed: *seed, Base: *base, Sink: sink,
+		Seed: *seed, Base: *base, Sink: counting,
 		BaseDelay: *baseDelay, MaxDelay: *maxDelay,
 		Jitter: 150 * time.Millisecond, ChunkSize: 1,
 		ConfirmTTL: *confirmTTL,
@@ -77,6 +84,27 @@ func runTrap(args []string) {
 	fmt.Printf("heramba trap — active defense on http://%s (base=%s)\n", *listen, *base)
 	fmt.Println("  bait surfaces:", strings.Join(th.baitPaths(), " "))
 	fmt.Println("  trip one and every later request is tarpitted + poisoned. Ctrl-C to stop.")
+
+	var dashSrv *http.Server
+	if *dashListen != "" {
+		start := time.Now()
+		dashSrv = &http.Server{
+			Addr: *dashListen,
+			Handler: dashboard.Handler(
+				dashboard.WithEvents(ring.Recent),
+				dashboard.WithMetrics(trapDashboardMetrics(counting, start)),
+				dashboard.Authorize(*dashToken),
+			),
+			ReadHeaderTimeout: 10 * time.Second,
+		}
+		fmt.Printf("  dashboard: live trap console on http://%s\n", *dashListen)
+		go func() {
+			if err := dashSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				fmt.Fprintln(os.Stderr, "heramba trap dashboard:", err)
+			}
+		}()
+	}
+
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			fmt.Fprintln(os.Stderr, "heramba trap:", err)
@@ -87,6 +115,28 @@ func runTrap(args []string) {
 	shutCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutCtx)
+	if dashSrv != nil {
+		_ = dashSrv.Shutdown(shutCtx)
+	}
+}
+
+// trapDashboardMetrics adapts the trap's counting sink to the dashboard's
+// MetricsFunc.
+func trapDashboardMetrics(counting *alert.CountingSink, start time.Time) dashboard.MetricsFunc {
+	return func() dashboard.Metrics {
+		byKind := map[string]int{}
+		for _, t := range counting.Snapshot() {
+			byKind[string(t.Kind)] = t.Count
+		}
+		return dashboard.Metrics{
+			Mode:       "trap",
+			Total:      counting.Total(),
+			ByKind:     byKind,
+			BySeverity: counting.BySeverity(),
+			Sources:    counting.Sources(),
+			Uptime:     time.Since(start),
+		}
+	}
 }
 
 // trapConfig configures a trap handler.
