@@ -56,6 +56,8 @@ type Model struct {
 	snapshotDir string         // where 's' writes exports (default ".")
 	toast       string         // transient status message (e.g. after an export)
 	toastUntil  time.Time      // when the toast expires
+	frozen      []event.Event  // scroll-lock: feed list frozen while navigating (cursor>0)
+	frozenAt    int            // state.Total at the moment the feed was frozen
 	view        viewMode       // which body is shown (overview / sources / campaigns / timeline)
 	width       int
 	height      int
@@ -110,6 +112,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "c":
 			m.state = NewState(m.state.maxRecent)
+			m.frozen, m.cursor, m.inspecting = nil, 0, false
 			return m, nil
 		case "f":
 			// Cycle the feed severity floor: off → low → medium → high → crit → off.
@@ -120,13 +123,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case "down", "j":
-			if n := len(m.state.RecentFiltered(0, m.sevFloor)); m.cursor < n-1 {
+			// Entering navigation freezes the feed list so the selection stays on
+			// the event you picked while new ones keep streaming into the counts.
+			if len(m.frozen) == 0 {
+				m.frozen = m.state.RecentFiltered(0, m.sevFloor)
+				m.frozenAt = m.state.Total
+			}
+			if m.cursor < len(m.frozen)-1 {
 				m.cursor++
 			}
 			return m, nil
 		case "up", "k":
 			if m.cursor > 0 {
 				m.cursor--
+			}
+			if m.cursor == 0 { // back at the top: unfreeze and follow live again
+				m.frozen = nil
 			}
 			return m, nil
 		case "enter":
@@ -322,10 +334,19 @@ func (m Model) exportSnapshot() string {
 	return "✓ snapshot written to " + path
 }
 
+// feedEvents is the list the feed renders: the frozen snapshot while the cursor
+// is engaged (scroll-lock), otherwise the live newest-first filtered stream.
+func (m Model) feedEvents() []event.Event {
+	if len(m.frozen) > 0 {
+		return m.frozen
+	}
+	return m.state.RecentFiltered(0, m.sevFloor)
+}
+
 // selectedEvent returns the feed event under the cursor (respecting the active
 // severity filter), and whether one exists.
 func (m Model) selectedEvent() (event.Event, bool) {
-	evs := m.state.RecentFiltered(0, m.sevFloor)
+	evs := m.feedEvents()
 	if len(evs) == 0 {
 		return event.Event{}, false
 	}
@@ -514,8 +535,24 @@ func (m Model) feed(w, rows int) string {
 		title += "  " + lipgloss.NewStyle().Foreground(colAmber).Render(
 			fmt.Sprintf("⧩ %s+", strings.ToUpper(m.sevFloor.String())))
 	}
+	if len(m.frozen) > 0 {
+		newN := m.state.Total - m.frozenAt
+		lock := "🔒 SCROLL-LOCK"
+		if newN > 0 {
+			lock += fmt.Sprintf(" · %d new", newN)
+		}
+		title += "  " + lipgloss.NewStyle().Foreground(colCyan).Render(lock)
+	}
 	out := []string{title}
-	evs := m.state.RecentFiltered(rows, m.sevFloor)
+	var evs []event.Event
+	if len(m.frozen) > 0 {
+		evs = m.frozen
+		if len(evs) > rows {
+			evs = evs[:rows]
+		}
+	} else {
+		evs = m.state.RecentFiltered(rows, m.sevFloor)
+	}
 	if len(evs) == 0 {
 		if m.sevFloor > event.SeverityInfo {
 			out = append(out, styMuted.Render(fmt.Sprintf("no %s+ events (press f to lower filter)…", m.sevFloor.String())))
