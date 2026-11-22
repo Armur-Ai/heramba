@@ -1,0 +1,38 @@
+# Default values for the heramba chart.
+# Observe mode is the safe default: traffic passes through untouched, detections
+# are logged. Set mode to "protect" only once trusted, and always with upstream.
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/armur-ai/heramba
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Edge configuration (surfaced as HERAMBA_* env vars on the container).
+config:
+  mode: observe                      # observe | protect
+  upstream: "http://127.0.0.1:3000"  # reverse-proxy target
+  listen: ":8080"
+  adminListen: ":9090"               # health + Prometheus /metrics + /version
+  preset: ""                         # node|next|rails|django|laravel|wordpress|spring|...
+
+service:
+  type: ClusterIP
+  port: 80          # external port on the Service
+  targetPort: 8080  # Heramba's listen port
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# Pod security context is applied verbatim in the Deployment template.
+podSecurityContext:
+  runAsNonRoot: true
+
+nameOverride: ""
+fullnameOverride: ""

@@ -1,0 +1,16 @@
+apiVersion: v2
+name: heramba
+description: Active-deception edge proxy for the app/API layer (observe by default)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/Armur-Ai/heramba
+sources:
+  - https://github.com/Armur-Ai/heramba
+keywords:
+  - security
+  - deception
+  - honeypot
+  - edge-proxy
+maintainers:
+  - name: Armur-Ai

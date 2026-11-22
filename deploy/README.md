@@ -13,6 +13,7 @@ file is required.
 | **One-liner** | — | quickest smoke test / single host |
 | **Docker Compose** | [`docker-compose.yml`](docker-compose.yml) | a host or VM running your app in Docker |
 | **Kubernetes sidecar** | [`k8s/sidecar.yaml`](k8s/sidecar.yaml) | your app runs in k8s; Heramba shares the pod |
+| **Helm chart** | [`helm/heramba/`](helm/heramba/) | templated k8s install you tune via `values.yaml` |
 
 ### One-liner
 
@@ -36,6 +37,17 @@ curl -s -o /dev/null http://localhost:8080/.env   # trip a decoy
 
 Set your app image + port in `k8s/sidecar.yaml`, then `kubectl apply -f` it.
 Ingress hits the Service → Heramba (`:8080`) → your app on `localhost`.
+
+### Helm chart
+
+```
+helm install heramba ./deploy/helm/heramba \
+  --set config.upstream=http://myapp:3000 \
+  --set config.mode=observe
+```
+
+Edit [`helm/heramba/values.yaml`](helm/heramba/values.yaml) for image, replicas,
+mode/upstream/preset, resources and Service port. Observe mode is the default.
 
 ### Configuration
 

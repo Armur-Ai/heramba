@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "heramba.fullname" . }}
+  labels:
+    {{- include "heramba.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "heramba.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "heramba.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: {{ .Values.podSecurityContext.runAsNonRoot }}
+      containers:
+        - name: heramba
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["serve"]
+          env:
+            - name: HERAMBA_MODE
+              value: "{{ .Values.config.mode }}"
+            - name: HERAMBA_UPSTREAM
+              value: "{{ .Values.config.upstream }}"
+            - name: HERAMBA_LISTEN
+              value: "{{ .Values.config.listen }}"
+            - name: HERAMBA_ADMIN_LISTEN
+              value: "{{ .Values.config.adminListen }}"
+            - name: HERAMBA_PRESET
+              value: "{{ .Values.config.preset }}"
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: admin
+              containerPort: 9090
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: admin
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: admin
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
