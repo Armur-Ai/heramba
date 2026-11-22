@@ -14,6 +14,9 @@ file is required.
 | **Docker Compose** | [`docker-compose.yml`](docker-compose.yml) | a host or VM running your app in Docker |
 | **Kubernetes sidecar** | [`k8s/sidecar.yaml`](k8s/sidecar.yaml) | your app runs in k8s; Heramba shares the pod |
 | **Helm chart** | [`helm/heramba/`](helm/heramba/) | templated k8s install you tune via `values.yaml` |
+| **Fly.io** | [`fly.toml`](fly.toml) | `fly deploy` from this repo or the published image |
+| **Railway** | [`railway.json`](railway.json) | Railway build/deploy config (Dockerfile) |
+| **Render** | [`render.yaml`](render.yaml) | Render Blueprint running the published image |
 
 ### One-liner
 
@@ -48,6 +51,15 @@ helm install heramba ./deploy/helm/heramba \
 
 Edit [`helm/heramba/values.yaml`](helm/heramba/values.yaml) for image, replicas,
 mode/upstream/preset, resources and Service port. Observe mode is the default.
+
+### Managed platforms (Fly.io / Railway / Render)
+
+All three are env-configured — set `HERAMBA_UPSTREAM` to your app and keep
+`HERAMBA_MODE=observe` until trusted:
+
+- **Fly.io** — [`fly.toml`](fly.toml): `fly launch --no-deploy --copy-config` then `fly deploy`.
+- **Railway** — [`railway.json`](railway.json): build from the `Dockerfile`, start command `serve`.
+- **Render** — [`render.yaml`](render.yaml): a Blueprint running `ghcr.io/armur-ai/heramba`; set `HERAMBA_LISTEN` to Render's port.
 
 ### Configuration
 

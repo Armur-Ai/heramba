@@ -7,6 +7,7 @@
 package deploy
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -122,10 +123,56 @@ func TestHelmTemplatesWellFormed(t *testing.T) {
 // TestExistingManifestsValid also guards the hand-written manifests already in
 // deploy/ (no templating), so edits to them cannot break YAML either.
 func TestExistingManifestsValid(t *testing.T) {
-	for _, f := range []string{"k8s/sidecar.yaml", "docker-compose.yml"} {
+	for _, f := range []string{"k8s/sidecar.yaml", "docker-compose.yml", "render.yaml"} {
 		docs := parseYAMLDocs(t, f, readFile(t, f))
 		if len(docs) == 0 {
 			t.Errorf("%s produced no documents", f)
+		}
+	}
+}
+
+// TestRenderBlueprintShape checks the Render recipe has the structure Render
+// expects (a web service pointing at the Heramba image).
+func TestRenderBlueprintShape(t *testing.T) {
+	docs := parseYAMLDocs(t, "render.yaml", readFile(t, "render.yaml"))
+	svcs, ok := docs[0]["services"].([]any)
+	if !ok || len(svcs) == 0 {
+		t.Fatalf("render.yaml must list services, got %v", docs[0]["services"])
+	}
+	svc := svcs[0].(map[string]any)
+	if svc["type"] != "web" {
+		t.Errorf("render service type = %v, want web", svc["type"])
+	}
+	img, _ := svc["image"].(map[string]any)
+	if img == nil || !strings.Contains(img["url"].(string), "heramba") {
+		t.Errorf("render service must reference the heramba image, got %v", svc["image"])
+	}
+}
+
+// TestRailwayJSONValid checks the Railway recipe is valid JSON with a deploy
+// start command.
+func TestRailwayJSONValid(t *testing.T) {
+	var cfg struct {
+		Deploy struct {
+			StartCommand string `json:"startCommand"`
+		} `json:"deploy"`
+	}
+	if err := json.Unmarshal([]byte(readFile(t, "railway.json")), &cfg); err != nil {
+		t.Fatalf("railway.json must be valid JSON: %v", err)
+	}
+	if cfg.Deploy.StartCommand != "serve" {
+		t.Errorf("railway startCommand = %q, want serve", cfg.Deploy.StartCommand)
+	}
+}
+
+// TestFlyTomlPresent documents that fly.toml ships as a recipe but is NOT parsed
+// here: the repo vendors no TOML library, so we validate only that the file
+// exists and names the Heramba service. (Kept as a documented example.)
+func TestFlyTomlPresent(t *testing.T) {
+	content := readFile(t, "fly.toml")
+	for _, want := range []string{"app = \"heramba-edge\"", "internal_port = 8080", "HERAMBA_MODE"} {
+		if !strings.Contains(content, want) {
+			t.Errorf("fly.toml missing %q", want)
 		}
 	}
 }

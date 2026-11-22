@@ -1,0 +1,27 @@
+# Fly.io — deploy Heramba's edge. From this repo:
+#
+#     fly launch --no-deploy --copy-config --dockerfile Dockerfile
+#     fly deploy
+#
+# Or run the published image directly by setting [build].image below instead of
+# building from the Dockerfile. Observe mode is the safe default; point
+# HERAMBA_UPSTREAM at your app (Fly private networking uses <app>.internal).
+app = "heramba-edge"
+primary_region = "iad"
+
+[build]
+  # Build from the repo Dockerfile (default), or pull the image:
+  # image = "ghcr.io/armur-ai/heramba:latest"
+  dockerfile = "Dockerfile"
+
+[env]
+  HERAMBA_MODE = "observe"
+  HERAMBA_LISTEN = ":8080"
+  HERAMBA_UPSTREAM = "http://your-app.internal:3000"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1

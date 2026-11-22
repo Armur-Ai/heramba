@@ -1,0 +1,22 @@
+# Render Blueprint — deploy Heramba's edge from the published image.
+# Commit this as render.yaml at your repo root (or point a Blueprint at it), then
+# create the Blueprint in the Render dashboard. Observe mode is the safe default.
+#
+# Render routes external traffic to the one web port; set HERAMBA_LISTEN to the
+# port Render injects ($PORT, default 10000) and point HERAMBA_UPSTREAM at your
+# app service.
+services:
+  - type: web
+    name: heramba
+    runtime: image
+    image:
+      url: ghcr.io/armur-ai/heramba:latest
+    envVars:
+      - key: HERAMBA_MODE
+        value: observe
+      - key: HERAMBA_LISTEN
+        value: ":10000"
+      - key: HERAMBA_UPSTREAM
+        value: "http://your-app:3000"
+      - key: HERAMBA_PRESET
+        value: ""
