@@ -22,6 +22,8 @@ func TestMattermostSinkPostsAttachment(t *testing.T) {
 	defer srv.Close()
 
 	s := NewMattermost(srv.URL, time.Second, event.SeverityLow)
+	// Deception events are SeverityHigh, so the attachment color is the high
+	// (amber) swatch, not critical red.
 	e := event.Deception(event.KindCanaryTriggered, "10.0.0.4", "hrmb_z", "used").WithLabel("campaign", "sweep")
 	if err := s.Emit(e); err != nil {
 		t.Fatalf("emit: %v", err)
@@ -31,7 +33,7 @@ func TestMattermostSinkPostsAttachment(t *testing.T) {
 		t.Fatalf("expected one attachment, got %v", got["attachments"])
 	}
 	blob, _ := json.Marshal(got)
-	for _, want := range []string{"canary_triggered", "10.0.0.4", "sweep", "#ff6b6b", "heramba"} {
+	for _, want := range []string{"canary_triggered", "10.0.0.4", "sweep", "#f5a524", "heramba"} {
 		if !strings.Contains(string(blob), want) {
 			t.Errorf("payload missing %q: %s", want, blob)
 		}
