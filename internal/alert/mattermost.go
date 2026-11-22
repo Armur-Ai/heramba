@@ -1,11 +1,8 @@
 package alert
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/Armur-Ai/heramba/internal/event"
@@ -16,17 +13,14 @@ import (
 // the detection fields), which renders as a tidy card in the channel. Fail-soft
 // and severity-floored like the other chat sinks.
 type MattermostSink struct {
+	*httpSender
 	url    string
-	client *http.Client
 	minSev event.Severity
 }
 
 // NewMattermost creates a Mattermost sink posting to an incoming-webhook URL.
 func NewMattermost(url string, timeout time.Duration, minSeverity event.Severity) *MattermostSink {
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
-	return &MattermostSink{url: url, client: &http.Client{Timeout: timeout}, minSev: minSeverity}
+	return &MattermostSink{httpSender: newHTTPSender(timeout), url: url, minSev: minSeverity}
 }
 
 // Emit posts the event as a Mattermost message.
@@ -38,22 +32,7 @@ func (s *MattermostSink) Emit(e event.Event) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.url, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("mattermost: non-2xx status %d", resp.StatusCode)
-	}
-	return nil
+	return s.deliver("mattermost", httpPost{url: s.url, body: body, contentType: "application/json"})
 }
 
 type mattermostMsg struct {

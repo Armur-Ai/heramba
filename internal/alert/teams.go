@@ -1,11 +1,8 @@
 package alert
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/Armur-Ai/heramba/internal/event"
@@ -20,18 +17,15 @@ import (
 // engine never lets a telemetry failure break traffic) and honors a minimum-
 // severity floor so a busy observe-mode edge does not flood the channel.
 type TeamsSink struct {
+	*httpSender
 	url    string
-	client *http.Client
 	minSev event.Severity
 }
 
 // NewTeams creates a Teams sink posting to a Teams incoming-webhook URL. Only
 // events at or above minSeverity are sent.
 func NewTeams(url string, timeout time.Duration, minSeverity event.Severity) *TeamsSink {
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
-	return &TeamsSink{url: url, client: &http.Client{Timeout: timeout}, minSev: minSeverity}
+	return &TeamsSink{httpSender: newHTTPSender(timeout), url: url, minSev: minSeverity}
 }
 
 // Emit renders the event as a MessageCard and posts it when it meets the floor.
@@ -43,22 +37,7 @@ func (s *TeamsSink) Emit(e event.Event) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.url, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("teams: non-2xx status %d", resp.StatusCode)
-	}
-	return nil
+	return s.deliver("teams", httpPost{url: s.url, body: body, contentType: "application/json"})
 }
 
 // --- MessageCard payload (typed, so the shape is unit-testable) -------------

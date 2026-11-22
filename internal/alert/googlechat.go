@@ -1,11 +1,8 @@
 package alert
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/Armur-Ai/heramba/internal/event"
@@ -15,17 +12,14 @@ import (
 // simple text message with the key detail inline. Fail-soft and severity-floored
 // like the other chat sinks.
 type GoogleChatSink struct {
+	*httpSender
 	url    string
-	client *http.Client
 	minSev event.Severity
 }
 
 // NewGoogleChat creates a Google Chat sink posting to a space webhook URL.
 func NewGoogleChat(url string, timeout time.Duration, minSeverity event.Severity) *GoogleChatSink {
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
-	return &GoogleChatSink{url: url, client: &http.Client{Timeout: timeout}, minSev: minSeverity}
+	return &GoogleChatSink{httpSender: newHTTPSender(timeout), url: url, minSev: minSeverity}
 }
 
 // Emit posts the event as a Google Chat text message.
@@ -37,22 +31,7 @@ func (s *GoogleChatSink) Emit(e event.Event) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.url, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("googlechat: non-2xx status %d", resp.StatusCode)
-	}
-	return nil
+	return s.deliver("googlechat", httpPost{url: s.url, body: body, contentType: "application/json; charset=UTF-8"})
 }
 
 type googleChatMsg struct {
