@@ -167,6 +167,78 @@ func TestTopDecoys(t *testing.T) {
 	}
 }
 
+func TestSourceDrill(t *testing.T) {
+	now := time.Now().UTC()
+	evs := []event.Event{
+		// recentEvents hands us newest-first; mirror that here.
+		evAt(event.KindCanaryTriggered, event.SeverityCritical, "1.1.1.1", "/keys", now.Add(2*time.Second)),
+		evAt(event.KindDecoyHit, event.SeverityHigh, "1.1.1.1", "/.env", now.Add(time.Second)),
+		evAt(event.KindDecoyHit, event.SeverityLow, "1.1.1.1", "/.env", now),
+		evAt(event.KindProbe, event.SeverityMedium, "2.2.2.2", "/a", now),
+	}
+	d := sourceDrill(evs, "1.1.1.1")
+	if d.Count != 3 {
+		t.Fatalf("count = %d, want 3", d.Count)
+	}
+	if len(d.Events) != 3 {
+		t.Fatalf("events = %d, want 3", len(d.Events))
+	}
+	if d.Events[0].Kind != event.KindCanaryTriggered {
+		t.Errorf("first event kind = %q, want canary (newest first preserved)", d.Events[0].Kind)
+	}
+	if d.MaxSeverity != "critical" {
+		t.Errorf("max severity = %q, want critical", d.MaxSeverity)
+	}
+	if d.Targets["/.env"] != 2 {
+		t.Errorf("target /.env count = %d, want 2", d.Targets["/.env"])
+	}
+	if d.FirstSeen != now || d.LastSeen != now.Add(2*time.Second) {
+		t.Errorf("first/last = %v/%v, want %v/%v", d.FirstSeen, d.LastSeen, now, now.Add(2*time.Second))
+	}
+}
+
+func TestSourceDrillUnknownIsEmptyNotNil(t *testing.T) {
+	d := sourceDrill(nil, "nobody")
+	if d.Count != 0 {
+		t.Errorf("count = %d, want 0", d.Count)
+	}
+	if d.Events == nil || d.Kinds == nil || d.Targets == nil {
+		t.Error("drill maps/slice must never be nil")
+	}
+}
+
+func TestConfirmedBreaches(t *testing.T) {
+	now := time.Now().UTC()
+	evs := []event.Event{
+		evAt(event.KindCanaryTriggered, event.SeverityHigh, "a", "/keys", now.Add(time.Second)),
+		evAt(event.KindCanaryTriggered, event.SeverityHigh, "b", "/keys", now),
+		evAt(event.KindDecoyHit, event.SeverityHigh, "a", "/.env", now), // not a breach
+	}
+	b := confirmedBreaches(evs)
+	if b.Count != 2 {
+		t.Fatalf("count = %d, want 2", b.Count)
+	}
+	if b.Sources != 2 {
+		t.Errorf("sources = %d, want 2", b.Sources)
+	}
+	if b.Targets["/keys"] != 2 {
+		t.Errorf("target /keys = %d, want 2", b.Targets["/keys"])
+	}
+	if b.LastSeen != now.Add(time.Second) {
+		t.Errorf("last seen = %v, want %v", b.LastSeen, now.Add(time.Second))
+	}
+	if len(b.Recent) != 2 {
+		t.Errorf("recent = %d, want 2", len(b.Recent))
+	}
+}
+
+func TestConfirmedBreachesEmpty(t *testing.T) {
+	b := confirmedBreaches(nil)
+	if b.Count != 0 || b.Recent == nil || b.Targets == nil {
+		t.Errorf("empty breaches = %+v, want zero count with non-nil fields", b)
+	}
+}
+
 func TestAggregatesNeverNil(t *testing.T) {
 	if topSources(nil) == nil {
 		t.Error("topSources(nil) is nil, want empty slice")

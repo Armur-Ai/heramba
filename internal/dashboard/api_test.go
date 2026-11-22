@@ -117,6 +117,40 @@ func TestMetricsDecodeShape(t *testing.T) {
 	}
 }
 
+func TestSourceDrillEndpoint(t *testing.T) {
+	h := testHandler()
+	rr := get(t, h, "/api/sources/10.0.0.1")
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	var d SourceDetail
+	if err := json.Unmarshal(rr.Body.Bytes(), &d); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if d.Source != "10.0.0.1" || d.Count != 1 {
+		t.Errorf("drill = %+v, want source 10.0.0.1 count 1", d)
+	}
+	if len(d.Events) != 1 || d.Events[0].Source != "10.0.0.1" {
+		t.Errorf("drill events = %+v, want one event for 10.0.0.1", d.Events)
+	}
+}
+
+func TestBreachesEndpoint(t *testing.T) {
+	h := testHandler()
+	rr := get(t, h, "/api/breaches")
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rr.Code)
+	}
+	var b Breaches
+	if err := json.Unmarshal(rr.Body.Bytes(), &b); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	// sampleEvents has exactly one canary_triggered.
+	if b.Count != 1 {
+		t.Errorf("breach count = %d, want 1", b.Count)
+	}
+}
+
 func TestSubpathsAreNotIndex(t *testing.T) {
 	h := testHandler()
 	// An unknown path must not be swallowed by the SPA root handler.

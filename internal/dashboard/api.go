@@ -115,6 +115,28 @@ func (s *server) handleSources(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, topSources(evs))
 }
 
+// handleSourceDrill serves GET /api/sources/{id}: the events and rolled-up
+// stats for a single source. {id} is a raw source identifier (IP); it is also
+// accepted via ?source= for clients that prefer a query.
+func (s *server) handleSourceDrill(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		id = r.URL.Query().Get("source")
+	}
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "source required"})
+		return
+	}
+	evs := s.recentEvents(maxEventCount)
+	writeJSON(w, http.StatusOK, sourceDrill(evs, id))
+}
+
+// handleBreaches serves GET /api/breaches: confirmed breaches (canary triggers).
+func (s *server) handleBreaches(w http.ResponseWriter, _ *http.Request) {
+	evs := s.recentEvents(maxEventCount)
+	writeJSON(w, http.StatusOK, confirmedBreaches(evs))
+}
+
 // handleCampaigns serves GET /api/campaigns: coordinated multi-IP swarms.
 func (s *server) handleCampaigns(w http.ResponseWriter, _ *http.Request) {
 	evs := s.recentEvents(maxEventCount)

@@ -179,6 +179,8 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /api/metrics", s.handleMetrics)
 	mux.HandleFunc("GET /api/timeline", s.handleTimeline)
 	mux.HandleFunc("GET /api/sources", s.handleSources)
+	mux.HandleFunc("GET /api/sources/{id}", s.handleSourceDrill)
+	mux.HandleFunc("GET /api/breaches", s.handleBreaches)
 	mux.HandleFunc("GET /api/campaigns", s.handleCampaigns)
 	mux.HandleFunc("GET /api/decoys", s.handleDecoys)
 
