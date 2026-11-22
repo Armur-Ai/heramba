@@ -1,11 +1,7 @@
 package alert
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
-	"fmt"
-	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -21,9 +17,9 @@ const defaultAxiomURL = "https://api.axiom.co"
 // authenticated with a Bearer API token. Fail-soft and severity-floored like
 // the other push sinks.
 type AxiomSink struct {
+	*httpSender
 	endpoint string
 	token    string
-	client   *http.Client
 	minSev   event.Severity
 }
 
@@ -32,11 +28,8 @@ func NewAxiom(base, dataset, token string, timeout time.Duration, minSeverity ev
 	if base == "" {
 		base = defaultAxiomURL
 	}
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
 	endpoint := strings.TrimRight(base, "/") + "/v1/datasets/" + url.PathEscape(dataset) + "/ingest"
-	return &AxiomSink{endpoint: endpoint, token: token, client: &http.Client{Timeout: timeout}, minSev: minSeverity}
+	return &AxiomSink{httpSender: newHTTPSender(timeout), endpoint: endpoint, token: token, minSev: minSeverity}
 }
 
 // Emit posts the event as a single-element JSON array.
@@ -59,21 +52,10 @@ func (s *AxiomSink) Emit(e event.Event) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.endpoint, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+s.token)
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("axiom: non-2xx status %d", resp.StatusCode)
-	}
-	return nil
+	return s.deliver("axiom", httpPost{
+		url:         s.endpoint,
+		body:        body,
+		contentType: "application/json",
+		headers:     map[string]string{"Authorization": "Bearer " + s.token},
+	})
 }

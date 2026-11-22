@@ -1,11 +1,8 @@
 package alert
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/Armur-Ai/heramba/internal/event"
@@ -16,9 +13,9 @@ import (
 // fields are prefixed with "_" per the GELF spec, and the level is a syslog
 // numeric. Fail-soft and severity-floored like the other push sinks.
 type GELFSink struct {
+	*httpSender
 	url    string
 	host   string
-	client *http.Client
 	minSev event.Severity
 }
 
@@ -28,10 +25,7 @@ func NewGELF(url, host string, timeout time.Duration, minSeverity event.Severity
 	if host == "" {
 		host = "heramba"
 	}
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
-	return &GELFSink{url: url, host: host, client: &http.Client{Timeout: timeout}, minSev: minSeverity}
+	return &GELFSink{httpSender: newHTTPSender(timeout), url: url, host: host, minSev: minSeverity}
 }
 
 // Emit posts the event as a GELF 1.1 message.
@@ -43,22 +37,7 @@ func (s *GELFSink) Emit(e event.Event) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.url, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("gelf: non-2xx status %d", resp.StatusCode)
-	}
-	return nil
+	return s.deliver("gelf", httpPost{url: s.url, body: body, contentType: "application/json"})
 }
 
 // GELFMessage builds a GELF 1.1 payload for an event. Exported for tests.
