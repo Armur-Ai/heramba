@@ -25,6 +25,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/Armur-Ai/heramba/internal/alert"
@@ -38,10 +39,23 @@ import (
 )
 
 // Engine is the configured edge runtime. Build with New, serve with ServeHTTP.
+//
+// All configuration-derived state lives in an atomically-swapped *engineState,
+// so Reload can replace the decoy surface, sinks, mode and upstream on a running
+// engine without dropping in-flight connections: each request loads the current
+// snapshot once and uses it throughout. The classifier is deliberately NOT part
+// of the snapshot — it is kept across reloads so learned per-source behavior is
+// not lost when config changes.
 type Engine struct {
+	cls      *classify.Classifier // stable across reloads (keeps learned state)
+	honeypot http.Handler         // optional deception app; set via SetHoneypot, not reloaded
+	st       atomic.Pointer[engineState]
+}
+
+// engineState is the reloadable snapshot of config-derived runtime state.
+type engineState struct {
 	cfg       config.Config
 	reg       *decoy.Registry
-	cls       *classify.Classifier
 	norm      *signal.Normalizer // protect mode only
 	jit       *signal.Jitter     // protect-mode tarpit for flagged sources
 	sink      alert.Sink
@@ -49,8 +63,10 @@ type Engine struct {
 	trusted   []*net.IPNet           // proxy CIDRs whose XFF we trust
 	limiter   *ratelimit.Limiter     // per-source rate limit (protect mode only)
 	counterOn bool                   // counter-agent prompt-decoy injection (protect mode)
-	honeypot  http.Handler           // optional: serve non-decoy paths from a deception app (no upstream)
 }
+
+// state returns the current reloadable snapshot.
+func (e *Engine) state() *engineState { return e.st.Load() }
 
 // SetHoneypot installs a fallthrough handler used ONLY in honeypot-only
 // deployments (no upstream): requests that are not decoys/canaries are served
@@ -70,34 +86,48 @@ const ctxFlagAgentic ctxKey = iota
 // normalization and a tarpit. An upstream (reverse-proxy target) is optional in
 // observe mode (no upstream => honeypot-only: decoys + 404).
 func New(cfg config.Config, sink alert.Sink) (*Engine, error) {
-	if sink == nil {
-		sink = alert.Discard
-	}
 	cls := classify.NewWithOptions(classify.Options{
 		CadenceRPS:   cfg.Classifier.CadenceRPS,
 		EnumDistinct: cfg.Classifier.EnumDistinct,
 		ToolAt:       cfg.Classifier.ToolAt,
 		AgenticAt:    cfg.Classifier.AgenticAt,
 	})
-	e := &Engine{cfg: cfg, reg: decoy.NewRegistry(cfg.Decoys.Paths...), cls: cls, sink: sink}
+	e := &Engine{cls: cls}
+	st, err := e.buildState(cfg, sink)
+	if err != nil {
+		return nil, err
+	}
+	e.st.Store(st)
+	return e, nil
+}
+
+// buildState assembles a reloadable snapshot from config. It is used by New and
+// by Reload; ModifyResponse closes over the Engine (not the snapshot) so it
+// always reads the live state, which keeps reloads correct for in-flight proxied
+// responses.
+func (e *Engine) buildState(cfg config.Config, sink alert.Sink) (*engineState, error) {
+	if sink == nil {
+		sink = alert.Discard
+	}
+	st := &engineState{cfg: cfg, reg: decoy.NewRegistry(cfg.Decoys.Paths...), sink: sink}
 	if p, ok := decoy.GetPreset(cfg.Decoys.Preset); ok {
-		e.reg.ApplyPreset(p) // framework-tailored lures on top of the defaults
+		st.reg.ApplyPreset(p) // framework-tailored lures on top of the defaults
 	}
 	for _, tok := range cfg.Decoys.Canaries {
-		e.reg.Canaries().Watch(tok, "configured canary")
+		st.reg.Canaries().Watch(tok, "configured canary")
 	}
 	for _, c := range cfg.TrustedProxies {
 		if _, n, err := net.ParseCIDR(c); err == nil {
-			e.trusted = append(e.trusted, n)
+			st.trusted = append(st.trusted, n)
 		}
 	}
 	if cfg.Mode == config.ModeProtect {
-		e.norm = signal.DefaultNormalizer()
-		e.jit = signal.NewJitter(250*time.Millisecond, 1*time.Second)
+		st.norm = signal.DefaultNormalizer()
+		st.jit = signal.NewJitter(250*time.Millisecond, 1*time.Second)
 		if cfg.RateLimitRPS > 0 {
-			e.limiter = ratelimit.New(cfg.RateLimitRPS, cfg.RateLimitBurst)
+			st.limiter = ratelimit.New(cfg.RateLimitRPS, cfg.RateLimitBurst)
 		}
-		e.counterOn = cfg.Counter.Enabled
+		st.counterOn = cfg.Counter.Enabled
 	}
 	if cfg.Upstream != "" {
 		u, err := url.Parse(cfg.Upstream)
@@ -105,22 +135,45 @@ func New(cfg config.Config, sink alert.Sink) (*Engine, error) {
 			return nil, fmt.Errorf("edge: bad upstream %q: %w", cfg.Upstream, err)
 		}
 		rp := httputil.NewSingleHostReverseProxy(u)
-		if e.norm != nil || e.counterOn {
+		if st.norm != nil || st.counterOn {
 			rp.ModifyResponse = e.modifyResponse
 		}
-		e.proxy = rp
+		st.proxy = rp
 	}
-	return e, nil
+	return st, nil
+}
+
+// Reload atomically swaps the engine's config-derived state (decoy surface,
+// canaries, preset, sinks, mode, upstream, rate limit) without interrupting
+// in-flight requests. The classifier's learned state is preserved. A bad
+// upstream in the new config is reported and the current state is left in place.
+//
+// Passing a nil sink keeps the engine's current sink — useful when the alert
+// wiring is swapped out-of-band (e.g. behind a SwapSink) and only the detection
+// surface/mode needs to change here.
+func (e *Engine) Reload(cfg config.Config, sink alert.Sink) error {
+	if sink == nil {
+		if cur := e.st.Load(); cur != nil {
+			sink = cur.sink
+		}
+	}
+	st, err := e.buildState(cfg, sink)
+	if err != nil {
+		return err
+	}
+	e.st.Store(st)
+	return nil
 }
 
 // modifyResponse applies protect-mode response transforms: header normalization
 // (signal denial) and, for flagged agentic sources, counter-agent lure
 // injection into HTML/JS bodies.
 func (e *Engine) modifyResponse(resp *http.Response) error {
-	if e.norm != nil {
-		e.norm.Apply(resp.Header)
+	st := e.state()
+	if st.norm != nil {
+		st.norm.Apply(resp.Header)
 	}
-	if !e.counterOn || resp.Request == nil {
+	if !st.counterOn || resp.Request == nil {
 		return nil
 	}
 	if flag, _ := resp.Request.Context().Value(ctxFlagAgentic).(bool); !flag {
@@ -155,10 +208,10 @@ func (e *Engine) modifyResponse(resp *http.Response) error {
 
 	// Close the loop: the fabricated paths become decoys; the key a canary.
 	for _, p := range lure.Paths {
-		e.reg.Add(p, "counter-agent lure")
+		st.reg.Add(p, "counter-agent lure")
 	}
-	e.reg.Canaries().Watch(lure.Key, "counter-agent lure key")
-	e.sink.Emit(event.New(event.KindCounterDeployed, event.SeverityInfo, "", resp.Request.URL.Path,
+	st.reg.Canaries().Watch(lure.Key, "counter-agent lure key")
+	st.sink.Emit(event.New(event.KindCounterDeployed, event.SeverityInfo, "", resp.Request.URL.Path,
 		"injected counter-agent lure").WithLabel("lure_key", lure.Key))
 	return nil
 }
@@ -171,7 +224,8 @@ func itoaLen(n int) string {
 func (e *Engine) Handler() http.Handler { return e }
 
 func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ip := e.clientIP(r)
+	st := e.state() // one consistent snapshot for the whole request
+	ip := e.clientIP(r, st)
 
 	// 1. Classify the source (both modes — detection is the point of observe).
 	v := e.cls.Classify(classify.Observation{
@@ -179,52 +233,52 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		UserAgent: r.UserAgent(), Headers: headerSubset(r), Time: time.Now().UTC(),
 	})
 	if v.Label == "agentic-suspected" {
-		e.sink.Emit(event.New(event.KindAgenticTraffic, event.SeverityMedium, ip, r.URL.Path,
+		st.sink.Emit(event.New(event.KindAgenticTraffic, event.SeverityMedium, ip, r.URL.Path,
 			fmt.Sprintf("agentic-suspected (score %.2f)", v.Score)).
 			WithLabel("label", v.Label))
 	}
 
 	// 2a. Canary use: a planted canary token appearing in the request is a
 	// confirmed intrusion (zero-FP). In protect mode the request is denied.
-	if c, ok := e.scanCanary(r); ok {
-		e.sink.Emit(event.Deception(event.KindCanaryTriggered, ip, c.Label,
+	if c, ok := e.scanCanary(r, st); ok {
+		st.sink.Emit(event.Deception(event.KindCanaryTriggered, ip, c.Label,
 			"canary token used ("+c.Label+")").WithLabel("canary_label", c.Label))
-		if e.cfg.Mode == config.ModeProtect {
-			e.serveNeutral(w)
+		if st.cfg.Mode == config.ModeProtect {
+			e.serveNeutral(w, st)
 			return
 		}
 	}
 
 	// 2b. Deception surface: a decoy hit is zero-FP; the edge serves it.
-	if _, ok := e.reg.IsDecoy(r.URL.Path); ok {
-		if ev, hit := e.reg.InspectPath(r.Method, r.URL.Path, ip); hit {
-			e.sink.Emit(ev)
+	if _, ok := st.reg.IsDecoy(r.URL.Path); ok {
+		if ev, hit := st.reg.InspectPath(r.Method, r.URL.Path, ip); hit {
+			st.sink.Emit(ev)
 		}
-		e.serveNeutral(w)
+		e.serveNeutral(w, st)
 		return
 	}
 
 	// 3. Real application traffic.
 	// Rate limit abusive sources (protect mode only).
-	if e.limiter != nil && !e.limiter.Allow(ip) {
-		e.sink.Emit(event.New(event.KindRateLimited, event.SeverityMedium, ip, r.URL.Path,
+	if st.limiter != nil && !st.limiter.Allow(ip) {
+		st.sink.Emit(event.New(event.KindRateLimited, event.SeverityMedium, ip, r.URL.Path,
 			"source exceeded request-rate budget"))
-		if e.norm != nil {
-			e.norm.Apply(w.Header())
+		if st.norm != nil {
+			st.norm.Apply(w.Header())
 		}
 		w.Header().Set("Retry-After", "1")
 		w.WriteHeader(http.StatusTooManyRequests)
 		_, _ = w.Write([]byte("429 too many requests\n"))
 		return
 	}
-	if e.cfg.Mode == config.ModeProtect && v.Label == "agentic-suspected" && e.jit != nil {
-		e.jit.Sleep(r.Context()) // tarpit flagged sources
+	if st.cfg.Mode == config.ModeProtect && v.Label == "agentic-suspected" && st.jit != nil {
+		st.jit.Sleep(r.Context()) // tarpit flagged sources
 	}
-	if e.counterOn && v.Label == "agentic-suspected" {
+	if st.counterOn && v.Label == "agentic-suspected" {
 		r = r.WithContext(context.WithValue(r.Context(), ctxFlagAgentic, true))
 	}
-	if e.proxy != nil {
-		e.proxy.ServeHTTP(w, r)
+	if st.proxy != nil {
+		st.proxy.ServeHTTP(w, r)
 		return
 	}
 	// Honeypot-only deployment (no upstream). If a deception app is installed,
@@ -234,14 +288,14 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e.honeypot.ServeHTTP(w, r)
 		return
 	}
-	e.serveNeutral(w)
+	e.serveNeutral(w, st)
 }
 
 // serveNeutral writes a minimal 404 with normalized headers (protect mode),
 // indistinguishable from a genuinely missing path.
-func (e *Engine) serveNeutral(w http.ResponseWriter) {
-	if e.norm != nil {
-		e.norm.Apply(w.Header())
+func (e *Engine) serveNeutral(w http.ResponseWriter, st *engineState) {
+	if st.norm != nil {
+		st.norm.Apply(w.Header())
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusNotFound)
@@ -252,8 +306,8 @@ func (e *Engine) serveNeutral(w http.ResponseWriter) {
 // and header values (cookies/auth headers included). Body scanning is a roadmap
 // item; this covers the common vector (a planted fake credential used in a
 // header or query).
-func (e *Engine) scanCanary(r *http.Request) (decoy.Canary, bool) {
-	cans := e.reg.Canaries().All()
+func (e *Engine) scanCanary(r *http.Request, st *engineState) (decoy.Canary, bool) {
+	cans := st.reg.Canaries().All()
 	if len(cans) == 0 {
 		return decoy.Canary{}, false
 	}
@@ -313,16 +367,16 @@ func (b *replayBody) Close() error               { return b.c.Close() }
 // clientIP returns the peer address, or the left-most X-Forwarded-For entry
 // when the direct peer is a configured trusted proxy. By default no proxy is
 // trusted, so a client can never spoof its IP via a forged XFF header.
-func (e *Engine) clientIP(r *http.Request) string {
+func (e *Engine) clientIP(r *http.Request, st *engineState) string {
 	host := r.RemoteAddr
 	if h, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
 		host = h
 	}
-	if len(e.trusted) == 0 {
+	if len(st.trusted) == 0 {
 		return host
 	}
 	peer := net.ParseIP(host)
-	if peer == nil || !e.isTrusted(peer) {
+	if peer == nil || !isTrusted(st.trusted, peer) {
 		return host
 	}
 	xff := r.Header.Get("X-Forwarded-For")
@@ -340,8 +394,8 @@ func (e *Engine) clientIP(r *http.Request) string {
 	return host
 }
 
-func (e *Engine) isTrusted(ip net.IP) bool {
-	for _, n := range e.trusted {
+func isTrusted(trusted []*net.IPNet, ip net.IP) bool {
+	for _, n := range trusted {
 		if n.Contains(ip) {
 			return true
 		}

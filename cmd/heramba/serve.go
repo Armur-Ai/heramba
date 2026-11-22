@@ -81,7 +81,9 @@ func runServe(args []string) {
 	store := evidence.NewStore()
 	ingestor := intel.NewIngestor(store, "edge")
 	advisor := newShadowAdvisor()
-	alertSink := buildSink(cfg)
+	// The alert wiring sits behind a SwapSink so SIGHUP can replace it live
+	// without rebuilding the counting sink (which feeds metrics + the summary).
+	alertSink := alert.NewSwap(buildSink(cfg))
 	counting := alert.Count(alert.MultiSink{alertSink, ingestor, advisor})
 	engine, err := edge.New(cfg, counting)
 	if err != nil {
@@ -164,6 +166,19 @@ func runServe(args []string) {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	// SIGHUP hot-reloads the detection surface and alert wiring from the config
+	// file without dropping connections. The listen sockets and TLS are NOT
+	// rebound (those need a restart); mode, decoys/preset/canaries, sinks,
+	// upstream and rate limit all take effect live.
+	hup := make(chan os.Signal, 1)
+	signal.Notify(hup, syscall.SIGHUP)
+	go func() {
+		for range hup {
+			reloadServe(*configPath, alertSink, engine)
+		}
+	}()
+
 	go func() {
 		if err := serveEdge(srv, cfg); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			fmt.Fprintf(os.Stderr, "heramba: serve error: %v\n", err)
@@ -195,7 +210,7 @@ func runServe(args []string) {
 	}
 	// Flush any buffered sinks (e.g. the email digest) so a final batch is not
 	// lost on a clean shutdown.
-	if err := alert.FlushAll(alertSink); err != nil {
+	if err := alertSink.Flush(); err != nil {
 		fmt.Fprintf(os.Stderr, "heramba: flushing sinks: %v\n", err)
 	}
 
@@ -235,6 +250,31 @@ func runServe(args []string) {
 		}
 		fmt.Println("  (shadow mode: validate + audit only. Enable the engine in enforce mode to act, with approval gates.)")
 	}
+}
+
+// reloadServe reloads config from path and applies it to a running engine: it
+// swaps the alert wiring (into swap) and the engine's detection surface/mode.
+// On any error it logs and leaves the running state untouched. Returns the
+// applied config (or an error) so the behavior is unit-testable.
+func reloadServe(path string, swap *alert.SwapSink, engine *edge.Engine) (config.Config, error) {
+	cfg, err := config.Load(path)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "heramba: SIGHUP reload skipped: %v\n", err)
+		return cfg, err
+	}
+	cfg = cfg.ApplyEnv()
+	if err := cfg.Validate(); err != nil {
+		fmt.Fprintf(os.Stderr, "heramba: SIGHUP reload skipped: %v\n", err)
+		return cfg, err
+	}
+	newSink := buildSink(cfg)
+	if err := engine.Reload(cfg, nil); err != nil { // nil = keep the engine's (counting) sink
+		fmt.Fprintf(os.Stderr, "heramba: SIGHUP reload skipped: %v\n", err)
+		return cfg, err
+	}
+	swap.Swap(newSink)
+	fmt.Printf("heramba: reloaded config from %s (mode=%s preset=%q)\n", path, cfg.Mode, cfg.Decoys.Preset)
+	return cfg, nil
 }
 
 // serveEdge starts the edge server over HTTPS when TLS files are configured,
