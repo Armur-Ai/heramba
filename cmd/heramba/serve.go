@@ -397,6 +397,9 @@ func buildSink(cfg config.Config) alert.Sink {
 	if c := cfg.Alert.BetterStack; c.URL != "" && c.Token != "" {
 		sinks = append(sinks, alert.NewBetterStack(c.URL, c.Token, 5*time.Second, floor))
 	}
+	if c := cfg.Alert.GELF; c.URL != "" {
+		sinks = append(sinks, alert.NewGELF(c.URL, c.Host, 5*time.Second, floor))
+	}
 	if u := cfg.Alert.Sumo; u != "" {
 		sinks = append(sinks, alert.NewSumoLogic(u, 5*time.Second, floor))
 	}

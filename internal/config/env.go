@@ -129,6 +129,9 @@ func (c Config) ApplyEnv() Config {
 	if v := envVar("BETTERSTACK_TOKEN", false); v != "" {
 		c.Alert.BetterStack.Token = v
 	}
+	if v := envVar("GELF_URL", false); v != "" {
+		c.Alert.GELF.URL = v
+	}
 	if v := envVar("SUMO_URL", false); v != "" {
 		c.Alert.Sumo = v
 	}

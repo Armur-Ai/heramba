@@ -108,6 +108,7 @@ type AlertConfig struct {
 	OpenObserve OpenObserveConfig `yaml:"openobserve"`
 	Axiom       AxiomConfig       `yaml:"axiom"`
 	BetterStack BetterStackConfig `yaml:"betterstack"`
+	GELF        GELFConfig        `yaml:"gelf"`
 	Sumo        string            `yaml:"sumo"` // Sumo Logic HTTP Source URL (the URL is the secret)
 	// TemplateWebhook POSTs a body rendered from an operator-supplied Go
 	// text/template, so any service with a fixed payload shape can be targeted.
@@ -183,6 +184,12 @@ type AxiomConfig struct {
 type BetterStackConfig struct {
 	URL   string `yaml:"url"`   // the source's ingest URL
 	Token string `yaml:"token"` // source token (Bearer)
+}
+
+// GELFConfig configures a Graylog GELF-over-HTTP sink.
+type GELFConfig struct {
+	URL  string `yaml:"url"`  // GELF HTTP input, e.g. http://graylog:12201/gelf
+	Host string `yaml:"host"` // GELF host field (empty = heramba)
 }
 
 // LokiConfig configures a Grafana Loki push sink.

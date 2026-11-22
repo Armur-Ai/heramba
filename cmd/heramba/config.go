@@ -124,6 +124,9 @@ alert:
   betterstack:
     url: ""                # your BetterStack source ingest URL ("" = disabled)
     token: ""              # source token (Bearer)
+  gelf:
+    url: ""                # Graylog GELF HTTP input, e.g. http://graylog:12201/gelf
+    host: ""               # GELF host field (empty = heramba)
   sumo: ""                 # Sumo Logic HTTP Source URL (the URL embeds the token)
   # Generic templated webhook: render any payload shape from a Go text/template
   # (executed with the detection event as data) and POST it to any service.
