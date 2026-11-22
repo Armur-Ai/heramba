@@ -163,7 +163,7 @@ type RotateConfig struct {
 // DecoyConfig controls decoy/canary behavior.
 type DecoyConfig struct {
 	Enabled  bool     `yaml:"enabled"`
-	Preset   string   `yaml:"preset"`   // framework preset: node|next|rails|django|laravel|wordpress|spring
+	Preset   string   `yaml:"preset"`   // framework preset (see `heramba decoys presets`)
 	Paths    []string `yaml:"paths"`    // extra decoy paths to serve/watch
 	Canaries []string `yaml:"canaries"` // canary tokens (planted elsewhere) to watch for in requests
 }

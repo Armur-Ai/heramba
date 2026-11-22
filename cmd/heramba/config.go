@@ -128,8 +128,9 @@ alert:
 
 decoys:
   enabled: true
-  preset: ""               # framework preset: node|next|rails|django|laravel|wordpress|
-                           #   fastapi|symfony|aspnet|go|phoenix|spring  ("" = generic defaults only)
+  preset: ""               # framework preset: node|next|rails|django|laravel|wordpress|fastapi|
+                           #   symfony|aspnet|go|phoenix|spring|drupal|magento|joomla|flask|express
+                           #   ("" = generic defaults only; see `heramba decoys presets`)
   paths: []                # extra decoy paths to serve/watch
   canaries: []             # canary tokens (planted elsewhere) to watch for in requests
 

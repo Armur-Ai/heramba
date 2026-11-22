@@ -117,3 +117,16 @@ func TestEveryPresetHasPaths(t *testing.T) {
 		}
 	}
 }
+
+func TestNewFrameworkPresetsPresent(t *testing.T) {
+	for _, want := range []string{"drupal", "magento", "joomla", "flask", "express"} {
+		p, ok := GetPreset(want)
+		if !ok {
+			t.Errorf("missing preset %q", want)
+			continue
+		}
+		if len(p.Paths) == 0 || len(p.Seeds) == 0 {
+			t.Errorf("preset %q should have paths and seeds: %+v", want, p)
+		}
+	}
+}

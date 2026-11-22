@@ -207,6 +207,79 @@ var presets = map[string]Preset{
 			{Plant: "/application.properties (datasource.password)", Value: "EXAMPLE_spring_pw_3a9c21e4"},
 		},
 	},
+	"drupal": {
+		Name: "drupal",
+		Paths: []Endpoint{
+			{"/sites/default/settings.php", "Drupal settings/credential probe"},
+			{"/sites/default/settings.local.php", "Drupal local settings probe"},
+			{"/CHANGELOG.txt", "Drupal version-fingerprint probe"},
+			{"/core/install.php", "Drupal installer probe"},
+		},
+		Prefixes: []Endpoint{
+			{"/sites/default/files/", "Drupal files directory walk"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/sites/default/settings.php ($databases password)", Value: "EXAMPLE_drupal_pw_7f3a9c21"},
+			{Plant: "/sites/default/settings.php (hash_salt)", Value: "EXAMPLE0a1b2c3d4e5f60718293a4b5c6d7e8f901"},
+		},
+	},
+	"magento": {
+		Name: "magento",
+		Paths: []Endpoint{
+			{"/app/etc/env.php", "Magento env/credential probe"},
+			{"/app/etc/config.php", "Magento module config probe"},
+			{"/app/etc/local.xml", "Magento 1 local config probe"},
+			{"/var/log/system.log", "Magento system log probe"},
+		},
+		Prefixes: []Endpoint{
+			{"/app/etc/", "Magento config directory walk"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/app/etc/env.php (crypt.key)", Value: "EXAMPLE0a1b2c3d4e5f60718293a4b5c6"},
+			{Plant: "/app/etc/env.php (db password)", Value: "EXAMPLE_magento_pw_9c21e4"},
+		},
+	},
+	"joomla": {
+		Name: "joomla",
+		Paths: []Endpoint{
+			{"/configuration.php", "Joomla config/credential probe"},
+			{"/configuration.php-dist", "Joomla config template probe"},
+			{"/htaccess.txt", "Joomla default htaccess probe"},
+			{"/administrator/manifests/files/joomla.xml", "Joomla version-fingerprint probe"},
+		},
+		Prefixes: []Endpoint{
+			{"/administrator/", "Joomla admin enumeration"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/configuration.php ($password)", Value: "EXAMPLE_joomla_pw_3a9c21e4"},
+			{Plant: "/configuration.php ($secret)", Value: "EXAMPLE0a1b2c3d4e5f6071"},
+		},
+	},
+	"flask": {
+		Name: "flask",
+		Paths: []Endpoint{
+			{"/.env", "Flask env/secret file probe"},
+			{"/config.py", "Flask settings source probe"},
+			{"/instance/config.py", "Flask instance secrets probe"},
+			{"/app.py", "Flask entrypoint source probe"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/config.py (SECRET_KEY)", Value: "EXAMPLE0a1b2c3d4e5f60718293a4b5c6d7e8f901"},
+		},
+	},
+	"express": {
+		Name: "express",
+		Paths: []Endpoint{
+			{"/.env", "Express env/secret file probe"},
+			{"/config/config.js", "Express config source probe"},
+			{"/ecosystem.config.js", "PM2 process config probe"},
+			{"/.sequelizerc", "Sequelize DB config probe"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/.env (SESSION_SECRET)", Value: "EXAMPLE-session-secret-0a1b2c3d4e5f6071"},
+			{Plant: "/.env (JWT_SECRET)", Value: "EXAMPLE-jwt-secret-8293a4b5c6d7e8f9"},
+		},
+	},
 }
 
 // PresetNames returns the available preset names, sorted.

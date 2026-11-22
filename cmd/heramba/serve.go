@@ -32,7 +32,7 @@ func runServe(args []string) {
 	listen := fs.String("listen", "", "override listen address, e.g. :8080")
 	upstream := fs.String("upstream", "", "override upstream, e.g. http://127.0.0.1:3000")
 	adminListen := fs.String("admin-listen", "", "health/metrics address, e.g. :9090 (empty=disabled)")
-	preset := fs.String("preset", "", "framework decoy preset: node|next|rails|django|laravel|wordpress|spring")
+	preset := fs.String("preset", "", "framework decoy preset (run 'heramba decoys presets' for the full list)")
 	deceptionOn := fs.Bool("deception", false, "when there is no upstream, auto-mount the synthetic deception app for non-decoy paths")
 	deceptionSeed := fs.Int64("deception-seed", 1, "seed for the deterministic synthetic world")
 	_ = fs.Parse(args)
