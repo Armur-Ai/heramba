@@ -107,6 +107,7 @@ type AlertConfig struct {
 	Honeycomb   HoneycombConfig   `yaml:"honeycomb"`
 	OpenObserve OpenObserveConfig `yaml:"openobserve"`
 	Axiom       AxiomConfig       `yaml:"axiom"`
+	BetterStack BetterStackConfig `yaml:"betterstack"`
 	Sumo        string            `yaml:"sumo"` // Sumo Logic HTTP Source URL (the URL is the secret)
 	// TemplateWebhook POSTs a body rendered from an operator-supplied Go
 	// text/template, so any service with a fixed payload shape can be targeted.
@@ -176,6 +177,12 @@ type AxiomConfig struct {
 	URL     string `yaml:"url"`     // empty = Axiom Cloud (https://api.axiom.co)
 	Dataset string `yaml:"dataset"` // Axiom dataset
 	Token   string `yaml:"token"`   // Bearer API token
+}
+
+// BetterStackConfig configures a BetterStack (Logtail) sink.
+type BetterStackConfig struct {
+	URL   string `yaml:"url"`   // the source's ingest URL
+	Token string `yaml:"token"` // source token (Bearer)
 }
 
 // LokiConfig configures a Grafana Loki push sink.

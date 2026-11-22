@@ -123,6 +123,12 @@ func (c Config) ApplyEnv() Config {
 	if v := envVar("AXIOM_DATASET", false); v != "" {
 		c.Alert.Axiom.Dataset = v
 	}
+	if v := envVar("BETTERSTACK_URL", false); v != "" {
+		c.Alert.BetterStack.URL = v
+	}
+	if v := envVar("BETTERSTACK_TOKEN", false); v != "" {
+		c.Alert.BetterStack.Token = v
+	}
 	if v := envVar("SUMO_URL", false); v != "" {
 		c.Alert.Sumo = v
 	}
