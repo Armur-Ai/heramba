@@ -18,6 +18,7 @@ import (
 	"github.com/Armur-Ai/heramba/internal/event"
 	"github.com/Armur-Ai/heramba/internal/evidence"
 	"github.com/Armur-Ai/heramba/internal/intel"
+	"github.com/Armur-Ai/heramba/internal/tarpit"
 )
 
 // runHoneypot serves the stateful deception app behind the edge, with the
@@ -29,6 +30,8 @@ func runHoneypot(args []string) {
 	listen := fs.String("listen", "127.0.0.1:8080", "listen address")
 	seed := fs.Int64("seed", 1, "seed for the deterministic synthetic world")
 	format := fs.String("alert", "text", "alert format: text|jsonl")
+	slow := fs.Bool("slow", false, "tarpit mode: drip the synthetic app's responses out slowly to waste an attacker's time")
+	slowInterval := fs.Duration("slow-interval", 40*time.Millisecond, "per-byte drip interval in --slow mode")
 	_ = fs.Parse(args)
 
 	// Build the synthetic world + deception app.
@@ -74,11 +77,26 @@ func runHoneypot(args []string) {
 		fmt.Fprintf(os.Stderr, "heramba: %v\n", err)
 		os.Exit(1)
 	}
-	engine.SetHoneypot(app)
+	// In --slow mode the synthetic app is wrapped in a tarpit so every response
+	// is dripped out byte-by-byte: the world stays coherent and every interaction
+	// is still recorded, but an automated attacker's wall-clock is burned.
+	if *slow {
+		engine.SetHoneypot(deception.NewSlowApp(app, tarpit.Config{
+			ChunkSize: 1,
+			Interval:  *slowInterval,
+			Jitter:    *slowInterval / 2,
+			MaxTotal:  20 * time.Second,
+		}))
+	} else {
+		engine.SetHoneypot(app)
+	}
 
 	srv := &http.Server{Addr: cfg.Listen, Handler: engine.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	fmt.Printf("heramba honeypot — listen=%s · deception world seed=%d (%d users, %d projects)\n",
 		cfg.Listen, *seed, len(world.Users), len(world.Projects))
+	if *slow {
+		fmt.Printf("  SLOW mode: synthetic responses dripped at %s/byte (tarpit).\n", *slowInterval)
+	}
 	fmt.Println("  decoys/canaries fire in front; non-decoy paths get a coherent synthetic app.")
 	fmt.Println("  try: POST /api/login {\"username\":\"<user>\"}, then GET /api/projects")
 
