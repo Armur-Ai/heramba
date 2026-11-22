@@ -2,6 +2,8 @@ package watch
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -40,20 +42,23 @@ func tick() tea.Cmd {
 // live event stream into State and renders it as a real-time "you're being
 // attacked right now" view.
 type Model struct {
-	state      *State
-	ch         <-chan event.Event
-	mode       string // observe / protect — informational, set from the flag
-	started    time.Time
-	now        time.Time
-	paused     bool
-	closed     bool
-	showHelp   bool           // '?' overlay
-	inspecting bool           // enter: full-detail inspector for the selected feed event
-	cursor     int            // selected feed row (0 = newest), overview only
-	sevFloor   event.Severity // feed severity filter floor ('f' cycles)
-	view       viewMode       // which body is shown (overview / sources / campaigns / timeline)
-	width      int
-	height     int
+	state       *State
+	ch          <-chan event.Event
+	mode        string // observe / protect — informational, set from the flag
+	started     time.Time
+	now         time.Time
+	paused      bool
+	closed      bool
+	showHelp    bool           // '?' overlay
+	inspecting  bool           // enter: full-detail inspector for the selected feed event
+	cursor      int            // selected feed row (0 = newest), overview only
+	sevFloor    event.Severity // feed severity filter floor ('f' cycles)
+	snapshotDir string         // where 's' writes exports (default ".")
+	toast       string         // transient status message (e.g. after an export)
+	toastUntil  time.Time      // when the toast expires
+	view        viewMode       // which body is shown (overview / sources / campaigns / timeline)
+	width       int
+	height      int
 }
 
 // NewModel builds a dashboard over the given event channel. mode is shown in
@@ -126,6 +131,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "enter":
 			m.inspecting = !m.inspecting
+			return m, nil
+		case "s":
+			m.toast, m.toastUntil = m.exportSnapshot(), m.now.Add(4*time.Second)
 			return m, nil
 		case "tab", "right", "l":
 			m.view = m.view.next()
@@ -294,6 +302,26 @@ func (m Model) quietHero(bodyH int) string {
 	return lipgloss.Place(m.width-2, bodyH, lipgloss.Center, lipgloss.Center, panel)
 }
 
+// exportSnapshot writes a markdown summary of the current state to the snapshot
+// directory and returns a status line for the toast (the path, or the error).
+func (m Model) exportSnapshot() string {
+	dir := m.snapshotDir
+	if dir == "" {
+		dir = "."
+	}
+	now := m.now
+	if now.IsZero() {
+		now = time.Now()
+	}
+	snap := m.state.Snapshot(m.mode, m.started, now)
+	name := fmt.Sprintf("heramba-watch-%s.md", now.Format("20060102-150405"))
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, []byte(snap.Markdown()), 0o644); err != nil {
+		return "✗ export failed: " + err.Error()
+	}
+	return "✓ snapshot written to " + path
+}
+
 // selectedEvent returns the feed event under the cursor (respecting the active
 // severity filter), and whether one exists.
 func (m Model) selectedEvent() (event.Event, bool) {
@@ -359,6 +387,10 @@ func (m Model) helpView(bodyH int) string {
 		{"tab / shift+tab", "cycle views forward / back"},
 		{"← → / h l", "cycle views"},
 		{"space / p", "pause & resume the live stream"},
+		{"↑ ↓ / j k", "move the feed cursor"},
+		{"enter", "inspect the selected event"},
+		{"f", "cycle the feed severity filter"},
+		{"s", "export a markdown snapshot"},
 		{"c", "clear all accumulated state"},
 		{"?", "toggle this help"},
 		{"q / ctrl+c", "quit"},
@@ -574,6 +606,15 @@ func (m Model) sidebar(w int) string {
 }
 
 func (m Model) footer() string {
+	// A fresh export (or other action) shows a transient toast in place of the
+	// keybindings for a few seconds.
+	if m.toast != "" && m.now.Before(m.toastUntil) {
+		style := styKey
+		if strings.HasPrefix(m.toast, "✗") {
+			style = lipgloss.NewStyle().Foreground(colRed).Bold(true)
+		}
+		return style.Render(m.toast)
+	}
 	// Full key list, then progressively shorter ones, so a narrow terminal still
 	// gets a legible (not truncated-mid-glyph) footer.
 	full := []string{
@@ -581,6 +622,7 @@ func (m Model) footer() string {
 		styKey.Render("↑↓") + " select",
 		styKey.Render("enter") + " inspect",
 		styKey.Render("f") + " filter",
+		styKey.Render("s") + " snapshot",
 		styKey.Render("c") + " clear",
 		styKey.Render("?") + " help",
 		styKey.Render("q") + " quit",
