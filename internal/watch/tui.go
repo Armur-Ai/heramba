@@ -2,6 +2,7 @@ package watch
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -39,18 +40,20 @@ func tick() tea.Cmd {
 // live event stream into State and renders it as a real-time "you're being
 // attacked right now" view.
 type Model struct {
-	state    *State
-	ch       <-chan event.Event
-	mode     string // observe / protect — informational, set from the flag
-	started  time.Time
-	now      time.Time
-	paused   bool
-	closed   bool
-	showHelp bool           // '?' overlay
-	sevFloor event.Severity // feed severity filter floor ('f' cycles)
-	view     viewMode       // which body is shown (overview / sources / campaigns / timeline)
-	width    int
-	height   int
+	state      *State
+	ch         <-chan event.Event
+	mode       string // observe / protect — informational, set from the flag
+	started    time.Time
+	now        time.Time
+	paused     bool
+	closed     bool
+	showHelp   bool           // '?' overlay
+	inspecting bool           // enter: full-detail inspector for the selected feed event
+	cursor     int            // selected feed row (0 = newest), overview only
+	sevFloor   event.Severity // feed severity filter floor ('f' cycles)
+	view       viewMode       // which body is shown (overview / sources / campaigns / timeline)
+	width      int
+	height     int
 }
 
 // NewModel builds a dashboard over the given event channel. mode is shown in
@@ -89,6 +92,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.showHelp = false
 				return m, nil
 			}
+			if m.inspecting {
+				m.inspecting = false
+				return m, nil
+			}
 			return m, tea.Quit
 		case "?":
 			m.showHelp = !m.showHelp
@@ -106,6 +113,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.sevFloor++
 			}
+			return m, nil
+		case "down", "j":
+			if n := len(m.state.RecentFiltered(0, m.sevFloor)); m.cursor < n-1 {
+				m.cursor++
+			}
+			return m, nil
+		case "up", "k":
+			if m.cursor > 0 {
+				m.cursor--
+			}
+			return m, nil
+		case "enter":
+			m.inspecting = !m.inspecting
 			return m, nil
 		case "tab", "right", "l":
 			m.view = m.view.next()
@@ -233,6 +253,9 @@ func (m Model) body(bodyH int) string {
 	if m.showHelp {
 		return m.helpView(bodyH)
 	}
+	if m.inspecting {
+		return m.inspectorView(bodyH)
+	}
 	switch m.view {
 	case viewSources:
 		return panelStyle.Width(m.width - 2).Height(bodyH).Render(m.sourcesView(m.width-4, bodyH-1))
@@ -243,6 +266,63 @@ func (m Model) body(bodyH int) string {
 	default:
 		return m.overview(bodyH)
 	}
+}
+
+// selectedEvent returns the feed event under the cursor (respecting the active
+// severity filter), and whether one exists.
+func (m Model) selectedEvent() (event.Event, bool) {
+	evs := m.state.RecentFiltered(0, m.sevFloor)
+	if len(evs) == 0 {
+		return event.Event{}, false
+	}
+	i := m.cursor
+	if i >= len(evs) {
+		i = len(evs) - 1
+	}
+	return evs[i], true
+}
+
+// inspectorView renders the full detail of the selected feed event: every
+// field and label, so an operator can pivot on a single detection.
+func (m Model) inspectorView(bodyH int) string {
+	e, ok := m.selectedEvent()
+	if !ok {
+		panel := panelStyle.BorderForeground(colCyan).Padding(1, 3).Render(styMuted.Render("no event selected"))
+		return lipgloss.Place(m.width-2, bodyH, lipgloss.Center, lipgloss.Center, panel)
+	}
+	label := func(k string) string { return styMuted.Render(padLeft(k, 12)) + "  " }
+	val := lipgloss.NewStyle().Foreground(colFg)
+	sevStyle := lipgloss.NewStyle().Bold(true).Foreground(sevColor(e.Severity))
+
+	var lines []string
+	lines = append(lines, styHead.Render("EVENT INSPECTOR"), "")
+	lines = append(lines, label("time")+val.Render(e.Time.Local().Format("2006-01-02 15:04:05.000 MST")))
+	lines = append(lines, label("kind")+lipgloss.NewStyle().Foreground(sevColor(e.Severity)).Render(string(e.Kind)))
+	lines = append(lines, label("severity")+sevStyle.Render(strings.ToUpper(e.Severity.String())))
+	lines = append(lines, label("confidence")+val.Render(fmt.Sprintf("%.2f", e.Confidence)))
+	if e.Source != "" {
+		lines = append(lines, label("source")+val.Render(e.Source))
+	}
+	if e.Target != "" {
+		lines = append(lines, label("target")+val.Render(e.Target))
+	}
+	if e.Detail != "" {
+		lines = append(lines, label("detail")+val.Render(e.Detail))
+	}
+	if len(e.Labels) > 0 {
+		lines = append(lines, "", styHead.Render("LABELS"))
+		keys := make([]string, 0, len(e.Labels))
+		for k := range e.Labels {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			lines = append(lines, label(k)+val.Render(e.Labels[k]))
+		}
+	}
+	lines = append(lines, "", styMuted.Render("↑/↓ select · enter/esc close"))
+	panel := panelStyle.BorderForeground(sevColor(e.Severity)).Padding(1, 3).Render(strings.Join(lines, "\n"))
+	return lipgloss.Place(m.width-2, bodyH, lipgloss.Center, lipgloss.Center, panel)
 }
 
 // helpView renders a centered keybinding reference over the body region.
@@ -391,16 +471,23 @@ func (m Model) feed(w, rows int) string {
 	// source, then target fills the remainder.
 	const tsW, kindW, srcW = 8, 16, 16
 	gutter := 1 + 1 + 1 + 1 // single spaces between the five columns
-	tgtW := w - tsW - 1 - kindW - srcW - gutter
+	markW := 2              // selection marker column ("▸ " / "  ")
+	tgtW := w - markW - tsW - 1 - kindW - srcW - gutter
 	if tgtW < 6 {
 		tgtW = 6
 	}
-	for _, e := range evs {
+	// Only the overview feed is navigable; show the cursor there.
+	showCursor := m.view == viewOverview
+	for i, e := range evs {
 		ts := cell(e.Time.Local().Format("15:04:05"), tsW, styMuted)
 		kind := cell(string(e.Kind), kindW, lipgloss.NewStyle().Foreground(sevColor(e.Severity)))
 		src := cell(e.Source, srcW, lipgloss.NewStyle().Foreground(colFg))
 		tgt := cell(e.Target, tgtW, styMuted)
-		out = append(out, strings.Join([]string{ts, kindDot(e.Kind), kind, src, tgt}, " "))
+		mark := "  "
+		if showCursor && i == m.cursor {
+			mark = lipgloss.NewStyle().Foreground(colCyan).Bold(true).Render("▸ ")
+		}
+		out = append(out, mark+strings.Join([]string{ts, kindDot(e.Kind), kind, src, tgt}, " "))
 	}
 	return strings.Join(out, "\n")
 }
@@ -463,7 +550,8 @@ func (m Model) sidebar(w int) string {
 func (m Model) footer() string {
 	keys := []string{
 		styKey.Render("tab") + "/" + styKey.Render("1-4") + " views",
-		styKey.Render("space") + " pause",
+		styKey.Render("↑↓") + " select",
+		styKey.Render("enter") + " inspect",
 		styKey.Render("f") + " filter",
 		styKey.Render("c") + " clear",
 		styKey.Render("?") + " help",
