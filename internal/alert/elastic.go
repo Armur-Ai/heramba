@@ -1,11 +1,8 @@
 package alert
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -16,10 +13,10 @@ import (
 // an @timestamp, so they are immediately searchable in Kibana. Optional API-key
 // auth. Fail-soft and severity-floored.
 type ElasticSink struct {
+	*httpSender
 	base   string // Elasticsearch base URL, e.g. https://es:9200
 	index  string // index name, e.g. heramba-detections
 	apiKey string // optional; sent as "Authorization: ApiKey <key>"
-	client *http.Client
 	minSev event.Severity
 }
 
@@ -28,15 +25,12 @@ func NewElastic(base, index, apiKey string, timeout time.Duration, minSeverity e
 	if index == "" {
 		index = "heramba-detections"
 	}
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
 	return &ElasticSink{
-		base:   strings.TrimRight(base, "/"),
-		index:  index,
-		apiKey: apiKey,
-		client: &http.Client{Timeout: timeout},
-		minSev: minSeverity,
+		httpSender: newHTTPSender(timeout),
+		base:       strings.TrimRight(base, "/"),
+		index:      index,
+		apiKey:     apiKey,
+		minSev:     minSeverity,
 	}
 }
 
@@ -60,23 +54,9 @@ func (s *ElasticSink) Emit(e event.Event) error {
 		return err
 	}
 	url := fmt.Sprintf("%s/%s/_doc", s.base, s.index)
-	ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
+	p := httpPost{url: url, body: body, contentType: "application/json"}
 	if s.apiKey != "" {
-		req.Header.Set("Authorization", "ApiKey "+s.apiKey)
+		p.headers = map[string]string{"Authorization": "ApiKey " + s.apiKey}
 	}
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("elastic: non-2xx status %d", resp.StatusCode)
-	}
-	return nil
+	return s.deliver("elastic", p)
 }

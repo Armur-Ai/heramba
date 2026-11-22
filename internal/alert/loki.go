@@ -1,11 +1,7 @@
 package alert
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
-	"fmt"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -18,19 +14,16 @@ import (
 // labels). Fail-soft and severity-floored like the other push sinks. An optional
 // tenant sets the X-Scope-OrgID header for multi-tenant Loki.
 type LokiSink struct {
+	*httpSender
 	url    string
 	tenant string
-	client *http.Client
 	minSev event.Severity
 }
 
 // NewLoki creates a Loki sink. url is the full push endpoint, e.g.
 // https://loki:3100/loki/api/v1/push. tenant may be "".
 func NewLoki(url, tenant string, timeout time.Duration, minSeverity event.Severity) *LokiSink {
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
-	return &LokiSink{url: url, tenant: tenant, client: &http.Client{Timeout: timeout}, minSev: minSeverity}
+	return &LokiSink{httpSender: newHTTPSender(timeout), url: url, tenant: tenant, minSev: minSeverity}
 }
 
 // Emit posts the event as a single Loki stream entry.
@@ -42,25 +35,11 @@ func (s *LokiSink) Emit(e event.Event) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), s.client.Timeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.url, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
+	p := httpPost{url: s.url, body: body, contentType: "application/json"}
 	if s.tenant != "" {
-		req.Header.Set("X-Scope-OrgID", s.tenant)
+		p.headers = map[string]string{"X-Scope-OrgID": s.tenant}
 	}
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("loki: non-2xx status %d", resp.StatusCode)
-	}
-	return nil
+	return s.deliver("loki", p)
 }
 
 type lokiPush struct {
