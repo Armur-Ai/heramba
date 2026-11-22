@@ -1,0 +1,24 @@
+# systemd unit for the Heramba edge (binary at /usr/local/bin/heramba).
+# Install: cp deploy/heramba.service /etc/systemd/system/ && systemctl enable --now heramba
+# Observe mode is the safe default; edit the Environment lines for your setup.
+[Unit]
+Description=Heramba active-deception edge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=HERAMBA_MODE=observe
+Environment=HERAMBA_UPSTREAM=http://127.0.0.1:3000
+Environment=HERAMBA_ADMIN_LISTEN=:9090
+ExecStart=/usr/local/bin/heramba serve
+Restart=on-failure
+RestartSec=2
+# Hardening
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

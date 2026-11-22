@@ -284,3 +284,15 @@ func TestAnsiblePlaybookValid(t *testing.T) {
 		t.Error("playbook should set HERAMBA_MODE")
 	}
 }
+
+// TestSystemdUnitPresent checks the systemd unit has the required sections and
+// ExecStart (it is an INI-like file; the repo vendors no INI parser, so this is
+// a marker check on a documented example).
+func TestSystemdUnitPresent(t *testing.T) {
+	content := readFile(t, "heramba.service")
+	for _, want := range []string{"[Unit]", "[Service]", "ExecStart=/usr/local/bin/heramba serve", "[Install]", "HERAMBA_MODE=observe"} {
+		if !strings.Contains(content, want) {
+			t.Errorf("heramba.service missing %q", want)
+		}
+	}
+}

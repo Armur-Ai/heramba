@@ -22,6 +22,7 @@ file is required.
 | **DigitalOcean** | [`.do/app.yaml`](.do/app.yaml) | App Platform spec |
 | **Docker Swarm** | [`docker-stack.yml`](docker-stack.yml) | `docker stack deploy` |
 | **Ansible** | [`ansible-deploy.yml`](ansible-deploy.yml) | `ansible-playbook` (community.docker) |
+| **systemd** | [`heramba.service`](heramba.service) | bare-metal/VM service unit |
 
 ### One-liner
 
