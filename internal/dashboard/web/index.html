@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Heramba — Active Defense Console</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%9B%A1</text></svg>">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="app" class="app">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-glyph" aria-hidden="true">🛡</span>
+      <span class="brand-name">HERAMBA</span>
+      <span class="brand-sub">active defense console</span>
+    </div>
+    <div class="topbar-stats">
+      <div class="pill" id="mode-pill"><span class="dot" id="mode-dot"></span><span id="mode-label">—</span></div>
+      <div class="pill pill-quiet"><span class="muted">uptime</span> <span id="uptime" class="mono">—</span></div>
+      <div class="pill pill-quiet"><span class="muted">sources</span> <span id="stat-sources" class="mono tnum">0</span></div>
+      <div class="live"><span class="live-dot" id="live-dot"></span><span id="live-label">LIVE</span></div>
+    </div>
+  </header>
+
+  <div class="shell">
+    <!-- Left nav -->
+    <nav class="nav" aria-label="sections">
+      <a class="nav-item active" href="#overview"><span class="nav-ico">▦</span><span>Overview</span></a>
+      <a class="nav-item" href="#feed"><span class="nav-ico">≋</span><span>Live Feed</span></a>
+      <a class="nav-item" href="#sources"><span class="nav-ico">⌖</span><span>Sources</span></a>
+      <a class="nav-item" href="#swarms"><span class="nav-ico">⚇</span><span>Swarms</span></a>
+      <a class="nav-item" href="#decoys"><span class="nav-ico">⬡</span><span>Decoys</span></a>
+      <a class="nav-item" href="#controls"><span class="nav-ico">⚙</span><span>Controls</span></a>
+      <div class="nav-spacer"></div>
+      <div class="nav-foot">
+        <div class="threat-mini">
+          <div class="muted tiny">THREAT</div>
+          <div id="nav-threat" class="threat-num tnum">0</div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main grid -->
+    <main class="grid">
+
+      <!-- KPI row -->
+      <section class="kpis" id="overview">
+        <div class="kpi"><div class="kpi-label">Detections</div><div class="kpi-val tnum" id="kpi-total">0</div><div class="kpi-foot" id="kpi-total-rate">—</div></div>
+        <div class="kpi"><div class="kpi-label">Critical + High</div><div class="kpi-val tnum" id="kpi-crit">0</div><div class="kpi-foot muted">severity-weighted</div></div>
+        <div class="kpi"><div class="kpi-label">Active Sources</div><div class="kpi-val tnum" id="kpi-sources">0</div><div class="kpi-foot muted">distinct identities</div></div>
+        <div class="kpi"><div class="kpi-label">Coordinated Swarms</div><div class="kpi-val tnum" id="kpi-swarms">0</div><div class="kpi-foot muted">multi-IP campaigns</div></div>
+      </section>
+
+      <!-- Threat gauge -->
+      <section class="card card-gauge">
+        <div class="card-head"><h2>Threat Level</h2></div>
+        <div class="gauge-wrap"><div id="gauge" class="gauge"></div>
+          <div class="gauge-readout"><div class="gauge-num tnum" id="gauge-num">0</div><div class="gauge-tier" id="gauge-tier">NOMINAL</div></div>
+        </div>
+      </section>
+
+      <!-- Events over time -->
+      <section class="card card-timeline">
+        <div class="card-head">
+          <h2>Events Over Time</h2>
+          <div class="seg" id="window-seg">
+            <button data-window="5m">5m</button>
+            <button data-window="15m" class="on">15m</button>
+            <button data-window="1h">1h</button>
+            <button data-window="24h">24h</button>
+          </div>
+        </div>
+        <div id="timeline" class="chart chart-timeline"></div>
+      </section>
+
+      <!-- By kind donut -->
+      <section class="card card-kind">
+        <div class="card-head"><h2>By Kind</h2></div>
+        <div class="donut-row">
+          <div id="donut" class="donut"></div>
+          <ul class="legend" id="kind-legend"></ul>
+        </div>
+      </section>
+
+      <!-- By severity bars -->
+      <section class="card card-sev">
+        <div class="card-head"><h2>By Severity</h2></div>
+        <div id="sev-bars" class="sev-bars"></div>
+      </section>
+
+      <!-- Agentic score histogram -->
+      <section class="card card-hist">
+        <div class="card-head"><h2>Agentic Score</h2><span class="muted tiny" id="hist-count">0 samples</span></div>
+        <div id="histogram" class="chart chart-hist"></div>
+      </section>
+
+      <!-- Live feed -->
+      <section class="card card-feed" id="feed">
+        <div class="card-head"><h2>Live Detections</h2><span class="muted tiny" id="feed-count"></span></div>
+        <div class="feed-wrap">
+          <table class="feed">
+            <thead><tr><th>time</th><th>sev</th><th>kind</th><th>source</th><th>target</th><th class="col-detail">detail</th></tr></thead>
+            <tbody id="feed-rows"></tbody>
+          </table>
+          <div class="empty" id="feed-empty" hidden>No detections yet. The edge is quiet.</div>
+        </div>
+      </section>
+
+      <!-- Top sources -->
+      <section class="card card-sources" id="sources">
+        <div class="card-head"><h2>Top Sources</h2></div>
+        <table class="data">
+          <thead><tr><th>source</th><th class="num">hits</th><th>sev</th><th>kinds</th><th class="num">conf</th></tr></thead>
+          <tbody id="sources-rows"></tbody>
+        </table>
+        <div class="empty" id="sources-empty" hidden>No sources observed.</div>
+      </section>
+
+      <!-- Swarms / campaigns -->
+      <section class="card card-swarms" id="swarms">
+        <div class="card-head"><h2>Coordinated Swarms</h2><span class="muted tiny">multi-IP campaigns</span></div>
+        <div id="swarm-list" class="swarm-list"></div>
+        <div class="empty" id="swarms-empty" hidden>No coordinated activity detected.</div>
+      </section>
+
+      <!-- Decoy hit-map -->
+      <section class="card card-decoys" id="decoys">
+        <div class="card-head"><h2>Decoy Hit-Map</h2></div>
+        <div id="decoy-map" class="decoy-map"></div>
+        <div class="empty" id="decoys-empty" hidden>No decoys touched.</div>
+      </section>
+
+      <!-- Control panel -->
+      <section class="card card-controls" id="controls">
+        <div class="card-head"><h2>Control Panel</h2><span class="muted tiny">localhost by default</span></div>
+        <div class="controls">
+          <div class="control-group">
+            <div class="control-label">Posture</div>
+            <div class="seg seg-mode" id="mode-seg">
+              <button data-mode="observe">Observe</button>
+              <button data-mode="protect">Protect</button>
+            </div>
+          </div>
+          <div class="control-group">
+            <div class="control-label">Pipeline</div>
+            <button class="btn" id="btn-pause">Pause</button>
+          </div>
+          <div class="control-group">
+            <div class="control-label">Decoy preset</div>
+            <div class="preset-row">
+              <select id="preset-select" class="select">
+                <option value="baseline">baseline</option>
+                <option value="honeytokens">honeytokens</option>
+                <option value="aggressive">aggressive</option>
+                <option value="cloud-metadata">cloud-metadata</option>
+              </select>
+              <button class="btn" id="btn-preset">Apply</button>
+            </div>
+          </div>
+          <div class="control-group">
+            <div class="control-label">Maintenance</div>
+            <button class="btn btn-danger" id="btn-clear">Clear Counters</button>
+          </div>
+          <div class="control-group control-token">
+            <div class="control-label">Bearer token <span class="muted tiny">(if required)</span></div>
+            <input id="token-input" class="input mono" type="password" placeholder="optional" autocomplete="off">
+          </div>
+          <div class="control-status" id="control-status">ready</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="vendor/charts.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
