@@ -1,0 +1,25 @@
+# Example: run an edge with the live dashboards wired up.
+#
+# The web dashboard and the `watch` TUI are enabled on the COMMAND LINE, not in
+# this file (there is no dashboard: key). What this config provides is the JSONL
+# alert sink both tools attach to, plus the admin listener. See README.md.
+#
+# Lint this file:  heramba config lint examples/dashboard/.heramba.yml
+
+mode: observe                    # detection only; flip to protect for inline action
+listen: "127.0.0.1:8080"         # the edge's public listener
+upstream: "http://127.0.0.1:3000" # your app behind the edge
+
+# admin_listen exposes health, readiness, Prometheus /metrics, and the built-in
+# admin dashboard at /dashboard (separate from `heramba dashboard`).
+admin_listen: "127.0.0.1:9090"
+
+alert:
+  # Write events as JSONL to a file. `heramba watch <file>` and
+  # `heramba dashboard <file>` tail this exact file to render live.
+  format: jsonl
+  file: "heramba-events.jsonl"
+
+decoys:
+  enabled: true
+  preset: express                # framework decoy surface (heramba decoys presets)
