@@ -247,6 +247,8 @@ func kindDot(k event.Kind) string {
 		return lipgloss.NewStyle().Foreground(colViolet).Render("▲")
 	case event.KindRateLimited:
 		return lipgloss.NewStyle().Foreground(colCyan).Render("■")
+	case event.KindCounterDeployed:
+		return lipgloss.NewStyle().Foreground(colGreen).Render("✦")
 	default:
 		return styMuted.Render("·")
 	}
@@ -529,6 +531,7 @@ func (m Model) summary() string {
 		tally("agentic", m.state.AgenticFlags(), colViolet),
 		tally("egress", m.state.EgressBlocks(), colAmber),
 		tally("rate-limited", m.state.ByKind[event.KindRateLimited], colCyan),
+		tally("counter", m.state.ByKind[event.KindCounterDeployed], colGreen),
 	}, "   ")
 	return line1 + "\n" + line2
 }
