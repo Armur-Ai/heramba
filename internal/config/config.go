@@ -85,6 +85,7 @@ type AlertConfig struct {
 	Datadog DatadogConfig `yaml:"datadog"`
 	Elastic ElasticConfig `yaml:"elastic"`
 	Syslog  SyslogConfig  `yaml:"syslog"`
+	Loki    LokiConfig    `yaml:"loki"`
 	// Rotate is an optional bounded on-disk JSONL audit trail (local, no
 	// network). Unlike the push sinks it records everything, ignoring
 	// MinSeverity — it is a durable record, not a notification channel.
@@ -114,6 +115,12 @@ type ElasticConfig struct {
 	URL    string `yaml:"url"`     // Elasticsearch base URL
 	Index  string `yaml:"index"`   // empty = heramba-detections
 	APIKey string `yaml:"api_key"` // optional ApiKey auth
+}
+
+// LokiConfig configures a Grafana Loki push sink.
+type LokiConfig struct {
+	URL    string `yaml:"url"`    // full push endpoint, e.g. http://loki:3100/loki/api/v1/push
+	Tenant string `yaml:"tenant"` // optional X-Scope-OrgID for multi-tenant Loki
 }
 
 // SyslogConfig configures a CEF-over-syslog sink.

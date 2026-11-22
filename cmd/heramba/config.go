@@ -93,6 +93,9 @@ alert:
   syslog:
     network: udp           # udp | tcp
     address: ""            # host:port of a CEF-over-syslog collector
+  loki:
+    url: ""                # Grafana Loki push endpoint, e.g. http://loki:3100/loki/api/v1/push
+    tenant: ""             # optional X-Scope-OrgID for multi-tenant Loki
 
   # --- SMTP email digest (batches events above min_severity into one message) ---
   email:
