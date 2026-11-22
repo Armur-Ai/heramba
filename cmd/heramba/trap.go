@@ -40,6 +40,7 @@ func runTrap(args []string) {
 	format := fs.String("alert", "text", "alert format: text|jsonl")
 	baseDelay := fs.Duration("delay", 250*time.Millisecond, "first-offense tarpit drip interval")
 	maxDelay := fs.Duration("max-delay", 3*time.Second, "cap on the tarpit drip interval")
+	confirmTTL := fs.Duration("confirm-ttl", time.Hour, "how long a source stays confirmed-bad after its last offense")
 	fs.Usage = func() {
 		fmt.Fprint(os.Stderr, "usage: heramba trap [flags]\n\n"+
 			"A standalone active-defense endpoint: trip-wire bait in front, tarpit +\n"+
@@ -62,6 +63,7 @@ func runTrap(args []string) {
 		Seed: *seed, Base: *base, Sink: sink,
 		BaseDelay: *baseDelay, MaxDelay: *maxDelay,
 		Jitter: 150 * time.Millisecond, ChunkSize: 1,
+		ConfirmTTL: *confirmTTL,
 	})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "heramba trap:", err)
@@ -89,13 +91,14 @@ func runTrap(args []string) {
 
 // trapConfig configures a trap handler.
 type trapConfig struct {
-	Seed      int64
-	Base      string
-	Sink      alert.Sink
-	BaseDelay time.Duration
-	MaxDelay  time.Duration
-	Jitter    time.Duration
-	ChunkSize int
+	Seed       int64
+	Base       string
+	Sink       alert.Sink
+	BaseDelay  time.Duration
+	MaxDelay   time.Duration
+	Jitter     time.Duration
+	ChunkSize  int
+	ConfirmTTL time.Duration // how long a source stays confirmed-bad (0 = default 1h)
 }
 
 // trap is the composed active-defense handler.
@@ -111,7 +114,45 @@ type trap struct {
 	bait      map[string]tripwire.Bait // conventional path -> served bait body
 	linkHdr   string                   // Link: header planted on benign responses
 	htmlBait  string                   // HTML comment bait inserted into benign pages
-	confirmed sync.Map                 // source -> struct{}: sources that tripped a wire
+	confirmed *confirmedSet            // sources that tripped a wire (TTL-aged)
+	now       func() time.Time         // injectable clock (tests)
+}
+
+// confirmedSet tracks sources that have tripped a wire, with a TTL so a source
+// that stops offending ages back out — a trip-URL hit confirms malice at that
+// moment, but we don't want to tarpit an address (e.g. behind shared NAT)
+// forever once the campaign has moved on. Each offense refreshes the deadline.
+type confirmedSet struct {
+	ttl time.Duration
+	mu  sync.Mutex
+	at  map[string]time.Time // source -> last-offense time
+}
+
+func newConfirmedSet(ttl time.Duration) *confirmedSet {
+	return &confirmedSet{ttl: ttl, at: map[string]time.Time{}}
+}
+
+// mark records (or refreshes) a source as confirmed bad as of `now`.
+func (c *confirmedSet) mark(src string, now time.Time) {
+	c.mu.Lock()
+	c.at[src] = now
+	c.mu.Unlock()
+}
+
+// has reports whether src is currently confirmed bad (within the TTL), expiring
+// it lazily otherwise.
+func (c *confirmedSet) has(src string, now time.Time) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	t, ok := c.at[src]
+	if !ok {
+		return false
+	}
+	if c.ttl > 0 && now.Sub(t) > c.ttl {
+		delete(c.at, src)
+		return false
+	}
+	return true
 }
 
 // newTrapHandler builds the composed handler. The signer key, labyrinth, and
@@ -124,6 +165,9 @@ func newTrapHandler(cfg trapConfig) (*trap, error) {
 	if cfg.ChunkSize <= 0 {
 		cfg.ChunkSize = 1
 	}
+	if cfg.ConfirmTTL <= 0 {
+		cfg.ConfirmTTL = time.Hour
+	}
 	key := sha256.Sum256([]byte(fmt.Sprintf("heramba-trap:%d", cfg.Seed)))
 	signer, err := tripwire.NewSigner(key[:])
 	if err != nil {
@@ -135,17 +179,19 @@ func newTrapHandler(cfg trapConfig) (*trap, error) {
 		return nil, err
 	}
 	t := &trap{
-		planter:  planter,
-		matcher:  tripwire.NewMatcher(signer),
-		esc:      tarpit.NewEscalator(cfg.BaseDelay, cfg.MaxDelay, tarpit.Exponential),
-		lab:      tarpit.NewLabyrinth(cfg.Seed, "/internal", 6, 8),
-		gen:      poison.NewGenerator(cfg.Seed, marker),
-		sink:     cfg.Sink,
-		chunk:    cfg.ChunkSize,
-		jitter:   cfg.Jitter,
-		bait:     map[string]tripwire.Bait{},
-		linkHdr:  planter.LinkHeader().Body,
-		htmlBait: planter.HTMLComments().Body,
+		planter:   planter,
+		matcher:   tripwire.NewMatcher(signer),
+		esc:       tarpit.NewEscalator(cfg.BaseDelay, cfg.MaxDelay, tarpit.Exponential),
+		lab:       tarpit.NewLabyrinth(cfg.Seed, "/internal", 6, 8),
+		gen:       poison.NewGenerator(cfg.Seed, marker),
+		sink:      cfg.Sink,
+		chunk:     cfg.ChunkSize,
+		jitter:    cfg.Jitter,
+		bait:      map[string]tripwire.Bait{},
+		linkHdr:   planter.LinkHeader().Body,
+		htmlBait:  planter.HTMLComments().Body,
+		confirmed: newConfirmedSet(cfg.ConfirmTTL),
+		now:       time.Now,
 	}
 	t.bait["/robots.txt"] = planter.RobotsTxt()
 	t.bait["/sitemap.xml"] = planter.SitemapXML()
@@ -171,16 +217,18 @@ func (t *trap) baitPaths() []string {
 
 func (t *trap) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	src := trapClientIP(r)
+	now := t.now()
 
-	// Already confirmed bad: sink everything into the tarpit.
-	if _, bad := t.confirmed.Load(src); bad {
+	// Already confirmed bad (within the TTL): sink everything into the tarpit.
+	if t.confirmed.has(src, now) {
+		t.confirmed.mark(src, now) // refresh while they keep hammering
 		t.serveTrapped(w, r, src)
 		return
 	}
 	// Did this request follow a trip-URL? (cryptographically verified.)
 	if ev, ok := t.matcher.InspectRequest(r, src); ok {
 		_ = t.sink.Emit(ev)
-		t.confirmed.Store(src, struct{}{})
+		t.confirmed.mark(src, now)
 		t.serveTrapped(w, r, src)
 		return
 	}

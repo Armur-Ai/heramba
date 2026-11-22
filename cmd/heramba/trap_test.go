@@ -76,14 +76,14 @@ func TestTrapDetectsTripAndConfirms(t *testing.T) {
 		t.Errorf("a trip hit is zero-false-positive (conf 1.0), got %v", evs[0].Confidence)
 	}
 	// The source must now be confirmed bad.
-	if _, bad := th.confirmed.Load("203.0.113.9"); !bad {
+	if !th.confirmed.has("203.0.113.9", time.Now()) {
 		t.Error("source should be confirmed-bad after a trip")
 	}
 }
 
 func TestTrapServesWatermarkedPoisonToConfirmedBad(t *testing.T) {
 	th, _ := newTestTrap(t)
-	th.confirmed.Store("198.51.100.7", struct{}{}) // pre-confirm
+	th.confirmed.mark("198.51.100.7", time.Now()) // pre-confirm
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/.env", nil)
@@ -129,6 +129,23 @@ func TestTrapBenignResponseCarriesBait(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "<!--") {
 		t.Error("benign response should embed an HTML-comment trip-link")
+	}
+}
+
+func TestConfirmedSetTTLExpires(t *testing.T) {
+	c := newConfirmedSet(time.Minute)
+	t0 := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	c.mark("1.2.3.4", t0)
+	if !c.has("1.2.3.4", t0.Add(30*time.Second)) {
+		t.Error("should still be confirmed within the TTL")
+	}
+	if c.has("1.2.3.4", t0.Add(2*time.Minute)) {
+		t.Error("should age out past the TTL")
+	}
+	// A fresh offense refreshes the deadline.
+	c.mark("1.2.3.4", t0.Add(2*time.Minute))
+	if !c.has("1.2.3.4", t0.Add(2*time.Minute+30*time.Second)) {
+		t.Error("a new offense should refresh the confirmation window")
 	}
 }
 
