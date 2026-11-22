@@ -33,6 +33,7 @@ instead of matching payloads (WAF) or watching hosts (EDR).
 | 🧲 **Counter-agent lures** | inject fabricated leads for flagged AI agents — the fake paths become decoys, the key a canary |
 | 🚧 **Egress firewall + rate limit** | deny-by-default outbound (cut SSRF/OOB/exfil) and throttle abusive sources |
 | 🛡️ **Observe-first** | detection-only by default; inline **protect** is explicit opt-in |
+| 📊 **Live dashboards** | a world-class terminal UI (`heramba watch`) and a dark enterprise web console (`heramba dashboard`) over the same stream |
 
 <div align="center">
 
@@ -72,7 +73,13 @@ heramba config init          # writes a commented .heramba.yml (observe mode)
 heramba doctor               # advisory readiness check
 heramba serve                # run the edge in front of your app
 heramba watch                # live attack dashboard (TUI) over the event stream
+heramba dashboard            # dark enterprise web dashboard (browser) over the same stream
 ```
+
+Prefer a browser? `heramba dashboard` serves a dark, enterprise SOC console
+(threat gauge, events-over-time, by-kind/severity charts, live feed, coordinated-
+swarm panel, decoy heat-map) over the same event stream — or `heramba dashboard
+--demo` to explore it against a synthetic attack with no edge running.
 
 Point your ingress at Heramba's `listen` address; it forwards real traffic to
 your `upstream` untouched (observe mode) and logs detections. Probe a decoy and
