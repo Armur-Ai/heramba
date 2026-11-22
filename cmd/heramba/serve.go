@@ -135,6 +135,7 @@ func runServe(args []string) {
 					byKind[string(t.Kind)] = t.Count
 				}
 				return admin.Metrics{
+					Mode:       string(cfg.Mode),
 					Total:      counting.Total(),
 					ByKind:     byKind,
 					BySeverity: counting.BySeverity(),
@@ -166,7 +167,7 @@ func runServe(args []string) {
 		}
 	}()
 	if adminSrv != nil {
-		fmt.Printf("  admin: health + metrics on %s (/healthz /readyz /metrics /version)\n", cfg.AdminListen)
+		fmt.Printf("  admin: status page + health + metrics on %s (/ /healthz /readyz /metrics /version)\n", cfg.AdminListen)
 		go func() {
 			if err := adminSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				fmt.Fprintf(os.Stderr, "heramba: admin serve error: %v\n", err)

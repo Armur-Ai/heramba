@@ -119,4 +119,54 @@ func TestMetricsNilSourceStillServesUp(t *testing.T) {
 	if code != 200 || !strings.Contains(body, "heramba_up 1") {
 		t.Fatalf("nil metrics should still report up: %d %q", code, body)
 	}
+	// build_info is independent of the metrics source and must always appear.
+	if !strings.Contains(body, "heramba_build_info{version=") {
+		t.Errorf("metrics missing build_info: %s", body)
+	}
+	if !strings.Contains(body, "# TYPE heramba_build_info gauge") {
+		t.Errorf("metrics missing build_info TYPE line: %s", body)
+	}
+}
+
+func TestStatusPageServesHTML(t *testing.T) {
+	h := Handler(nil, func() Metrics {
+		return Metrics{
+			Mode:    "observe",
+			Total:   7,
+			ByKind:  map[string]int{"decoy_hit": 5, "probe": 2},
+			Sources: 3,
+			Uptime:  65 * time.Second,
+		}
+	})
+	code, body := do(t, h, "/")
+	if code != 200 {
+		t.Fatalf("status page code %d", code)
+	}
+	for _, want := range []string{
+		"<!doctype html>", "Heramba edge", "observe", "decoy_hit", "distinct sources", "7", "/metrics",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("status page missing %q in:\n%s", want, body)
+		}
+	}
+	// Self-contained: no external asset references.
+	for _, bad := range []string{"http://", "https://", "src="} {
+		if strings.Contains(body, bad) {
+			t.Errorf("status page should be self-contained, found %q", bad)
+		}
+	}
+}
+
+func TestStatusPageUnknownPathIs404(t *testing.T) {
+	h := Handler(nil, nil)
+	if code, _ := do(t, h, "/nope"); code != http.StatusNotFound {
+		t.Fatalf("unknown admin path should 404, got %d", code)
+	}
+}
+
+func TestStatusPageNilMetrics(t *testing.T) {
+	code, body := do(t, Handler(nil, nil), "/")
+	if code != 200 || !strings.Contains(body, "No metrics source") {
+		t.Fatalf("nil-metrics status page: %d %q", code, body)
+	}
 }
