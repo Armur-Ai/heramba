@@ -24,6 +24,8 @@ func runDecoys(args []string) {
 		runDecoysExport(args[1:])
 	case "canary":
 		runCanary(args[1:])
+	case "seeds":
+		runDecoysSeeds(args[1:])
 	default:
 		decoysUsage()
 		os.Exit(2)
@@ -35,15 +37,46 @@ func decoysUsage() {
   heramba decoys list [--preset <stack>]   list the decoy endpoints (optionally for a framework)
   heramba decoys presets                   list available framework presets
   heramba decoys export [--preset s] [--format json|nginx|caddy|traefik]   export the decoy surface
-  heramba decoys canary <label>            mint a canary token to plant`)
+  heramba decoys canary <label>            mint a canary token to plant
+  heramba decoys seeds [--preset <stack>]  list believable canary seeds to plant per framework`)
 }
 
 func runDecoysPresets() {
 	fmt.Println("Framework decoy presets (serve --preset <name> or decoys.preset in config):")
 	for _, name := range decoy.PresetNames() {
 		p, _ := decoy.GetPreset(name)
-		fmt.Printf("  %-10s %d lures, %d zones\n", name, len(p.Paths), len(p.Prefixes))
+		fmt.Printf("  %-10s %d lures, %d zones, %d canary seeds\n", name, len(p.Paths), len(p.Prefixes), len(p.Seeds))
 	}
+}
+
+// runDecoysSeeds lists the believable canary seeds a preset ships — fake secrets
+// to plant where only an attacker would find them; the edge watches each value,
+// so any later use is a zero-false-positive confirmed intrusion.
+func runDecoysSeeds(args []string) {
+	fs := flag.NewFlagSet("seeds", flag.ExitOnError)
+	preset := fs.String("preset", "", "show seeds for one framework preset (default: all)")
+	_ = fs.Parse(args)
+
+	names := decoy.PresetNames()
+	if *preset != "" {
+		if _, ok := decoy.GetPreset(*preset); !ok {
+			fmt.Fprintf(os.Stderr, "heramba: unknown preset %q (have: %v)\n", *preset, decoy.PresetNames())
+			os.Exit(1)
+		}
+		names = []string{*preset}
+	}
+	tw := tabwriter.NewWriter(os.Stdout, 0, 2, 2, ' ', 0)
+	fmt.Fprintln(tw, "PRESET\tPLANT AT\tSEED VALUE (fake — plant & watch)")
+	for _, name := range names {
+		p, _ := decoy.GetPreset(name)
+		for _, seed := range p.Seeds {
+			fmt.Fprintf(tw, "%s\t%s\t%s\n", name, seed.Plant, seed.Value)
+		}
+	}
+	_ = tw.Flush()
+	fmt.Println("\nThese values are inert examples. Plant one inside the matching decoy file; applying")
+	fmt.Println("the preset (serve --preset / decoys.preset) makes the edge watch it. Any later use is")
+	fmt.Println("a confirmed intrusion — no legitimate client ever carries a planted seed.")
 }
 
 func runDecoysList(args []string) {

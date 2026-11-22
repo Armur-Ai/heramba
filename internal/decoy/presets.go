@@ -12,8 +12,22 @@ import "sort"
 // request, so detection stays zero-false-positive.
 type Preset struct {
 	Name     string
-	Paths    []Endpoint // exact-path lures
-	Prefixes []Endpoint // decoy zones (any path under the prefix is a hit)
+	Paths    []Endpoint   // exact-path lures
+	Prefixes []Endpoint   // decoy zones (any path under the prefix is a hit)
+	Seeds    []CanarySeed // believable fake secrets to plant + watch for this stack
+}
+
+// CanarySeed is a believable fake secret tailored to a framework — a value that
+// looks exactly like the real thing (an AWS key, a Rails master.key, a Laravel
+// APP_KEY) but is inert. You plant it where only an attacker who has broken in
+// would find it (inside a decoy config file, a leaked-looking .env), and the
+// edge watches for the value appearing in any later request. Because no
+// legitimate client ever carries it, a hit is a zero-false-positive confirmation
+// that the planted bait was taken. Every Value here is a documented/example-form
+// token, never a live credential.
+type CanarySeed struct {
+	Plant string `json:"plant"` // where to plant it (which decoy file / field)
+	Value string `json:"value"` // the believable fake secret value to seed and watch
 }
 
 var presets = map[string]Preset{
@@ -30,6 +44,10 @@ var presets = map[string]Preset{
 		Prefixes: []Endpoint{
 			{"/node_modules/.cache/", "Node build-cache walk"},
 		},
+		Seeds: []CanarySeed{
+			{Plant: "/.npmrc (_authToken)", Value: "EXAMPLE-npm-authtoken-DEADBEEF0123456789abcd"},
+			{Plant: "/.env.local (API_KEY)", Value: "EXAMPLE-apikey-0a1b2c3d4e5f60718293a4b5"},
+		},
 	},
 	"next": {
 		Name: "next",
@@ -41,6 +59,9 @@ var presets = map[string]Preset{
 		},
 		Prefixes: []Endpoint{
 			{"/.next/cache/", "Next.js build-cache walk"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/.env.local (NEXT_PUBLIC_API_KEY)", Value: "nx_EXAMPLE0a1b2c3d4e5f60718293a4b5c6d7"},
 		},
 	},
 	"rails": {
@@ -55,6 +76,10 @@ var presets = map[string]Preset{
 		Prefixes: []Endpoint{
 			{"/config/", "Rails config directory walk"},
 		},
+		Seeds: []CanarySeed{
+			{Plant: "/config/master.key", Value: "0123456789abcdef0123456789abcdef"},
+			{Plant: "/config/database.yml (password)", Value: "EXAMPLE_db_pw_7f3a9c21e4"},
+		},
 	},
 	"django": {
 		Name: "django",
@@ -64,6 +89,9 @@ var presets = map[string]Preset{
 			{"/manage.py", "Django management entrypoint probe"},
 			{"/db.sqlite3", "Django SQLite database probe"},
 			{"/.env", "Django env/secret file probe"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/settings.py (SECRET_KEY)", Value: "django-insecure-EXAMPLE0a1b2c3d4e5f6071829"},
 		},
 	},
 	"laravel": {
@@ -78,6 +106,10 @@ var presets = map[string]Preset{
 		Prefixes: []Endpoint{
 			{"/storage/", "Laravel storage directory walk"},
 		},
+		Seeds: []CanarySeed{
+			{Plant: "/.env (APP_KEY)", Value: "base64:EXAMPLEa0b1c2d3e4f5061728394a5b6c7d8e9f0012="},
+			{Plant: "/.env (DB_PASSWORD)", Value: "EXAMPLE_laravel_pw_9c21e4"},
+		},
 	},
 	"wordpress": {
 		Name: "wordpress",
@@ -90,6 +122,10 @@ var presets = map[string]Preset{
 		Prefixes: []Endpoint{
 			{"/wp-includes/", "WordPress core directory walk"},
 		},
+		Seeds: []CanarySeed{
+			{Plant: "/wp-config.php (DB_PASSWORD)", Value: "EXAMPLE_wp_pw_3a9c21e4f7"},
+			{Plant: "/wp-config.php (AUTH_KEY)", Value: "EXAMPLE-unique-phrase-7f3a9c21e4b6"},
+		},
 	},
 	"fastapi": {
 		Name: "fastapi",
@@ -98,6 +134,9 @@ var presets = map[string]Preset{
 			{"/app/core/config.py", "FastAPI settings source probe"},
 			{"/alembic.ini", "Alembic DB migration config probe"},
 			{"/.env.prod", "FastAPI production secrets probe"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/.env (SECRET_KEY)", Value: "EXAMPLE0a1b2c3d4e5f60718293a4b5c6d7e8f901"},
 		},
 	},
 	"symfony": {
@@ -111,6 +150,9 @@ var presets = map[string]Preset{
 		Prefixes: []Endpoint{
 			{"/config/secrets/", "Symfony secrets directory walk"},
 		},
+		Seeds: []CanarySeed{
+			{Plant: "/.env.local (APP_SECRET)", Value: "EXAMPLE0a1b2c3d4e5f60718293a4b5c6"},
+		},
 	},
 	"aspnet": {
 		Name: "aspnet",
@@ -123,6 +165,9 @@ var presets = map[string]Preset{
 			{"/App_Data/", "ASP.NET App_Data directory walk"},
 			{"/.vs/", "Visual Studio metadata walk"},
 		},
+		Seeds: []CanarySeed{
+			{Plant: "/appsettings.json (ConnectionStrings password)", Value: "EXAMPLE_mssql_pw_7f3a9c21"},
+		},
 	},
 	"go": {
 		Name: "go",
@@ -131,6 +176,10 @@ var presets = map[string]Preset{
 			{"/config.yaml", "Go app config probe"},
 			{"/app.env", "Go app env probe"},
 		},
+		Seeds: []CanarySeed{
+			{Plant: "/.env (AWS_ACCESS_KEY_ID)", Value: "AKIAIOSFODNN7EXAMPLE"},
+			{Plant: "/.env (AWS_SECRET_ACCESS_KEY)", Value: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"},
+		},
 	},
 	"phoenix": {
 		Name: "phoenix",
@@ -138,6 +187,9 @@ var presets = map[string]Preset{
 			{"/.env", "Phoenix env/secret file probe"},
 			{"/config/prod.secret.exs", "Phoenix production secrets probe"},
 			{"/config/runtime.exs", "Phoenix runtime config probe"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/config/prod.secret.exs (secret_key_base)", Value: "EXAMPLE0a1b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00112233"},
 		},
 	},
 	"spring": {
@@ -150,6 +202,9 @@ var presets = map[string]Preset{
 		},
 		Prefixes: []Endpoint{
 			{"/actuator/", "Spring Boot actuator enumeration"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/application.properties (datasource.password)", Value: "EXAMPLE_spring_pw_3a9c21e4"},
 		},
 	},
 }
@@ -170,14 +225,18 @@ func GetPreset(name string) (Preset, bool) {
 	return p, ok
 }
 
-// ApplyPreset adds a preset's decoy paths and zones to the registry. Duplicates
-// (e.g. a preset path already in the defaults) are harmless — the registry keys
-// by path, so they simply coalesce.
+// ApplyPreset adds a preset's decoy paths and zones to the registry, and watches
+// the preset's canary seeds so that if an attacker takes a planted bait secret
+// and uses it, the edge detects it. Duplicates (e.g. a preset path already in
+// the defaults) are harmless — the registry keys by path, so they coalesce.
 func (r *Registry) ApplyPreset(p Preset) {
 	for _, e := range p.Paths {
 		r.Add(e.Path, e.Note)
 	}
 	for _, e := range p.Prefixes {
 		r.AddPrefix(e.Path, e.Note)
+	}
+	for _, seed := range p.Seeds {
+		r.canaries.Watch(seed.Value, "preset "+p.Name+" seed @ "+seed.Plant)
 	}
 }
