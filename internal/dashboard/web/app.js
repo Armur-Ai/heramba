@@ -4,7 +4,8 @@
 (function () {
   "use strict";
 
-  var POLL_MS = 2000;
+  var DEFAULT_POLL_MS = 2000;
+  var LS_KEY = "heramba.settings.v1";
   var SEV = ["critical", "high", "medium", "low", "info"];
   var SEV_COLOR = {
     critical: "#ff6b6b", high: "#f5a524", medium: "#a78bfa", low: "#57c7ff", info: "#868d9c",
@@ -18,11 +19,45 @@
   var state = {
     window: "15m",
     token: "",
-    paused: false,
+    paused: false,     // pipeline pause (control)
     mode: "",
-    lastSeen: {}, // event signature -> true, to flag fresh rows
+    lastSeen: {},      // event signature -> true, to flag fresh rows
     online: false,
+    // v2 UI prefs (persisted)
+    refreshMs: DEFAULT_POLL_MS,
+    autoPaused: false, // pause auto-refresh (UI)
+    compact: false,
+    sseEnabled: true,
+    theme: "noir",
+    // runtime
+    es: null,          // EventSource
+    sseLive: false,
+    timer: null,
+    drillSource: "",
   };
+
+  // ---- persisted settings (localStorage, best-effort) ----
+  function loadPrefs() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      var p = JSON.parse(raw);
+      if (p && typeof p === "object") {
+        if (p.refreshMs) state.refreshMs = p.refreshMs;
+        if (typeof p.compact === "boolean") state.compact = p.compact;
+        if (typeof p.sseEnabled === "boolean") state.sseEnabled = p.sseEnabled;
+        if (p.theme === "noir" || p.theme === "dim") state.theme = p.theme;
+      }
+    } catch (e) { /* private mode / disabled storage: use defaults */ }
+  }
+  function savePrefs() {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({
+        refreshMs: state.refreshMs, compact: state.compact,
+        sseEnabled: state.sseEnabled, theme: state.theme,
+      }));
+    } catch (e) { /* ignore */ }
+  }
 
   // ---- helpers ----
   function $(id) { return document.getElementById(id); }
@@ -225,7 +260,8 @@
       var kinds = Object.keys(r.kinds || {}).sort(function (a, b) { return r.kinds[b] - r.kinds[a]; }).slice(0, 3);
       var ktags = kinds.map(function (k) { return '<span class="kind-tag" style="color:' + kindColor(k) + '">' + esc(k) + "</span>"; }).join(" ");
       var sev = r.max_severity || "info";
-      return "<tr><td class='src'>" + esc(r.source) + "</td>" +
+      return "<tr class='clickable' tabindex='0' role='button' data-source='" + esc(r.source) +
+        "' aria-label='Drill into " + esc(r.source) + "'><td class='src'>" + esc(r.source) + "</td>" +
         "<td class='num tnum'>" + r.count + "</td>" +
         "<td><span class='sev sev-" + sev + "'>" + esc(sev) + "</span></td>" +
         "<td>" + ktags + "</td>" +
@@ -270,16 +306,77 @@
     }).join("");
   }
 
+  function renderBreaches(b) {
+    b = b || {};
+    var count = b.count || 0;
+    setNum($("kpi-breaches"), count);
+    var card = $("kpi-breach-card");
+    if (card) card.classList.toggle("kpi-alert", count > 0);
+    var foot = $("kpi-breaches-foot");
+    if (foot) {
+      foot.textContent = count > 0
+        ? (b.sources || 0) + " source" + ((b.sources || 0) === 1 ? "" : "s") + " · canary triggers"
+        : "canary triggers";
+    }
+  }
+
+  function renderTargets(rows) {
+    rows = rows || [];
+    var host = $("targets-list");
+    var empty = $("targets-empty");
+    if (empty) empty.hidden = rows.length > 0;
+    if (!host) return;
+    var max = rows.reduce(function (a, r) { return Math.max(a, r.count || 0); }, 1);
+    host.innerHTML = rows.slice(0, 8).map(function (r) {
+      var pct = ((r.count || 0) / max) * 100;
+      var sev = r.max_severity || "info";
+      var color = SEV_COLOR[sev] || "#868d9c";
+      return '<div class="tgt-row">' +
+        '<span class="tgt-name" title="' + esc(r.target) + '">' + esc(r.target) + "</span>" +
+        '<span class="tgt-val">' + (r.count || 0) + "</span>" +
+        '<span class="tgt-track"><span class="tgt-fill" style="width:' + pct + "%;background:" + color + '"></span></span>' +
+        "</div>";
+    }).join("");
+  }
+
+  // renderSevTime draws the stacked severity-over-time chart from the timeline
+  // buckets' per-severity counts, plus a small colour legend.
+  function renderSevTime(tl) {
+    var pts = (tl && tl.points) || [];
+    var series = SEV.map(function (s) {
+      return {
+        color: SEV_COLOR[s], label: s,
+        values: pts.map(function (p) { return (p.by_severity || {})[s] || 0; }),
+      };
+    }).filter(function (ser) {
+      return ser.values.some(function (v) { return v > 0; });
+    });
+    HC.stackedArea($("sevtime"), { series: series, height: 180, width: 700 });
+    var legend = $("sevtime-legend");
+    if (legend) {
+      legend.innerHTML = series.map(function (ser) {
+        return '<span><i style="background:' + ser.color + '"></i>' + esc(ser.label) + "</span>";
+      }).join("") || '<span class="muted">no data</span>';
+    }
+  }
+
   // ---- polling ----
-  function setOnline(ok) {
-    state.online = ok;
+  function updateLiveLabel() {
     var live = document.querySelector(".live");
     var lbl = $("live-label");
-    if (ok) { live.classList.remove("stale"); lbl.textContent = "LIVE"; }
-    else { live.classList.add("stale"); lbl.textContent = "RECONNECT"; }
+    if (!live || !lbl) return;
+    if (state.autoPaused) { live.classList.add("stale"); lbl.textContent = "PAUSED"; return; }
+    if (!state.online) { live.classList.add("stale"); lbl.textContent = "RECONNECT"; return; }
+    live.classList.remove("stale");
+    lbl.textContent = state.sseLive ? "LIVE" : "POLL";
+  }
+  function setOnline(ok) {
+    state.online = ok;
+    updateLiveLabel();
   }
 
   function poll() {
+    if (state.autoPaused) return;
     Promise.all([
       fetchJSON("api/metrics"),
       fetchJSON("api/events?n=120"),
@@ -287,15 +384,21 @@
       fetchJSON("api/sources"),
       fetchJSON("api/campaigns"),
       fetchJSON("api/decoys"),
+      fetchJSON("api/breaches"),
     ]).then(function (res) {
       renderMetrics(res[0]);
       renderFeed(res[1]);
       setNum($("kpi-swarms"), res[4].filter(function (c) { return c.coordinated; }).length);
       renderTimeline(res[2]);
+      renderSevTime(res[2]);
       renderSources(res[3]);
       renderSwarms(res[4]);
       renderDecoys(res[5]);
+      renderTargets(res[5]);
+      renderBreaches(res[6]);
       setOnline(true);
+      // if the drill drawer is open, refresh its contents too.
+      if (state.drillSource) loadDrill(state.drillSource);
     }).catch(function () {
       setOnline(false);
     });
@@ -365,10 +468,218 @@
     });
   }
 
+  // ---- live streaming (SSE) with polling fallback ----
+  function connectSSE() {
+    if (!state.sseEnabled || state.autoPaused) return;
+    if (typeof EventSource === "undefined") return; // graceful: polling covers it
+    disconnectSSE();
+    var es;
+    try { es = new EventSource("api/stream"); }
+    catch (e) { return; }
+    state.es = es;
+    es.onopen = function () { state.sseLive = true; setOnline(true); };
+    es.onmessage = function (ev) {
+      var frame;
+      try { frame = JSON.parse(ev.data); } catch (e) { return; }
+      if (!frame) return;
+      if (frame.type === "event" && frame.event) {
+        prependFeedRow(frame.event);
+      } else if (frame.type === "metrics" && frame.metrics) {
+        renderMetrics(frame.metrics);
+      }
+      setOnline(true);
+    };
+    es.onerror = function () {
+      // Drop the stream and lean on polling; the browser may also auto-retry.
+      state.sseLive = false;
+      updateLiveLabel();
+    };
+  }
+  function disconnectSSE() {
+    if (state.es) { try { state.es.close(); } catch (e) {} state.es = null; }
+    state.sseLive = false;
+  }
+
+  // prependFeedRow inserts a freshly-streamed event at the top of the feed with
+  // a flash, so the UI updates the instant an event arrives (between polls).
+  function prependFeedRow(e) {
+    var tb = $("feed-rows");
+    if (!tb) return;
+    var empty = $("feed-empty");
+    if (empty) empty.hidden = true;
+    var sev = e.severity_label || "info";
+    var tr = document.createElement("tr");
+    tr.className = "fresh";
+    tr.innerHTML =
+      '<td class="t" title="' + esc(clock(e.time)) + '">' + esc(relTime(e.time)) + "</td>" +
+      '<td><span class="sevdot sev-' + sev + '"></span><span class="sev sev-' + sev + '">' + esc(sev) + "</span></td>" +
+      '<td><span class="kind-tag" style="color:' + kindColor(e.kind) + '">' + esc(e.kind) + "</span></td>" +
+      '<td class="src">' + esc(e.source || "—") + "</td>" +
+      '<td><span class="tgt" title="' + esc(e.target || "") + '">' + esc(e.target || "—") + "</span></td>" +
+      '<td class="col-detail">' + esc(e.detail || "") + "</td>";
+    tb.insertBefore(tr, tb.firstChild);
+    // trim to keep the DOM bounded; the next poll re-syncs authoritatively.
+    while (tb.children.length > 120) tb.removeChild(tb.lastChild);
+  }
+
+  // ---- managed refresh timer ----
+  function scheduleTimer() {
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    if (state.autoPaused) return;
+    state.timer = setInterval(poll, state.refreshMs);
+  }
+
+  // ---- theme + density ----
+  function applyTheme() {
+    document.documentElement.setAttribute("data-theme", state.theme);
+    document.querySelectorAll("#theme-seg button").forEach(function (b) {
+      b.classList.toggle("on", b.getAttribute("data-theme") === state.theme);
+    });
+  }
+  function applyCompact() {
+    var app = document.getElementById("app");
+    if (app) app.classList.toggle("compact", state.compact);
+  }
+
+  // ---- source drill drawer ----
+  function openDrill(source) {
+    state.drillSource = source;
+    $("drill-source").textContent = source;
+    toggleDrawer("drill", true);
+    loadDrill(source);
+  }
+  function loadDrill(source) {
+    fetchJSON("api/sources/" + encodeURIComponent(source)).then(function (d) {
+      renderDrill(d);
+    }).catch(function () {
+      $("drill-body").innerHTML = '<div class="empty">Could not load source detail.</div>';
+    });
+  }
+  function renderDrill(d) {
+    var body = $("drill-body");
+    if (!body) return;
+    var evs = d.events || [];
+    var kinds = Object.keys(d.kinds || {}).sort(function (a, b) { return d.kinds[b] - d.kinds[a]; });
+    var ktags = kinds.map(function (k) {
+      return '<span class="kind-tag" style="color:' + kindColor(k) + '">' + esc(k) + " " + d.kinds[k] + "</span>";
+    }).join(" ");
+    var sev = d.max_severity || "info";
+    var head =
+      '<div class="swarm-meta" style="margin-bottom:12px">' +
+      "<span>events <b>" + (d.count || 0) + "</b></span>" +
+      "<span>targets <b>" + Object.keys(d.targets || {}).length + "</b></span>" +
+      "<span>max sev <span class='sev sev-" + sev + "'>" + esc(sev) + "</span></span>" +
+      "<span>max conf <b>" + (d.max_confidence != null ? d.max_confidence.toFixed(2) : "—") + "</b></span>" +
+      "</div><div style='margin-bottom:12px'>" + (ktags || '<span class="muted">no activity</span>') + "</div>";
+    var rows = evs.length
+      ? ('<table class="feed"><thead><tr><th>time</th><th>sev</th><th>kind</th><th>target</th></tr></thead><tbody>' +
+          evs.slice(0, 80).map(function (e) {
+            var s = e.severity_label || "info";
+            return "<tr><td class='t' title='" + esc(clock(e.time)) + "'>" + esc(relTime(e.time)) + "</td>" +
+              "<td><span class='sev sev-" + s + "'>" + esc(s) + "</span></td>" +
+              '<td><span class="kind-tag" style="color:' + kindColor(e.kind) + '">' + esc(e.kind) + "</span></td>" +
+              "<td><span class='tgt'>" + esc(e.target || "—") + "</span></td></tr>";
+          }).join("") + "</tbody></table>")
+      : '<div class="empty rich"><span class="empty-glyph" aria-hidden="true">⌖</span>No events for this source.</div>';
+    body.innerHTML = head + rows;
+  }
+
+  // ---- drawers (shared open/close) ----
+  function toggleDrawer(name, open) {
+    var drawer = $(name + "-drawer");
+    var overlay = $(name + "-overlay");
+    if (!drawer || !overlay) return;
+    drawer.classList.toggle("open", open);
+    overlay.classList.toggle("open", open);
+    drawer.setAttribute("aria-hidden", open ? "false" : "true");
+    if (!open && name === "drill") state.drillSource = "";
+  }
+
+  function wireSettings() {
+    $("btn-settings").addEventListener("click", function () { toggleDrawer("settings", true); });
+    $("settings-close").addEventListener("click", function () { toggleDrawer("settings", false); });
+    $("settings-overlay").addEventListener("click", function () { toggleDrawer("settings", false); });
+    $("drill-close").addEventListener("click", function () { toggleDrawer("drill", false); });
+    $("drill-overlay").addEventListener("click", function () { toggleDrawer("drill", false); });
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") { toggleDrawer("settings", false); toggleDrawer("drill", false); }
+    });
+
+    // refresh interval
+    var rs = $("refresh-select");
+    rs.value = String(state.refreshMs);
+    rs.addEventListener("change", function () {
+      state.refreshMs = parseInt(this.value, 10) || DEFAULT_POLL_MS;
+      savePrefs();
+      scheduleTimer();
+    });
+
+    // pause auto-refresh
+    $("pause-refresh").addEventListener("change", function () {
+      state.autoPaused = this.checked;
+      if (state.autoPaused) { disconnectSSE(); if (state.timer) { clearInterval(state.timer); state.timer = null; } }
+      else { scheduleTimer(); connectSSE(); poll(); }
+      updateLiveLabel();
+    });
+
+    // compact density
+    var ct = $("compact-toggle");
+    ct.checked = state.compact;
+    ct.addEventListener("change", function () {
+      state.compact = this.checked;
+      applyCompact();
+      savePrefs();
+    });
+
+    // SSE toggle
+    var st = $("sse-toggle");
+    st.checked = state.sseEnabled;
+    st.addEventListener("change", function () {
+      state.sseEnabled = this.checked;
+      savePrefs();
+      if (state.sseEnabled) connectSSE(); else disconnectSSE();
+      updateLiveLabel();
+    });
+
+    // theme segmented control (in drawer) + quick toggle button
+    document.querySelectorAll("#theme-seg button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        state.theme = b.getAttribute("data-theme");
+        applyTheme(); savePrefs();
+      });
+    });
+    $("btn-theme").addEventListener("click", function () {
+      state.theme = state.theme === "noir" ? "dim" : "noir";
+      applyTheme(); savePrefs();
+    });
+  }
+
+  function wireDrill() {
+    var tb = $("sources-rows");
+    if (!tb) return;
+    function handle(target) {
+      var row = target.closest ? target.closest("tr.clickable") : null;
+      if (row && row.getAttribute("data-source")) openDrill(row.getAttribute("data-source"));
+    }
+    tb.addEventListener("click", function (ev) { handle(ev.target); });
+    tb.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" || ev.key === " ") {
+        var row = ev.target.closest && ev.target.closest("tr.clickable");
+        if (row) { ev.preventDefault(); handle(ev.target); }
+      }
+    });
+  }
+
   function start() {
+    loadPrefs();
+    applyTheme();
+    applyCompact();
     wireControls();
+    wireSettings();
+    wireDrill();
     poll();
-    setInterval(poll, POLL_MS);
+    scheduleTimer();
+    connectSSE();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
