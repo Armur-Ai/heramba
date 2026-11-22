@@ -136,6 +136,7 @@ func runServe(args []string) {
 				for _, t := range counting.Snapshot() {
 					byKind[string(t.Kind)] = t.Count
 				}
+				hs := engine.ScoreSnapshot()
 				return admin.Metrics{
 					Mode:       string(cfg.Mode),
 					Total:      counting.Total(),
@@ -143,6 +144,12 @@ func runServe(args []string) {
 					BySeverity: counting.BySeverity(),
 					Sources:    counting.Sources(),
 					Uptime:     time.Since(startTime),
+					Score: admin.ScoreHistogram{
+						Bounds:    hs.Bounds,
+						CumCounts: hs.CumulativeCounts,
+						Sum:       hs.Sum,
+						Count:     hs.Count,
+					},
 				}
 			}),
 			ReadHeaderTimeout: 10 * time.Second,

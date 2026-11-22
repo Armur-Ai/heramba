@@ -49,6 +49,7 @@ import (
 type Engine struct {
 	cls      *classify.Classifier // stable across reloads (keeps learned state)
 	honeypot http.Handler         // optional deception app; set via SetHoneypot, not reloaded
+	hist     *ScoreHistogram      // cumulative per-request agentic-score histogram
 	st       atomic.Pointer[engineState]
 }
 
@@ -92,7 +93,7 @@ func New(cfg config.Config, sink alert.Sink) (*Engine, error) {
 		ToolAt:       cfg.Classifier.ToolAt,
 		AgenticAt:    cfg.Classifier.AgenticAt,
 	})
-	e := &Engine{cls: cls}
+	e := &Engine{cls: cls, hist: newScoreHistogram()}
 	st, err := e.buildState(cfg, sink)
 	if err != nil {
 		return nil, err
@@ -232,6 +233,7 @@ func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Source: ip, Method: r.Method, Path: r.URL.Path,
 		UserAgent: r.UserAgent(), Headers: headerSubset(r), Time: time.Now().UTC(),
 	})
+	e.hist.Observe(v.Score) // cheap: a few atomic ops, feeds the /metrics histogram
 	if v.Label == "agentic-suspected" {
 		st.sink.Emit(event.New(event.KindAgenticTraffic, event.SeverityMedium, ip, r.URL.Path,
 			fmt.Sprintf("agentic-suspected (score %.2f)", v.Score)).

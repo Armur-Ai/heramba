@@ -170,3 +170,39 @@ func TestStatusPageNilMetrics(t *testing.T) {
 		t.Fatalf("nil-metrics status page: %d %q", code, body)
 	}
 }
+
+func TestScoreHistogramRendered(t *testing.T) {
+	h := Handler(nil, func() Metrics {
+		return Metrics{
+			Score: ScoreHistogram{
+				Bounds:    []float64{0.1, 0.2, 0.3},
+				CumCounts: []uint64{2, 5, 9, 10}, // bounds+1, cumulative
+				Sum:       3.3,
+				Count:     10,
+			},
+		}
+	})
+	code, body := do(t, h, "/metrics")
+	if code != 200 {
+		t.Fatalf("code %d", code)
+	}
+	for _, want := range []string{
+		"# TYPE heramba_agentic_score histogram",
+		`heramba_agentic_score_bucket{le="0.1"} 2`,
+		`heramba_agentic_score_bucket{le="0.3"} 9`,
+		`heramba_agentic_score_bucket{le="+Inf"} 10`,
+		"heramba_agentic_score_sum 3.3",
+		"heramba_agentic_score_count 10",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("metrics missing %q in:\n%s", want, body)
+		}
+	}
+}
+
+func TestScoreHistogramOmittedWhenEmpty(t *testing.T) {
+	_, body := do(t, Handler(nil, func() Metrics { return Metrics{} }), "/metrics")
+	if strings.Contains(body, "heramba_agentic_score") {
+		t.Errorf("empty histogram should be omitted:\n%s", body)
+	}
+}

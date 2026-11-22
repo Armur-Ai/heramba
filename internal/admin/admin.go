@@ -25,6 +25,18 @@ type Metrics struct {
 	BySeverity map[string]int
 	Sources    int
 	Uptime     time.Duration
+	// Score is the agentic-classifier-score histogram (optional). Bounds are the
+	// bucket upper bounds; CumCounts has one more entry (the trailing +Inf
+	// bucket) and is cumulative. Zero value (nil Bounds) omits the metric.
+	Score ScoreHistogram
+}
+
+// ScoreHistogram is a renderable histogram snapshot (cumulative counts).
+type ScoreHistogram struct {
+	Bounds    []float64
+	CumCounts []uint64
+	Sum       float64
+	Count     uint64
 }
 
 // MetricsFunc returns the current metrics snapshot.
@@ -131,6 +143,24 @@ func writeMetrics(w http.ResponseWriter, metrics MetricsFunc) {
 	fmt.Fprintln(w, "# HELP heramba_sources_total Distinct detection sources seen.")
 	fmt.Fprintln(w, "# TYPE heramba_sources_total gauge")
 	fmt.Fprintf(w, "heramba_sources_total %d\n", m.Sources)
+
+	writeScoreHistogram(w, m.Score)
+}
+
+// writeScoreHistogram renders the agentic-score histogram in Prometheus format
+// (cumulative buckets + _sum + _count). A nil-bounds histogram is omitted.
+func writeScoreHistogram(w http.ResponseWriter, h ScoreHistogram) {
+	if len(h.Bounds) == 0 || len(h.CumCounts) != len(h.Bounds)+1 {
+		return
+	}
+	fmt.Fprintln(w, "# HELP heramba_agentic_score Per-request agentic classifier score (0..1).")
+	fmt.Fprintln(w, "# TYPE heramba_agentic_score histogram")
+	for i, b := range h.Bounds {
+		fmt.Fprintf(w, "heramba_agentic_score_bucket{le=\"%g\"} %d\n", b, h.CumCounts[i])
+	}
+	fmt.Fprintf(w, "heramba_agentic_score_bucket{le=\"+Inf\"} %d\n", h.CumCounts[len(h.CumCounts)-1])
+	fmt.Fprintf(w, "heramba_agentic_score_sum %g\n", h.Sum)
+	fmt.Fprintf(w, "heramba_agentic_score_count %d\n", h.Count)
 }
 
 // writeStatusPage renders a tiny, self-contained (no external assets) read-only
