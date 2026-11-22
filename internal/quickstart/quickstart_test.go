@@ -27,6 +27,9 @@ func TestDetectStacks(t *testing.T) {
 		{"wp-config.php", "<?php", "wordpress"},
 		{"next.config.js", "module.exports={}", "next"},
 		{"package.json", `{"dependencies":{"express":"^4"}}`, "node"},
+		{"go.mod", "module x\n", "go"},
+		{"mix.exs", "defmodule X do\nend\n", "phoenix"},
+		{"appsettings.json", "{}", "aspnet"},
 	}
 	for _, c := range cases {
 		dir := t.TempDir()

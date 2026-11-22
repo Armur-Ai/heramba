@@ -30,9 +30,12 @@ func Detect(dir string) Stack {
 	if exists("next.config.js") || exists("next.config.mjs") || exists("next.config.ts") || pkgHasDep(dir, "next") {
 		return Stack{"next", "Next.js config / dependency"}
 	}
-	// Laravel before generic PHP.
+	// Laravel before generic PHP, Symfony before generic.
 	if exists("artisan") || (exists("composer.json") && exists("app/Http")) {
 		return Stack{"laravel", "Laravel artisan / app structure"}
+	}
+	if exists("bin/console") && exists("composer.json") {
+		return Stack{"symfony", "Symfony bin/console"}
 	}
 	if exists("wp-config.php") || exists("wp-config-sample.php") || exists("wp-content") {
 		return Stack{"wordpress", "WordPress wp-config / wp-content"}
@@ -40,17 +43,44 @@ func Detect(dir string) Stack {
 	if exists("manage.py") {
 		return Stack{"django", "Django manage.py"}
 	}
+	if fileContains(dir, "requirements.txt", "fastapi") || fileContains(dir, "pyproject.toml", "fastapi") {
+		return Stack{"fastapi", "FastAPI dependency"}
+	}
 	if exists("Gemfile") || exists("config.ru") {
 		return Stack{"rails", "Ruby Gemfile / config.ru"}
 	}
+	if exists("mix.exs") {
+		return Stack{"phoenix", "Elixir mix.exs"}
+	}
+	if exists("appsettings.json") || exists("web.config") || globExists(dir, "*.csproj") {
+		return Stack{"aspnet", "ASP.NET project markers"}
+	}
 	if exists("pom.xml") || exists("build.gradle") || exists("build.gradle.kts") {
 		return Stack{"spring", "Java pom.xml / build.gradle"}
+	}
+	if exists("go.mod") {
+		return Stack{"go", "Go go.mod"}
 	}
 	// Generic Node last (Next.js already handled above).
 	if exists("package.json") {
 		return Stack{"node", "Node package.json"}
 	}
 	return Stack{"", "no known framework markers"}
+}
+
+// globExists reports whether any file in dir matches the glob pattern.
+func globExists(dir, pattern string) bool {
+	m, err := filepath.Glob(filepath.Join(dir, pattern))
+	return err == nil && len(m) > 0
+}
+
+// fileContains reports whether dir/rel exists and contains substr (case-insensitive).
+func fileContains(dir, rel, substr string) bool {
+	b, err := os.ReadFile(filepath.Join(dir, rel))
+	if err != nil {
+		return false
+	}
+	return strings.Contains(strings.ToLower(string(b)), strings.ToLower(substr))
 }
 
 // pkgHasDep reports whether package.json lists dep in (dev)dependencies.
