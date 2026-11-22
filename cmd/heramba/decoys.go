@@ -6,6 +6,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/Armur-Ai/heramba/internal/config"
 	"github.com/Armur-Ai/heramba/internal/decoy"
 )
 
@@ -26,10 +27,29 @@ func runDecoys(args []string) {
 		runCanary(args[1:])
 	case "seeds":
 		runDecoysSeeds(args[1:])
+	case "verify":
+		runDecoysVerify(args[1:])
 	default:
 		decoysUsage()
 		os.Exit(2)
 	}
+}
+
+// verifyDecoy classifies a string against a registry: exact decoy path, decoy
+// zone, watched canary, canary-shaped-but-unwatched, or unknown. It returns a
+// human description and whether the string matched a decoy/canary. Pure, so it
+// is directly unit-testable.
+func verifyDecoy(r *decoy.Registry, s string) (string, bool) {
+	if c, ok := r.Canaries().Check(s); ok {
+		return "watched canary (" + c.Label + ")", true
+	}
+	if e, ok := r.IsDecoy(s); ok {
+		return "decoy path (" + e.Note + ")", true
+	}
+	if decoy.Looks(s) {
+		return "canary-shaped but NOT currently watched (minted elsewhere, or not configured)", false
+	}
+	return "not a known decoy path or watched canary", false
 }
 
 func decoysUsage() {
@@ -38,7 +58,48 @@ func decoysUsage() {
   heramba decoys presets                   list available framework presets
   heramba decoys export [--preset s] [--format json|nginx|caddy|traefik|haproxy|envoy]   export the decoy surface
   heramba decoys canary <label>            mint a canary token to plant
-  heramba decoys seeds [--preset <stack>]  list believable canary seeds to plant per framework`)
+  heramba decoys seeds [--preset <stack>]  list believable canary seeds to plant per framework
+  heramba decoys verify <value> [--preset s] [--config f]   is this string a decoy path / watched canary?`)
+}
+
+// runDecoysVerify is a triage helper: given a path or token, report whether the
+// edge would treat it as a decoy/canary, using the same registry the serve
+// command builds (defaults + config decoys/canaries + optional preset).
+func runDecoysVerify(args []string) {
+	fs := flag.NewFlagSet("verify", flag.ExitOnError)
+	preset := fs.String("preset", "", "also apply a framework preset")
+	cfgPath := fs.String("config", ".heramba.yml", "config file for extra decoys/canaries")
+	_ = fs.Parse(args)
+	if fs.NArg() == 0 {
+		fmt.Fprintln(os.Stderr, "usage: heramba decoys verify <value> [--preset s] [--config f]")
+		os.Exit(2)
+	}
+	value := fs.Arg(0)
+
+	cfg, _ := config.Load(*cfgPath) // best-effort; defaults are fine
+	cfg = cfg.ApplyEnv()
+	r := decoy.NewRegistry(cfg.Decoys.Paths...)
+	presetName := *preset
+	if presetName == "" {
+		presetName = cfg.Decoys.Preset
+	}
+	if presetName != "" {
+		p, ok := decoy.GetPreset(presetName)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "heramba: unknown preset %q (have: %v)\n", presetName, decoy.PresetNames())
+			os.Exit(1)
+		}
+		r.ApplyPreset(p)
+	}
+	for _, tok := range cfg.Decoys.Canaries {
+		r.Canaries().Watch(tok, "configured canary")
+	}
+
+	desc, matched := verifyDecoy(r, value)
+	fmt.Printf("%q: %s\n", value, desc)
+	if !matched {
+		os.Exit(1)
+	}
 }
 
 func runDecoysPresets() {
