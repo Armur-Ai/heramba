@@ -46,6 +46,7 @@ type Model struct {
 	now     time.Time
 	paused  bool
 	closed  bool
+	view    viewMode // which body is shown (overview / sources / campaigns / timeline)
 	width   int
 	height  int
 }
@@ -86,6 +87,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "c":
 			m.state = NewState(m.state.maxRecent)
+			return m, nil
+		case "tab", "right", "l":
+			m.view = m.view.next()
+			return m, nil
+		case "shift+tab", "left", "h":
+			m.view = m.view.prev()
+			return m, nil
+		case "1", "2", "3", "4":
+			if v := viewMode(msg.String()[0] - '1'); v >= 0 && v < numViews {
+				m.view = v
+			}
 			return m, nil
 		}
 		return m, nil
@@ -183,7 +195,37 @@ func (m Model) View() string {
 	b.WriteString("\n")
 	b.WriteString(m.summary())
 	b.WriteString("\n")
+	b.WriteString(m.tabBar())
+	b.WriteString("\n")
 
+	bodyH := m.height - 11
+	if bodyH < 6 {
+		bodyH = 6
+	}
+	b.WriteString(m.body(bodyH))
+	b.WriteString("\n")
+	b.WriteString(m.footer())
+	return b.String()
+}
+
+// body renders the active view, each in a full-width bordered panel (the
+// overview is the split feed + sidebar).
+func (m Model) body(bodyH int) string {
+	switch m.view {
+	case viewSources:
+		return panelStyle.Width(m.width - 2).Height(bodyH).Render(m.sourcesView(m.width-4, bodyH-1))
+	case viewCampaigns:
+		return panelStyle.Width(m.width - 2).Height(bodyH).Render(m.campaignsView(m.width-4, bodyH-1))
+	case viewTimeline:
+		return panelStyle.Width(m.width - 2).Height(bodyH).Render(m.timelineView(m.width-4, bodyH-1))
+	default:
+		return m.overview(bodyH)
+	}
+}
+
+// overview is the default split: live feed on the left, source/campaign/decoy
+// sidebar on the right.
+func (m Model) overview(bodyH int) string {
 	feedW := m.width*3/5 - 2
 	sideW := m.width - feedW - 5
 	if feedW < 30 {
@@ -192,20 +234,12 @@ func (m Model) View() string {
 	if sideW < 24 {
 		sideW = 24
 	}
-	bodyH := m.height - 9
-	if bodyH < 6 {
-		bodyH = 6
-	}
-
 	// Panels carry 1 column of horizontal padding on each side, so the usable
 	// text width is the panel width minus 2. Lay content out to that exact inner
 	// width so rows never wrap inside the border.
 	feed := panelStyle.Width(feedW).Height(bodyH).Render(m.feed(feedW-2, bodyH-1))
 	side := panelStyle.Width(sideW).Height(bodyH).Render(m.sidebar(sideW - 2))
-	b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, feed, side))
-	b.WriteString("\n")
-	b.WriteString(m.footer())
-	return b.String()
+	return lipgloss.JoinHorizontal(lipgloss.Top, feed, side)
 }
 
 func (m Model) header() string {
@@ -370,9 +404,10 @@ func (m Model) sidebar(w int) string {
 
 func (m Model) footer() string {
 	keys := []string{
-		styKey.Render("q") + " quit",
+		styKey.Render("tab") + "/" + styKey.Render("1-4") + " views",
 		styKey.Render("space") + " pause",
 		styKey.Render("c") + " clear",
+		styKey.Render("q") + " quit",
 	}
 	return styMuted.Render(strings.Join(keys, "   ·   "))
 }
