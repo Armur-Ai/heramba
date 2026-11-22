@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -8,6 +9,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/Armur-Ai/heramba/internal/version"
 )
 
 func do(t *testing.T, h http.Handler, path string) (int, string) {
@@ -59,6 +62,44 @@ func TestMetricsPrometheusFormat(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Errorf("metrics missing %q in:\n%s", want, body)
 		}
+	}
+}
+
+func TestVersionEndpointReportsBuildAndUptime(t *testing.T) {
+	h := Handler(nil, func() Metrics {
+		return Metrics{Uptime: 42 * time.Second}
+	})
+	code, body := do(t, h, "/version")
+	if code != 200 {
+		t.Fatalf("version code %d", code)
+	}
+	var info struct {
+		Version       string `json:"version"`
+		Commit        string `json:"commit"`
+		Date          string `json:"date"`
+		UptimeSeconds int    `json:"uptime_seconds"`
+	}
+	if err := json.Unmarshal([]byte(body), &info); err != nil {
+		t.Fatalf("version body must be JSON: %v (%s)", err, body)
+	}
+	if info.Version != version.Version {
+		t.Errorf("version = %q, want wired %q", info.Version, version.Version)
+	}
+	if info.UptimeSeconds != 42 {
+		t.Errorf("uptime_seconds = %d, want 42", info.UptimeSeconds)
+	}
+}
+
+func TestVersionEndpointWithNilMetrics(t *testing.T) {
+	code, body := do(t, Handler(nil, nil), "/version")
+	if code != 200 {
+		t.Fatalf("version code %d", code)
+	}
+	if !strings.Contains(body, `"uptime_seconds":0`) {
+		t.Errorf("nil metrics should report zero uptime: %s", body)
+	}
+	if !strings.Contains(body, `"version"`) {
+		t.Errorf("version body missing version field: %s", body)
 	}
 }
 

@@ -159,7 +159,7 @@ func runServe(args []string) {
 		}
 	}()
 	if adminSrv != nil {
-		fmt.Printf("  admin: health + metrics on %s (/healthz /readyz /metrics)\n", cfg.AdminListen)
+		fmt.Printf("  admin: health + metrics on %s (/healthz /readyz /metrics /version)\n", cfg.AdminListen)
 		go func() {
 			if err := adminSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				fmt.Fprintf(os.Stderr, "heramba: admin serve error: %v\n", err)

@@ -5,11 +5,14 @@
 package admin
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
 	"sync/atomic"
 	"time"
+
+	"github.com/Armur-Ai/heramba/internal/version"
 )
 
 // Metrics is the snapshot the /metrics endpoint renders. It is provided by a
@@ -44,7 +47,29 @@ func Handler(ready *atomic.Bool, metrics MetricsFunc) http.Handler {
 		w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
 		writeMetrics(w, metrics)
 	})
+	mux.HandleFunc("/version", func(w http.ResponseWriter, _ *http.Request) {
+		var uptime time.Duration
+		if metrics != nil {
+			uptime = metrics().Uptime
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_ = json.NewEncoder(w).Encode(versionInfo{
+			Version:       version.Version,
+			Commit:        version.Commit,
+			Date:          version.Date,
+			UptimeSeconds: int(uptime.Seconds()),
+		})
+	})
 	return mux
+}
+
+// versionInfo is the JSON body served by /version: build metadata (stamped at
+// release time via -ldflags) plus how long this edge has been running.
+type versionInfo struct {
+	Version       string `json:"version"`
+	Commit        string `json:"commit"`
+	Date          string `json:"date"`
+	UptimeSeconds int    `json:"uptime_seconds"`
 }
 
 func writeMetrics(w http.ResponseWriter, metrics MetricsFunc) {
