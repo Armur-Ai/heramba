@@ -31,6 +31,7 @@ instead of matching payloads (WAF) or watching hosts (EDR).
 | 🤖 **Agentic-traffic classifier** | deterministic, explainable signals score how automated a source is — **no LLM on the hot path** |
 | 🙈 **Signal denial** | strip fingerprinting headers + timing jitter so automated oracles lose their ground truth |
 | 🧲 **Counter-agent lures** | inject fabricated leads for flagged AI agents — the fake paths become decoys, the key a canary |
+| 🪝 **Trip-wires & tarpits** | `heramba trap`: signed trip-URLs confirm an attacker, then sink it in an escalating tarpit, an endless labyrinth, and watermarked poison — see [docs/active-defense.md](docs/active-defense.md) |
 | 🚧 **Egress firewall + rate limit** | deny-by-default outbound (cut SSRF/OOB/exfil) and throttle abusive sources |
 | 🛡️ **Observe-first** | detection-only by default; inline **protect** is explicit opt-in |
 | 📊 **Live dashboards** | a world-class terminal UI (`heramba watch`) and a dark enterprise web console (`heramba dashboard`) over the same stream |
@@ -79,7 +80,9 @@ heramba dashboard            # dark enterprise web dashboard (browser) over the 
 Prefer a browser? `heramba dashboard` serves a dark, enterprise SOC console
 (threat gauge, events-over-time, by-kind/severity charts, live feed, coordinated-
 swarm panel, decoy heat-map) over the same event stream — or `heramba dashboard
---demo` to explore it against a synthetic attack with no edge running.
+--demo` to explore it against a synthetic attack with no edge running. Both the
+terminal UI and the web console are covered in [docs/dashboards.md](docs/dashboards.md);
+the active-defense trap is in [docs/active-defense.md](docs/active-defense.md).
 
 Point your ingress at Heramba's `listen` address; it forwards real traffic to
 your `upstream` untouched (observe mode) and logs detections. Probe a decoy and
