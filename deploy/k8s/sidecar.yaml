@@ -36,8 +36,21 @@ spec:
               value: "http://127.0.0.1:3000"
             - name: HERAMBA_MODE
               value: "observe" # observe (safe) | protect (inline)
+            - name: HERAMBA_ADMIN_LISTEN
+              value: ":9090" # health + Prometheus /metrics
           ports:
-            - containerPort: 8080
+            - name: http
+              containerPort: 8080
+            - name: admin
+              containerPort: 9090
+          livenessProbe:
+            httpGet: { path: /healthz, port: admin }
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /readyz, port: admin }
+            initialDelaySeconds: 2
+            periodSeconds: 5
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
