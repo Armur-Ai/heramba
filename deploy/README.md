@@ -17,6 +17,9 @@ file is required.
 | **Fly.io** | [`fly.toml`](fly.toml) | `fly deploy` from this repo or the published image |
 | **Railway** | [`railway.json`](railway.json) | Railway build/deploy config (Dockerfile) |
 | **Render** | [`render.yaml`](render.yaml) | Render Blueprint running the published image |
+| **AWS ECS** | [`ecs-taskdef.json`](ecs-taskdef.json) | Fargate task definition |
+| **GCP Cloud Run** | [`cloudrun-service.yaml`](cloudrun-service.yaml) | Knative service spec |
+| **DigitalOcean** | [`.do/app.yaml`](.do/app.yaml) | App Platform spec |
 
 ### One-liner
 

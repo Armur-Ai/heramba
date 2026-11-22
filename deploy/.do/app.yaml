@@ -1,0 +1,20 @@
+# DigitalOcean App Platform spec. Commit as .do/app.yaml, then create the app
+# (doctl apps create --spec .do/app.yaml). Observe mode is the safe default.
+name: heramba
+services:
+  - name: heramba
+    image:
+      registry_type: GHCR
+      registry: armur-ai
+      repository: heramba
+      tag: latest
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    envs:
+      - key: HERAMBA_MODE
+        value: observe
+      - key: HERAMBA_LISTEN
+        value: ":8080"
+      - key: HERAMBA_UPSTREAM
+        value: "http://your-app:3000"

@@ -1,0 +1,23 @@
+# GCP Cloud Run service (Knative). Deploy with:
+#   gcloud run services replace deploy/cloudrun-service.yaml --region=us-central1
+# Cloud Run exposes a single port; set HERAMBA_LISTEN to it ($PORT, default 8080).
+# Observe mode is the safe default; point HERAMBA_UPSTREAM at your backend.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: heramba
+spec:
+  template:
+    spec:
+      containers:
+        - image: ghcr.io/armur-ai/heramba:latest
+          args: ["serve"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: HERAMBA_MODE
+              value: observe
+            - name: HERAMBA_LISTEN
+              value: ":8080"
+            - name: HERAMBA_UPSTREAM
+              value: "https://your-backend"

@@ -176,3 +176,68 @@ func TestFlyTomlPresent(t *testing.T) {
 		}
 	}
 }
+
+// TestECSTaskDefValid checks the AWS ECS task definition is valid JSON with a
+// Heramba container and env.
+func TestECSTaskDefValid(t *testing.T) {
+	var td struct {
+		Family               string `json:"family"`
+		ContainerDefinitions []struct {
+			Name        string `json:"name"`
+			Image       string `json:"image"`
+			Environment []struct {
+				Name  string `json:"name"`
+				Value string `json:"value"`
+			} `json:"environment"`
+		} `json:"containerDefinitions"`
+	}
+	if err := json.Unmarshal([]byte(readFile(t, "ecs-taskdef.json")), &td); err != nil {
+		t.Fatalf("ecs-taskdef.json must be valid JSON: %v", err)
+	}
+	if td.Family == "" || len(td.ContainerDefinitions) == 0 {
+		t.Fatalf("ecs taskdef missing family/containers: %+v", td)
+	}
+	c := td.ContainerDefinitions[0]
+	if !strings.Contains(c.Image, "heramba") {
+		t.Errorf("ecs container image should be heramba, got %q", c.Image)
+	}
+	var hasMode bool
+	for _, e := range c.Environment {
+		if e.Name == "HERAMBA_MODE" && e.Value == "observe" {
+			hasMode = true
+		}
+	}
+	if !hasMode {
+		t.Errorf("ecs taskdef should set HERAMBA_MODE=observe, env=%+v", c.Environment)
+	}
+}
+
+// TestCloudRunServiceValid checks the Cloud Run Knative service YAML shape.
+func TestCloudRunServiceValid(t *testing.T) {
+	docs := parseYAMLDocs(t, "cloudrun-service.yaml", readFile(t, "cloudrun-service.yaml"))
+	d := docs[0]
+	if d["kind"] != "Service" {
+		t.Errorf("cloudrun kind = %v, want Service", d["kind"])
+	}
+	blob := readFile(t, "cloudrun-service.yaml")
+	for _, want := range []string{"ghcr.io/armur-ai/heramba", "HERAMBA_MODE", "serving.knative.dev"} {
+		if !strings.Contains(blob, want) {
+			t.Errorf("cloudrun service missing %q", want)
+		}
+	}
+}
+
+// TestDigitalOceanAppValid checks the DO App Platform spec YAML shape.
+func TestDigitalOceanAppValid(t *testing.T) {
+	docs := parseYAMLDocs(t, ".do/app.yaml", readFile(t, ".do/app.yaml"))
+	d := docs[0]
+	svcs, ok := d["services"].([]any)
+	if !ok || len(svcs) == 0 {
+		t.Fatalf("do app.yaml must list services, got %v", d["services"])
+	}
+	svc := svcs[0].(map[string]any)
+	img, _ := svc["image"].(map[string]any)
+	if img == nil || img["repository"] != "heramba" {
+		t.Errorf("do app service should reference the heramba image, got %v", svc["image"])
+	}
+}
