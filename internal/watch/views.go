@@ -57,10 +57,69 @@ func (m Model) tabBar() string {
 	return strings.Join(tabs, styMuted.Render("│"))
 }
 
-// sourcesView is a full-width table of every known source, ranked by urgency,
-// with its decoy/canary/agentic/egress breakdown and a severity tag.
+// srcSort selects how the Sources view is ordered ('o' cycles it).
+type srcSort int
+
+const (
+	sortUrgency srcSort = iota // severity, then volume, then recency (default)
+	sortHits                   // most active first
+	sortDecoys                 // most deception hits first
+	sortRecent                 // most recently seen first
+	numSorts
+)
+
+func (s srcSort) label() string {
+	switch s {
+	case sortHits:
+		return "hits"
+	case sortDecoys:
+		return "decoys"
+	case sortRecent:
+		return "recent"
+	default:
+		return "urgency"
+	}
+}
+
+func (s srcSort) next() srcSort { return (s + 1) % numSorts }
+
+// sourcesBy returns the top-n sources ordered by the given mode.
+func (st *State) sourcesBy(mode srcSort, n int) []Source {
+	if mode == sortUrgency {
+		return st.TopSources(n)
+	}
+	out := make([]Source, 0, len(st.sources))
+	for _, src := range st.sources {
+		out = append(out, *src)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		switch mode {
+		case sortHits:
+			if out[i].Count != out[j].Count {
+				return out[i].Count > out[j].Count
+			}
+		case sortDecoys:
+			di, dj := out[i].Decoys+out[i].Canaries, out[j].Decoys+out[j].Canaries
+			if di != dj {
+				return di > dj
+			}
+		case sortRecent:
+			if !out[i].Last.Equal(out[j].Last) {
+				return out[i].Last.After(out[j].Last)
+			}
+		}
+		return out[i].Addr < out[j].Addr // stable tiebreak
+	})
+	return capSlice(out, n)
+}
+
+// sourcesView is a full-width table of every known source, ordered by the
+// active sort, with its decoy/canary/agentic/egress breakdown and severity tag.
 func (m Model) sourcesView(w, h int) string {
-	head := styHead.Render("SOURCES") + styMuted.Render(fmt.Sprintf("  %d distinct", m.state.SourceCount()))
+	head := styHead.Render("SOURCES") +
+		styMuted.Render(fmt.Sprintf("  %d distinct", m.state.SourceCount())) +
+		styMuted.Render("  ·  sort: ") + lipgloss.NewStyle().Foreground(colCyan).Render(m.srcSort.label()) +
+		styMuted.Render(" (o)")
 	// 7 columns (source, sev, hits, decoy, canary, agent, egress) joined by 6
 	// single-space separators. The source column takes whatever is left.
 	addrW := w - (4 + 6 + 6 + 6 + 6 + 6) - 6
@@ -72,7 +131,7 @@ func (m Model) sourcesView(w, h int) string {
 			fit("SEV", 4) + " " + padLeft("HITS", 6) + " " + padLeft("DECOY", 6) + " " +
 			padLeft("CANARY", 6) + " " + padLeft("AGENT", 6) + " " + padLeft("EGRESS", 6))
 	lines := []string{head, cols}
-	for _, s := range m.state.TopSources(h - 3) {
+	for _, s := range m.state.sourcesBy(m.srcSort, h-3) {
 		sev := cell(sevAbbr(s.MaxSeverity), 4, lipgloss.NewStyle().Foreground(sevColor(s.MaxSeverity)))
 		row := cell(s.Addr, addrW, lipgloss.NewStyle().Foreground(colFg)) + " " + sev + " " +
 			styMuted.Render(padLeft(fmt.Sprintf("%d", s.Count), 6)) + " " +

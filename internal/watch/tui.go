@@ -58,6 +58,7 @@ type Model struct {
 	toastUntil  time.Time      // when the toast expires
 	frozen      []event.Event  // scroll-lock: feed list frozen while navigating (cursor>0)
 	frozenAt    int            // state.Total at the moment the feed was frozen
+	srcSort     srcSort        // ordering of the Sources view ('o' cycles)
 	view        viewMode       // which body is shown (overview / sources / campaigns / timeline)
 	width       int
 	height      int
@@ -146,6 +147,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "s":
 			m.toast, m.toastUntil = m.exportSnapshot(), m.now.Add(4*time.Second)
+			return m, nil
+		case "o":
+			m.srcSort = m.srcSort.next()
 			return m, nil
 		case "tab", "right", "l":
 			m.view = m.view.next()
