@@ -2,7 +2,9 @@
 #
 # `heramba watch` is shipped (internal/watch + cmd/heramba/watch.go). This tape
 # replays the recorded swarm attack (demo/attack.jsonl) through the real TUI, so
-# the gif shows genuine motion with no live edge needed.
+# the gif shows genuine motion with no live edge needed. It walks the full
+# dashboard: the live overview, then the Sources / Campaigns / Timeline views,
+# then the per-event inspector.
 #
 # Record with:   vhs demo/watch.tape
 # (run from the repo root; it builds bin/heramba itself)
@@ -26,17 +28,36 @@ Show
 Sleep 500ms
 Type "# Live defense dashboard — watch an autonomous swarm walk into the decoys."
 Enter
-Sleep 800ms
+Sleep 700ms
 # --replay plays the recorded attack paced by its own timestamps (demo).
 # In production you'd run:  heramba watch   (it tails the live alert sink)
-Type "heramba watch --replay --speed 1 demo/attack.jsonl"
-Sleep 400ms
+Type "heramba watch --replay --speed 2 demo/attack.jsonl"
+Sleep 300ms
 Enter
 
-# Altscreen TUI: events stream in, three sources cluster into one SWARM,
-# decoy/canary hits light up, egress callbacks get blocked, tallies climb.
-Sleep 13s
+# Overview: events stream in, three sources cluster into one SWARM, the THREAT
+# gauge climbs to CRITICAL, decoy/canary hits light up, the header sparkline
+# tracks the rate.
+Sleep 7s
 
-# Leave on the final frame (stream ended, totals + SWARM visible), then quit.
+# Pause the stream, then tour the focused views.
+Type "p"
+Sleep 900ms
+Type "2"
+Sleep 2600ms
+Type "3"
+Sleep 2600ms
+Type "4"
+Sleep 2800ms
+
+# Back to the overview and inspect the selected detection.
+Type "1"
+Sleep 1200ms
+Enter
+Sleep 2600ms
+Escape
+Sleep 700ms
+
+# Leave on a clean overview frame, then quit.
 Type "q"
 Sleep 800ms
