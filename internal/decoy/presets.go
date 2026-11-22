@@ -280,6 +280,93 @@ var presets = map[string]Preset{
 			{Plant: "/.env (JWT_SECRET)", Value: "EXAMPLE-jwt-secret-8293a4b5c6d7e8f9"},
 		},
 	},
+	"nestjs": {
+		Name: "nestjs",
+		Paths: []Endpoint{
+			{"/.env", "NestJS env/secret file probe"},
+			{"/ormconfig.json", "TypeORM database credential probe"},
+			{"/nest-cli.json", "NestJS project metadata probe"},
+			{"/dist/main.js", "NestJS compiled entrypoint probe"},
+		},
+		Prefixes: []Endpoint{
+			{"/dist/", "NestJS build-output walk"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/ormconfig.json (password)", Value: "EXAMPLE_nest_db_pw_7f3a9c21"},
+			{Plant: "/.env (JWT_SECRET)", Value: "EXAMPLE0a1b2c3d4e5f60718293a4b5c6d7e8f901"},
+		},
+	},
+	"strapi": {
+		Name: "strapi",
+		Paths: []Endpoint{
+			{"/.env", "Strapi env/secret file probe"},
+			{"/config/database.js", "Strapi database credential probe"},
+			{"/config/admin.js", "Strapi admin JWT secret probe"},
+			{"/config/server.js", "Strapi server/app-keys probe"},
+		},
+		Prefixes: []Endpoint{
+			{"/config/", "Strapi config directory walk"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/config/admin.js (auth.secret)", Value: "EXAMPLE0a1b2c3d4e5f60718293a4b5c6"},
+			{Plant: "/.env (APP_KEYS)", Value: "EXAMPLE-appkey1==,EXAMPLE-appkey2=="},
+		},
+	},
+	"remix": {
+		Name: "remix",
+		Paths: []Endpoint{
+			{"/.env", "Remix env/secret file probe"},
+			{"/remix.config.js", "Remix config source probe"},
+			{"/build/index.js", "Remix server-build probe"},
+		},
+		Prefixes: []Endpoint{
+			{"/build/", "Remix build-output walk"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/.env (SESSION_SECRET)", Value: "EXAMPLE-remix-session-0a1b2c3d4e5f6071"},
+		},
+	},
+	"sveltekit": {
+		Name: "sveltekit",
+		Paths: []Endpoint{
+			{"/.env", "SvelteKit env/secret file probe"},
+			{"/svelte.config.js", "SvelteKit config source probe"},
+			{"/vite.config.js", "Vite build config probe"},
+		},
+		Prefixes: []Endpoint{
+			{"/.svelte-kit/", "SvelteKit build-cache walk"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/.env (SECRET_API_KEY)", Value: "EXAMPLE-svelte-apikey-8293a4b5c6d7"},
+		},
+	},
+	"nuxt": {
+		Name: "nuxt",
+		Paths: []Endpoint{
+			{"/.env", "Nuxt env/secret file probe"},
+			{"/nuxt.config.ts", "Nuxt config source probe"},
+			{"/.output/server/index.mjs", "Nuxt server-output probe"},
+		},
+		Prefixes: []Endpoint{
+			{"/.nuxt/", "Nuxt build-cache walk"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/.env (NUXT_API_SECRET)", Value: "EXAMPLE-nuxt-secret-0a1b2c3d4e5f6071"},
+		},
+	},
+	"astro": {
+		Name: "astro",
+		Paths: []Endpoint{
+			{"/.env", "Astro env/secret file probe"},
+			{"/astro.config.mjs", "Astro config source probe"},
+		},
+		Prefixes: []Endpoint{
+			{"/.astro/", "Astro build-cache walk"},
+		},
+		Seeds: []CanarySeed{
+			{Plant: "/.env (SECRET_TOKEN)", Value: "EXAMPLE-astro-token-8293a4b5c6d7e8f9"},
+		},
+	},
 }
 
 // PresetNames returns the available preset names, sorted.

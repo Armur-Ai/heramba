@@ -130,3 +130,16 @@ func TestNewFrameworkPresetsPresent(t *testing.T) {
 		}
 	}
 }
+
+func TestFrontendBackendPresetsPresent(t *testing.T) {
+	for _, want := range []string{"nestjs", "strapi", "remix", "sveltekit", "nuxt", "astro"} {
+		p, ok := GetPreset(want)
+		if !ok {
+			t.Errorf("missing preset %q", want)
+			continue
+		}
+		if len(p.Paths) == 0 || len(p.Seeds) == 0 {
+			t.Errorf("preset %q should have paths and seeds: %+v", want, p)
+		}
+	}
+}
