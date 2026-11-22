@@ -22,6 +22,7 @@ import (
 	"github.com/Armur-Ai/heramba/internal/event"
 	"github.com/Armur-Ai/heramba/internal/evidence"
 	"github.com/Armur-Ai/heramba/internal/intel"
+	"github.com/Armur-Ai/heramba/internal/openapi"
 )
 
 // runServe loads config, builds the edge engine, and serves until interrupted.
@@ -72,6 +73,14 @@ func runServe(args []string) {
 	if err := cfg.Validate(); err != nil {
 		fmt.Fprintf(os.Stderr, "heramba: %v\n", err)
 		os.Exit(1)
+	}
+
+	// Seed request-body canaries from an OpenAPI spec, if configured.
+	if augmented, n, err := applyOpenAPICanaries(cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "heramba: openapi canaries disabled (%v)\n", err)
+	} else if n > 0 {
+		cfg = augmented
+		fmt.Printf("  OPENAPI: watching %d request-body canary field(s) from %s\n", n, cfg.Decoys.OpenAPISpec)
 	}
 
 	// Fan the live detection stream into the operator's alert output, the
@@ -276,6 +285,11 @@ func reloadServe(path string, swap *alert.SwapSink, engine *edge.Engine) (config
 		fmt.Fprintf(os.Stderr, "heramba: SIGHUP reload skipped: %v\n", err)
 		return cfg, err
 	}
+	if augmented, _, err := applyOpenAPICanaries(cfg); err == nil {
+		cfg = augmented
+	} else {
+		fmt.Fprintf(os.Stderr, "heramba: openapi canaries disabled on reload (%v)\n", err)
+	}
 	newSink := buildSink(cfg)
 	if err := engine.Reload(cfg, nil); err != nil { // nil = keep the engine's (counting) sink
 		fmt.Fprintf(os.Stderr, "heramba: SIGHUP reload skipped: %v\n", err)
@@ -284,6 +298,30 @@ func reloadServe(path string, swap *alert.SwapSink, engine *edge.Engine) (config
 	swap.Swap(newSink)
 	fmt.Printf("heramba: reloaded config from %s (mode=%s preset=%q)\n", path, cfg.Mode, cfg.Decoys.Preset)
 	return cfg, nil
+}
+
+// applyOpenAPICanaries, when cfg.Decoys.OpenAPISpec is set, reads the spec,
+// derives a canary value for each sensitive request-body field, and appends the
+// tokens to cfg.Decoys.Canaries (which the edge already watches — including in
+// request bodies). It returns the augmented config and the number of canaries
+// added. A read/parse error is returned so the caller can log and continue.
+func applyOpenAPICanaries(cfg config.Config) (config.Config, int, error) {
+	if cfg.Decoys.OpenAPISpec == "" {
+		return cfg, 0, nil
+	}
+	spec, err := os.ReadFile(cfg.Decoys.OpenAPISpec) //nolint:gosec // operator-supplied spec path
+	if err != nil {
+		return cfg, 0, err
+	}
+	fields, err := openapi.SensitiveFields(spec)
+	if err != nil {
+		return cfg, 0, err
+	}
+	cans := decoy.BodyCanaries(fields, cfg.Decoys.CanarySalt)
+	for _, c := range cans {
+		cfg.Decoys.Canaries = append(cfg.Decoys.Canaries, c.Token)
+	}
+	return cfg, len(cans), nil
 }
 
 // serveEdge starts the edge server over HTTPS when TLS files are configured,

@@ -8,6 +8,7 @@ import (
 
 	"github.com/Armur-Ai/heramba/internal/config"
 	"github.com/Armur-Ai/heramba/internal/decoy"
+	"github.com/Armur-Ai/heramba/internal/openapi"
 )
 
 // runDecoys lists the active decoy surface and mints canary tokens.
@@ -58,6 +59,7 @@ func decoysUsage() {
   heramba decoys presets                   list available framework presets
   heramba decoys export [--preset s] [--format json|nginx|caddy|traefik|haproxy|envoy|k8s-ingress]   export the decoy surface
   heramba decoys canary <label>            mint a canary token to plant
+  heramba decoys canary --from-openapi spec.json [--salt s]   derive request-body canaries from a spec
   heramba decoys seeds [--preset <stack>]  list believable canary seeds to plant per framework
   heramba decoys verify <value> [--preset s] [--config f]   is this string a decoy path / watched canary?`)
 }
@@ -170,7 +172,15 @@ func runDecoysList(args []string) {
 
 func runCanary(args []string) {
 	fs := flag.NewFlagSet("canary", flag.ExitOnError)
+	fromOpenAPI := fs.String("from-openapi", "", "derive body canaries from an OpenAPI/Swagger JSON spec")
+	salt := fs.String("salt", "", "salt for --from-openapi derivation (must match serve's decoys.canary_salt)")
 	_ = fs.Parse(args)
+
+	if *fromOpenAPI != "" {
+		runCanaryFromOpenAPI(*fromOpenAPI, *salt)
+		return
+	}
+
 	label := "manual"
 	if fs.NArg() > 0 {
 		label = fs.Arg(0)
@@ -183,6 +193,36 @@ func runCanary(args []string) {
 	fmt.Printf("canary token (label %q):\n  %s\n\n", c.Label, c.Token)
 	fmt.Println("Plant it where only an attacker would find and use it (a fake secret, a")
 	fmt.Println("decoy API key, a hidden field). Any later use is a confirmed intrusion.")
+}
+
+// runCanaryFromOpenAPI lists the deterministic request-body canaries derived
+// from a spec's sensitive fields — the values to plant (e.g. as field examples)
+// and that `serve` watches for when decoys.openapi_spec + canary_salt are set.
+func runCanaryFromOpenAPI(specPath, salt string) {
+	spec, err := os.ReadFile(specPath) //nolint:gosec // operator-supplied spec path
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "heramba: %v\n", err)
+		os.Exit(1)
+	}
+	fields, err := openapi.SensitiveFields(spec)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "heramba: %v\n", err)
+		os.Exit(1)
+	}
+	cans := decoy.BodyCanaries(fields, salt)
+	if len(cans) == 0 {
+		fmt.Println("no sensitive request-body fields found in the spec.")
+		return
+	}
+	tw := tabwriter.NewWriter(os.Stdout, 0, 2, 2, ' ', 0)
+	fmt.Fprintln(tw, "BODY FIELD\tCANARY VALUE (plant & watch)")
+	for _, c := range cans {
+		fmt.Fprintf(tw, "%s\t%s\n", c.Field, c.Token)
+	}
+	_ = tw.Flush()
+	fmt.Println("\nPlant each value as the field's example in your spec/docs (or anywhere an")
+	fmt.Println("attacker would copy it). With decoys.openapi_spec + the same canary_salt set,")
+	fmt.Println("`heramba serve` watches for these in request bodies — any hit is a confirmed intrusion.")
 }
 
 // runDecoysExport prints the decoy surface as JSON (default) or an nginx snippet.

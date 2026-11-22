@@ -181,6 +181,13 @@ type DecoyConfig struct {
 	Preset   string   `yaml:"preset"`   // framework preset (see `heramba decoys presets`)
 	Paths    []string `yaml:"paths"`    // extra decoy paths to serve/watch
 	Canaries []string `yaml:"canaries"` // canary tokens (planted elsewhere) to watch for in requests
+	// OpenAPISpec is a path to an OpenAPI/Swagger JSON spec. When set, Heramba
+	// derives a canary value for each sensitive-looking request-body field and
+	// watches for it in request bodies — so an attacker replaying a planted spec
+	// example is caught (zero false positive). CanarySalt keeps the derived
+	// values unguessable; use the same salt when listing them to plant.
+	OpenAPISpec string `yaml:"openapi_spec"`
+	CanarySalt  string `yaml:"canary_salt"`
 }
 
 // CounterConfig controls counter-agent prompt-decoy injection (PROTECT mode).

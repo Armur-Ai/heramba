@@ -139,6 +139,10 @@ decoys:
                            #   ("" = generic defaults only; run: heramba decoys presets)
   paths: []                # extra decoy paths to serve/watch
   canaries: []             # canary tokens (planted elsewhere) to watch for in requests
+  openapi_spec: ""         # path to an OpenAPI/Swagger JSON spec: derive + watch a
+                           #   request-body canary per sensitive field (list them with:
+                           #   heramba decoys canary --from-openapi spec.json --salt <salt>)
+  canary_salt: ""          # salt that makes the derived body-canary values unguessable
 
 # Agentic-traffic classifier thresholds (0/empty = conservative built-in defaults).
 classifier:
