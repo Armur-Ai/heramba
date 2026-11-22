@@ -18,9 +18,11 @@ import (
 // Metrics is the snapshot the /metrics endpoint renders. It is provided by a
 // function so this package stays decoupled from the alert/edge internals.
 type Metrics struct {
-	Total  int
-	ByKind map[string]int
-	Uptime time.Duration
+	Total      int
+	ByKind     map[string]int
+	BySeverity map[string]int
+	Sources    int
+	Uptime     time.Duration
 }
 
 // MetricsFunc returns the current metrics snapshot.
@@ -99,4 +101,19 @@ func writeMetrics(w http.ResponseWriter, metrics MetricsFunc) {
 	for _, k := range kinds {
 		fmt.Fprintf(w, "heramba_detections_by_kind_total{kind=%q} %d\n", k, m.ByKind[k])
 	}
+
+	fmt.Fprintln(w, "# HELP heramba_detections_by_severity_total Detections by severity.")
+	fmt.Fprintln(w, "# TYPE heramba_detections_by_severity_total counter")
+	sevs := make([]string, 0, len(m.BySeverity))
+	for s := range m.BySeverity {
+		sevs = append(sevs, s)
+	}
+	sort.Strings(sevs) // stable output
+	for _, s := range sevs {
+		fmt.Fprintf(w, "heramba_detections_by_severity_total{severity=%q} %d\n", s, m.BySeverity[s])
+	}
+
+	fmt.Fprintln(w, "# HELP heramba_sources_total Distinct detection sources seen.")
+	fmt.Fprintln(w, "# TYPE heramba_sources_total gauge")
+	fmt.Fprintf(w, "heramba_sources_total %d\n", m.Sources)
 }

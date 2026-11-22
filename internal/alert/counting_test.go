@@ -25,6 +25,22 @@ func TestCountingSinkTalliesAndDelegates(t *testing.T) {
 	}
 }
 
+func TestCountingSinkBySeverityAndSources(t *testing.T) {
+	c := Count(nil)
+	_ = c.Emit(event.New(event.KindDecoyHit, event.SeverityHigh, "10.0.0.1", "/a", ""))
+	_ = c.Emit(event.New(event.KindDecoyHit, event.SeverityHigh, "10.0.0.1", "/b", "")) // same source
+	_ = c.Emit(event.New(event.KindProbe, event.SeverityMedium, "10.0.0.2", "/c", ""))
+	_ = c.Emit(event.New(event.KindProbe, event.SeverityLow, "", "/d", "")) // empty source ignored
+
+	sev := c.BySeverity()
+	if sev["high"] != 2 || sev["medium"] != 1 || sev["low"] != 1 {
+		t.Fatalf("bySeverity wrong: %+v", sev)
+	}
+	if got := c.Sources(); got != 2 {
+		t.Fatalf("distinct sources = %d, want 2 (empty source must not count)", got)
+	}
+}
+
 func TestCountNilInner(t *testing.T) {
 	c := Count(nil)
 	_ = c.Emit(event.New(event.KindProbe, event.SeverityInfo, "", "", ""))

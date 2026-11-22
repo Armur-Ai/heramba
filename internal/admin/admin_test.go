@@ -45,7 +45,13 @@ func TestMetricsPrometheusFormat(t *testing.T) {
 	var ready atomic.Bool
 	ready.Store(true)
 	h := Handler(&ready, func() Metrics {
-		return Metrics{Total: 5, ByKind: map[string]int{"decoy_hit": 3, "canary_triggered": 2}, Uptime: 90 * time.Second}
+		return Metrics{
+			Total:      5,
+			ByKind:     map[string]int{"decoy_hit": 3, "canary_triggered": 2},
+			BySeverity: map[string]int{"high": 4, "medium": 1},
+			Sources:    2,
+			Uptime:     90 * time.Second,
+		}
 	})
 	code, body := do(t, h, "/metrics")
 	if code != 200 {
@@ -58,6 +64,11 @@ func TestMetricsPrometheusFormat(t *testing.T) {
 		`heramba_detections_by_kind_total{kind="decoy_hit"} 3`,
 		`heramba_detections_by_kind_total{kind="canary_triggered"} 2`,
 		"# TYPE heramba_detections_total counter",
+		`heramba_detections_by_severity_total{severity="high"} 4`,
+		`heramba_detections_by_severity_total{severity="medium"} 1`,
+		"# TYPE heramba_detections_by_severity_total counter",
+		"heramba_sources_total 2",
+		"# TYPE heramba_sources_total gauge",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("metrics missing %q in:\n%s", want, body)

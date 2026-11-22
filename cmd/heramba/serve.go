@@ -133,7 +133,13 @@ func runServe(args []string) {
 				for _, t := range counting.Snapshot() {
 					byKind[string(t.Kind)] = t.Count
 				}
-				return admin.Metrics{Total: counting.Total(), ByKind: byKind, Uptime: time.Since(startTime)}
+				return admin.Metrics{
+					Total:      counting.Total(),
+					ByKind:     byKind,
+					BySeverity: counting.BySeverity(),
+					Sources:    counting.Sources(),
+					Uptime:     time.Since(startTime),
+				}
 			}),
 			ReadHeaderTimeout: 10 * time.Second,
 		}
