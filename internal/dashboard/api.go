@@ -76,8 +76,9 @@ type metricsJSON struct {
 	Score         ScoreHistogram `json:"score"`
 }
 
-// handleMetrics serves GET /api/metrics as a JSON snapshot.
-func (s *server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
+// metricsPayload builds the wire-shape metrics snapshot (never-nil maps), shared
+// by GET /api/metrics and the live stream.
+func (s *server) metricsPayload() metricsJSON {
 	m := s.snapshot()
 	if m.ByKind == nil {
 		m.ByKind = map[string]int{}
@@ -85,7 +86,7 @@ func (s *server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 	if m.BySeverity == nil {
 		m.BySeverity = map[string]int{}
 	}
-	out := metricsJSON{
+	return metricsJSON{
 		Mode:          m.Mode,
 		Total:         m.Total,
 		ByKind:        m.ByKind,
@@ -94,7 +95,11 @@ func (s *server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 		UptimeSeconds: int(s.uptime().Seconds()),
 		Score:         m.Score,
 	}
-	writeJSON(w, http.StatusOK, out)
+}
+
+// handleMetrics serves GET /api/metrics as a JSON snapshot.
+func (s *server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, s.metricsPayload())
 }
 
 // handleTimeline serves GET /api/timeline?window= as bucketed event counts.

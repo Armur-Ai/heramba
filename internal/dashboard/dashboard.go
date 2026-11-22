@@ -92,6 +92,7 @@ type config struct {
 	metrics    MetricsFunc
 	controller Controller
 	token      string
+	broker     *Broker
 }
 
 // Option configures a dashboard Handler.
@@ -110,12 +111,20 @@ func WithController(ctl Controller) Option { return func(c *config) { c.controll
 // An empty token leaves writes unauthenticated (intended for localhost binds).
 func Authorize(token string) Option { return func(c *config) { c.token = token } }
 
+// WithBroker sets the pub/sub broker the live stream (GET /api/stream) fans out.
+// Supply one when an event source also publishes to it (so the UI updates the
+// instant an event arrives); otherwise the handler creates a private broker so
+// the stream endpoint still works (heartbeats only). The caller owns the broker
+// it supplies and may Close it on shutdown.
+func WithBroker(b *Broker) Option { return func(c *config) { c.broker = b } }
+
 // server holds the resolved dependencies behind the mux.
 type server struct {
 	events     EventsFunc
 	metrics    MetricsFunc
 	controller Controller
 	token      string
+	broker     *Broker
 	startedAt  time.Time
 }
 
@@ -131,11 +140,15 @@ func Handler(opts ...Option) http.Handler {
 	if cfg.controller == nil {
 		cfg.controller = NewMemoryController()
 	}
+	if cfg.broker == nil {
+		cfg.broker = NewBroker()
+	}
 	s := &server{
 		events:     cfg.events,
 		metrics:    cfg.metrics,
 		controller: cfg.controller,
 		token:      cfg.token,
+		broker:     cfg.broker,
 		startedAt:  time.Now(),
 	}
 	return s.routes()
@@ -157,6 +170,9 @@ func (s *server) routes() http.Handler {
 
 	// SPA shell at the root only.
 	mux.HandleFunc("GET /{$}", s.handleIndex(sub))
+
+	// Live stream (Server-Sent Events).
+	mux.HandleFunc("GET /api/stream", s.handleStream)
 
 	// Read APIs.
 	mux.HandleFunc("GET /api/events", s.handleEvents)
