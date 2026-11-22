@@ -86,6 +86,7 @@ type AlertConfig struct {
 	Elastic ElasticConfig `yaml:"elastic"`
 	Syslog  SyslogConfig  `yaml:"syslog"`
 	Loki    LokiConfig    `yaml:"loki"`
+	Sumo    string        `yaml:"sumo"` // Sumo Logic HTTP Source URL (the URL is the secret)
 	// Rotate is an optional bounded on-disk JSONL audit trail (local, no
 	// network). Unlike the push sinks it records everything, ignoring
 	// MinSeverity — it is a durable record, not a notification channel.

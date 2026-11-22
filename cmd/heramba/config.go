@@ -96,6 +96,7 @@ alert:
   loki:
     url: ""                # Grafana Loki push endpoint, e.g. http://loki:3100/loki/api/v1/push
     tenant: ""             # optional X-Scope-OrgID for multi-tenant Loki
+  sumo: ""                 # Sumo Logic HTTP Source URL (the URL embeds the token)
 
   # --- SMTP email digest (batches events above min_severity into one message) ---
   email:

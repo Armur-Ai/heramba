@@ -275,6 +275,9 @@ func buildSink(cfg config.Config) alert.Sink {
 	if c := cfg.Alert.Loki; c.URL != "" {
 		sinks = append(sinks, alert.NewLoki(c.URL, c.Tenant, 5*time.Second, floor))
 	}
+	if u := cfg.Alert.Sumo; u != "" {
+		sinks = append(sinks, alert.NewSumoLogic(u, 5*time.Second, floor))
+	}
 	if c := cfg.Alert.Rotate; c.File != "" {
 		if rs, err := alert.NewRotatingFile(c.File, c.MaxBytes, c.MaxBackups); err == nil {
 			sinks = append(sinks, rs) // records everything (no floor): durable audit trail
