@@ -111,6 +111,12 @@ alert:
     url: ""                # empty = US API (https://api.honeycomb.io)
     dataset: ""            # Honeycomb dataset name
     api_key: ""            # X-Honeycomb-Team key
+  openobserve:
+    url: ""                # instance root, e.g. http://localhost:5080 ("" = disabled)
+    org: ""                # empty = default
+    stream: ""             # empty = heramba
+    username: ""           # basic-auth user (email)
+    password: ""           # basic-auth password/token
   sumo: ""                 # Sumo Logic HTTP Source URL (the URL embeds the token)
   # Generic templated webhook: render any payload shape from a Go text/template
   # (executed with the detection event as data) and POST it to any service.

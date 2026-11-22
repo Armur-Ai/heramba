@@ -388,6 +388,9 @@ func buildSink(cfg config.Config) alert.Sink {
 	if c := cfg.Alert.Honeycomb; c.APIKey != "" && c.Dataset != "" {
 		sinks = append(sinks, alert.NewHoneycomb(c.URL, c.Dataset, c.APIKey, 5*time.Second, floor))
 	}
+	if c := cfg.Alert.OpenObserve; c.URL != "" {
+		sinks = append(sinks, alert.NewOpenObserve(c.URL, c.Org, c.Stream, c.Username, c.Password, 5*time.Second, floor))
+	}
 	if u := cfg.Alert.Sumo; u != "" {
 		sinks = append(sinks, alert.NewSumoLogic(u, 5*time.Second, floor))
 	}

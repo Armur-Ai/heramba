@@ -98,14 +98,15 @@ type AlertConfig struct {
 	MinSeverity string `yaml:"min_severity"` // floor for push sinks: info|low|medium|high|critical (default high)
 	// SIEM integrations — each fans out alongside the local text/jsonl record,
 	// above MinSeverity. Enabled when its endpoint field is set.
-	Splunk    SplunkConfig    `yaml:"splunk"`
-	Datadog   DatadogConfig   `yaml:"datadog"`
-	Elastic   ElasticConfig   `yaml:"elastic"`
-	Syslog    SyslogConfig    `yaml:"syslog"`
-	Loki      LokiConfig      `yaml:"loki"`
-	NewRelic  NewRelicConfig  `yaml:"newrelic"`
-	Honeycomb HoneycombConfig `yaml:"honeycomb"`
-	Sumo      string          `yaml:"sumo"` // Sumo Logic HTTP Source URL (the URL is the secret)
+	Splunk      SplunkConfig      `yaml:"splunk"`
+	Datadog     DatadogConfig     `yaml:"datadog"`
+	Elastic     ElasticConfig     `yaml:"elastic"`
+	Syslog      SyslogConfig      `yaml:"syslog"`
+	Loki        LokiConfig        `yaml:"loki"`
+	NewRelic    NewRelicConfig    `yaml:"newrelic"`
+	Honeycomb   HoneycombConfig   `yaml:"honeycomb"`
+	OpenObserve OpenObserveConfig `yaml:"openobserve"`
+	Sumo        string            `yaml:"sumo"` // Sumo Logic HTTP Source URL (the URL is the secret)
 	// TemplateWebhook POSTs a body rendered from an operator-supplied Go
 	// text/template, so any service with a fixed payload shape can be targeted.
 	TemplateWebhook TemplateWebhookConfig `yaml:"template_webhook"`
@@ -158,6 +159,15 @@ type HoneycombConfig struct {
 	URL     string `yaml:"url"`     // empty = US API (https://api.honeycomb.io)
 	Dataset string `yaml:"dataset"` // Honeycomb dataset
 	APIKey  string `yaml:"api_key"` // X-Honeycomb-Team key
+}
+
+// OpenObserveConfig configures an OpenObserve ingest sink.
+type OpenObserveConfig struct {
+	URL      string `yaml:"url"`      // instance root, e.g. http://localhost:5080
+	Org      string `yaml:"org"`      // empty = default
+	Stream   string `yaml:"stream"`   // empty = heramba
+	Username string `yaml:"username"` // basic-auth user (email)
+	Password string `yaml:"password"` // basic-auth password/token
 }
 
 // LokiConfig configures a Grafana Loki push sink.
