@@ -91,6 +91,55 @@ var presets = map[string]Preset{
 			{"/wp-includes/", "WordPress core directory walk"},
 		},
 	},
+	"fastapi": {
+		Name: "fastapi",
+		Paths: []Endpoint{
+			{"/.env", "FastAPI env/secret file probe"},
+			{"/app/core/config.py", "FastAPI settings source probe"},
+			{"/alembic.ini", "Alembic DB migration config probe"},
+			{"/.env.prod", "FastAPI production secrets probe"},
+		},
+	},
+	"symfony": {
+		Name: "symfony",
+		Paths: []Endpoint{
+			{"/.env", "Symfony env/secret file probe"},
+			{"/.env.local", "Symfony local secrets probe"},
+			{"/var/log/prod.log", "Symfony production log probe"},
+			{"/config/packages/security.yaml", "Symfony security config probe"},
+		},
+		Prefixes: []Endpoint{
+			{"/config/secrets/", "Symfony secrets directory walk"},
+		},
+	},
+	"aspnet": {
+		Name: "aspnet",
+		Paths: []Endpoint{
+			{"/appsettings.json", "ASP.NET settings/credential probe"},
+			{"/appsettings.Production.json", "ASP.NET production settings probe"},
+			{"/web.config", "ASP.NET web.config probe"},
+		},
+		Prefixes: []Endpoint{
+			{"/App_Data/", "ASP.NET App_Data directory walk"},
+			{"/.vs/", "Visual Studio metadata walk"},
+		},
+	},
+	"go": {
+		Name: "go",
+		Paths: []Endpoint{
+			{"/.env", "Go app env/secret file probe"},
+			{"/config.yaml", "Go app config probe"},
+			{"/app.env", "Go app env probe"},
+		},
+	},
+	"phoenix": {
+		Name: "phoenix",
+		Paths: []Endpoint{
+			{"/.env", "Phoenix env/secret file probe"},
+			{"/config/prod.secret.exs", "Phoenix production secrets probe"},
+			{"/config/runtime.exs", "Phoenix runtime config probe"},
+		},
+	},
 	"spring": {
 		Name: "spring",
 		Paths: []Endpoint{
