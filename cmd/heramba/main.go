@@ -25,6 +25,8 @@ func main() {
 		runServe(os.Args[2:])
 	case "watch":
 		runWatch(os.Args[2:])
+	case "replay":
+		runReplay(os.Args[2:])
 	case "report":
 		runReport(os.Args[2:])
 	case "quickstart":
@@ -63,6 +65,7 @@ usage:
 commands:
   serve        run the edge runtime (observe mode by default)
   watch        live attack dashboard (TUI) over the event stream
+  replay       feed a recorded JSONL capture through the configured alert sinks
   report       render a shareable incident report (markdown/html) from a capture
   quickstart   detect your stack and generate a tailored .heramba.yml
   decoys       generate and list decoys / canary tokens
