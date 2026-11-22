@@ -38,6 +38,10 @@ type Config struct {
 	Egress         EgressConfig     `yaml:"egress"`
 	Counter        CounterConfig    `yaml:"counter"`
 	Classifier     ClassifierConfig `yaml:"classifier"`
+	// TLS serves the edge over HTTPS with a static certificate when both
+	// cert_file and key_file are set. ACME/auto-cert is intentionally out of
+	// scope — terminate ACME at an upstream LB, or supply files here.
+	TLS TLSConfig `yaml:"tls"`
 	// RateLimitRPS throttles each source to this many requests/second in PROTECT
 	// mode (0 = disabled; never engaged in observe mode). RateLimitBurst is the
 	// allowed burst (defaults to max(RateLimitRPS, 1)).
@@ -56,6 +60,17 @@ func (c Config) DrainTimeout() time.Duration {
 		return 0
 	}
 	return time.Duration(c.DrainSeconds) * time.Second
+}
+
+// TLSConfig configures static-certificate HTTPS for the edge listener.
+type TLSConfig struct {
+	CertFile string `yaml:"cert_file"` // PEM certificate chain
+	KeyFile  string `yaml:"key_file"`  // PEM private key
+}
+
+// TLSEnabled reports whether the edge should serve HTTPS (both files set).
+func (c Config) TLSEnabled() bool {
+	return c.TLS.CertFile != "" && c.TLS.KeyFile != ""
 }
 
 // ClassifierConfig overrides the agentic-traffic classifier thresholds. Zero
@@ -235,6 +250,9 @@ func (c Config) Validate() error {
 	}
 	if n := c.Alert.Syslog.Network; n != "" && n != "udp" && n != "tcp" {
 		return fmt.Errorf("config: invalid alert.syslog.network %q (want udp|tcp)", n)
+	}
+	if (c.TLS.CertFile == "") != (c.TLS.KeyFile == "") {
+		return fmt.Errorf("config: tls.cert_file and tls.key_file must both be set or both empty")
 	}
 	return nil
 }

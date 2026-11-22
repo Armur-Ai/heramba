@@ -151,7 +151,11 @@ func runServe(args []string) {
 	if upstreamNote == "" {
 		upstreamNote = "(honeypot-only, no upstream)"
 	}
-	fmt.Printf("heramba edge — mode=%s listen=%s upstream=%s\n", cfg.Mode, cfg.Listen, upstreamNote)
+	scheme := "http"
+	if cfg.TLSEnabled() {
+		scheme = "https"
+	}
+	fmt.Printf("heramba edge — mode=%s listen=%s (%s) upstream=%s\n", cfg.Mode, cfg.Listen, scheme, upstreamNote)
 	if cfg.Mode == config.ModeObserve {
 		fmt.Println("  OBSERVE mode: detection only, real traffic passes through untouched.")
 	} else {
@@ -161,7 +165,7 @@ func runServe(args []string) {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := serveEdge(srv, cfg); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			fmt.Fprintf(os.Stderr, "heramba: serve error: %v\n", err)
 			stop()
 		}
@@ -231,6 +235,16 @@ func runServe(args []string) {
 		}
 		fmt.Println("  (shadow mode: validate + audit only. Enable the engine in enforce mode to act, with approval gates.)")
 	}
+}
+
+// serveEdge starts the edge server over HTTPS when TLS files are configured,
+// otherwise plain HTTP. ACME/auto-cert is intentionally not supported — supply
+// a static cert/key or terminate ACME at an upstream load balancer.
+func serveEdge(srv *http.Server, cfg config.Config) error {
+	if cfg.TLSEnabled() {
+		return srv.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile)
+	}
+	return srv.ListenAndServe()
 }
 
 // drain performs the graceful-drain step: it flips the readiness flag to false

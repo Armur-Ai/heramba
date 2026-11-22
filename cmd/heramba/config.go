@@ -64,6 +64,12 @@ listen: ":8080"            # address the edge binds
 admin_listen: ":9090"      # health + metrics + version (/healthz /readyz /metrics /version); "" disables
 upstream: ""               # reverse-proxy target, e.g. http://127.0.0.1:3000 ("" = honeypot-only)
 
+# Serve the edge over HTTPS with a static cert when BOTH are set (no ACME —
+# terminate ACME at an upstream LB, or supply files here). Both or neither.
+tls:
+  cert_file: ""            # PEM certificate chain
+  key_file: ""             # PEM private key
+
 # X-Forwarded-For is trusted ONLY from these proxy CIDRs ("" / empty = never trust
 # it, use the direct peer address). Set to your load balancer's CIDRs.
 trusted_proxies: []
