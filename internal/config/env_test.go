@@ -32,6 +32,21 @@ func TestApplyEnvBareOnlyForModeAndUpstream(t *testing.T) {
 	}
 }
 
+func TestApplyEnvSIEMEndpoints(t *testing.T) {
+	t.Setenv("HERAMBA_SPLUNK_URL", "https://hec:8088/services/collector/event")
+	t.Setenv("HERAMBA_SPLUNK_TOKEN", "tok")
+	t.Setenv("HERAMBA_DATADOG_API_KEY", "ddk")
+	t.Setenv("HERAMBA_ELASTIC_URL", "https://es:9200")
+	t.Setenv("HERAMBA_SYSLOG_ADDRESS", "siem:514")
+	c := Default().ApplyEnv()
+	if c.Alert.Splunk.URL == "" || c.Alert.Splunk.Token != "tok" {
+		t.Errorf("splunk env not applied: %+v", c.Alert.Splunk)
+	}
+	if c.Alert.Datadog.APIKey != "ddk" || c.Alert.Elastic.URL == "" || c.Alert.Syslog.Address != "siem:514" {
+		t.Errorf("siem env not applied: %+v", c.Alert)
+	}
+}
+
 func TestApplyEnvPrefixWinsOverBare(t *testing.T) {
 	t.Setenv("UPSTREAM", "http://bare:1")
 	t.Setenv("HERAMBA_UPSTREAM", "http://prefixed:2")

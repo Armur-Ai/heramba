@@ -44,6 +44,22 @@ func (c Config) ApplyEnv() Config {
 	if v := envVar("PRESET", false); v != "" {
 		c.Decoys.Preset = v
 	}
+	// SIEM endpoints
+	if v := envVar("SPLUNK_URL", false); v != "" {
+		c.Alert.Splunk.URL = v
+	}
+	if v := envVar("SPLUNK_TOKEN", false); v != "" {
+		c.Alert.Splunk.Token = v
+	}
+	if v := envVar("DATADOG_API_KEY", false); v != "" {
+		c.Alert.Datadog.APIKey = v
+	}
+	if v := envVar("ELASTIC_URL", false); v != "" {
+		c.Alert.Elastic.URL = v
+	}
+	if v := envVar("SYSLOG_ADDRESS", false); v != "" {
+		c.Alert.Syslog.Address = v
+	}
 	return c
 }
 

@@ -190,6 +190,26 @@ func buildSink(cfg config.Config) alert.Sink {
 	if u := cfg.Alert.Slack; u != "" {
 		sinks = append(sinks, alert.NewSlack(u, 5*time.Second, floor))
 	}
+	if c := cfg.Alert.Splunk; c.URL != "" {
+		sinks = append(sinks, alert.NewSplunk(c.URL, c.Token, 5*time.Second, floor))
+	}
+	if c := cfg.Alert.Datadog; c.APIKey != "" {
+		sinks = append(sinks, alert.NewDatadog(c.URL, c.APIKey, 5*time.Second, floor))
+	}
+	if c := cfg.Alert.Elastic; c.URL != "" {
+		sinks = append(sinks, alert.NewElastic(c.URL, c.Index, c.APIKey, 5*time.Second, floor))
+	}
+	if c := cfg.Alert.Syslog; c.Address != "" {
+		network := c.Network
+		if network == "" {
+			network = "udp"
+		}
+		if s, err := alert.NewSyslogCEF(network, c.Address, floor); err == nil {
+			sinks = append(sinks, s)
+		} else {
+			fmt.Fprintf(os.Stderr, "heramba: syslog sink disabled (dial %s %s: %v)\n", network, c.Address, err)
+		}
+	}
 	if len(sinks) == 1 {
 		return sinks[0]
 	}

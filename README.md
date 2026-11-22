@@ -234,6 +234,7 @@ attacker walks into. Keys: `q` quit · `space` pause · `c` clear.
 - ✅ Signal denial: response-header normalization + timing jitter
 - ✅ Deny-by-default egress/callback firewall + per-source rate limiting (protect mode)
 - ✅ Alert sinks (text / JSONL / webhook) + detection counting/summary; CLI (`serve`/`watch`/`decoys`/`config`/`doctor`/`experiment`)
+- ✅ **SIEM sinks** — Splunk HEC · Datadog Logs · Elasticsearch · CEF/syslog (config + `HERAMBA_SPLUNK_URL`/`DATADOG_API_KEY`/`ELASTIC_URL`/`SYSLOG_ADDRESS`)
 - ✅ **Live attack dashboard** `heramba watch` — real-time TUI over the event stream (sources, campaigns/swarm, decoy map); follows a live sink or replays a capture
 
 **Intelligence plane — shipped, tested; evidence→campaign→swarm live-wired into `serve`:**

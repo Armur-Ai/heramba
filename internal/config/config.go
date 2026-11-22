@@ -60,7 +60,38 @@ type AlertConfig struct {
 	// channel; the local text/jsonl sink always records everything.
 	Webhook     string `yaml:"webhook"`      // POST raw event JSON to this URL
 	Slack       string `yaml:"slack"`        // Slack incoming-webhook URL (Block Kit)
-	MinSeverity string `yaml:"min_severity"` // floor for webhook/slack: info|low|medium|high|critical (default high)
+	MinSeverity string `yaml:"min_severity"` // floor for push sinks: info|low|medium|high|critical (default high)
+	// SIEM integrations — each fans out alongside the local text/jsonl record,
+	// above MinSeverity. Enabled when its endpoint field is set.
+	Splunk  SplunkConfig  `yaml:"splunk"`
+	Datadog DatadogConfig `yaml:"datadog"`
+	Elastic ElasticConfig `yaml:"elastic"`
+	Syslog  SyslogConfig  `yaml:"syslog"`
+}
+
+// SplunkConfig configures a Splunk HTTP Event Collector sink.
+type SplunkConfig struct {
+	URL   string `yaml:"url"`   // full HEC collector URL
+	Token string `yaml:"token"` // HEC token
+}
+
+// DatadogConfig configures a Datadog Logs sink.
+type DatadogConfig struct {
+	URL    string `yaml:"url"`     // empty = US1 intake
+	APIKey string `yaml:"api_key"` // Datadog API key
+}
+
+// ElasticConfig configures an Elasticsearch sink.
+type ElasticConfig struct {
+	URL    string `yaml:"url"`     // Elasticsearch base URL
+	Index  string `yaml:"index"`   // empty = heramba-detections
+	APIKey string `yaml:"api_key"` // optional ApiKey auth
+}
+
+// SyslogConfig configures a CEF-over-syslog sink.
+type SyslogConfig struct {
+	Network string `yaml:"network"` // udp | tcp (default udp)
+	Address string `yaml:"address"` // host:port
 }
 
 // DecoyConfig controls decoy/canary behavior.
