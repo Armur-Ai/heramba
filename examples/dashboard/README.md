@@ -22,7 +22,8 @@ heramba watch heramba-events.jsonl
 ## Web console, read-only, over the same sink
 
 ```bash
-heramba dashboard heramba-events.jsonl --listen 127.0.0.1:7171
+# flags come before the source argument
+heramba dashboard --listen 127.0.0.1:7171 heramba-events.jsonl
 # open http://127.0.0.1:7171  (control panel is read-only when attached this way)
 ```
 

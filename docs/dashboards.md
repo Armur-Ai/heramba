@@ -33,6 +33,9 @@ heramba watch --replay demo/attack.jsonl --speed 8
 Everything below also works unchanged for `heramba dashboard` (swap the command
 name), because they share the source-resolution and follow/replay plumbing.
 
+> Put flags **before** the source argument (`heramba watch --mode protect
+> events.jsonl`). Flags after a positional argument are not parsed.
+
 ## `heramba watch` — the TUI
 
 ```
